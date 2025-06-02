@@ -11,6 +11,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
 import DirectorDashboard from "@/pages/director/DirectorDashboard";
 import DirectorClasses from "@/pages/director/DirectorClasses";
+import SubjectManagement from "@/pages/director/SubjectManagement";
 import DirectorStudents from "@/pages/director/DirectorStudents";
 import DirectorPayments from "@/pages/director/DirectorPayments";
 import DirectorGrades from "@/pages/director/DirectorGrades";
@@ -46,6 +47,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['DIRECTOR']}>
                   <DirectorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/director/subjects"
+              element={
+                <ProtectedRoute allowedRoles={['DIRECTOR']}>
+                  <SubjectManagement />
                 </ProtectedRoute>
               }
             />

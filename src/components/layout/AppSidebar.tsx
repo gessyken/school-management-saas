@@ -32,6 +32,7 @@ export const AppSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
         return [
           { name: 'Dashboard', path: '/director/dashboard', icon: Home },
           { name: 'Classes', path: '/director/classes', icon: BookOpen },
+          { name: 'Subject', path: '/director/subjects', icon: BookOpen },
           { name: 'Élèves', path: '/director/students', icon: Users },
           { name: 'Paiements', path: '/director/payments', icon: CreditCard },
           { name: 'Notes', path: '/director/grades', icon: GraduationCap },
