@@ -29,6 +29,11 @@ const studentSchema = new mongoose.Schema({
     lowercase: true,
     match: [/^\S+@\S+\.\S+$/, 'Invalid email format']
   },
+  level: {
+    type: String,
+    enum: ['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth', 'Upper Sixth'],
+    required: true
+  },
   phoneNumber: {
     type: String,
     trim: true,

@@ -29,7 +29,7 @@ const classesSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
         },
-    },{_id:false}],
+    }, { _id: false }],
     studentList: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Student'
@@ -45,6 +45,11 @@ const classesSchema = new mongoose.Schema({
         unique: false,
         match: [/^\d{4}-\d{4}$/, 'Academic year must be in format YYYY-YYYY'],
         trim: true
+    },
+    level: {
+        type: String,
+        enum: ['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth', 'Upper Sixth'],
+        required: true
     },
 }, {
     timestamps: true

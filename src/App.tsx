@@ -12,7 +12,7 @@ import LoginPage from "@/pages/LoginPage";
 import DirectorDashboard from "@/pages/director/DirectorDashboard";
 import ClassesManagement from "@/pages/director/ClassesManagement";
 import SubjectManagement from "@/pages/director/SubjectManagement";
-import DirectorStudents from "@/pages/director/DirectorStudents";
+import DirectorStudents from "@/pages/director/StudentManagement";
 import DirectorPayments from "@/pages/director/DirectorPayments";
 import DirectorGrades from "@/pages/director/DirectorGrades";
 import DirectorStatistics from "@/pages/director/DirectorStatistics";

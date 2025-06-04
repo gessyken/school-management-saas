@@ -2,7 +2,7 @@ import axios from "@/lib/api"; // Ensure this points to your Axios instance
 
 export interface SubjectInfo {
   subjectInfo: any; // MongoDB ObjectId of Subject
-  coefficient: number;
+  coefficient: number|"";
   teacherInfo: any; // MongoDB ObjectId of User (teacher)
 }
 
@@ -11,8 +11,9 @@ export interface SchoolClass {
   classesName: string;
   description?: string;
   status?: string ;
-  capacity?: number;
-  amountFee?: number;
+  level: string;
+  capacity?: number|"";
+  amountFee?: number|"";
   subjects?: SubjectInfo[];
   studentList?: any[]; // Array of Student ObjectIds
   mainTeacherInfo?: string; // MongoDB ObjectId of User

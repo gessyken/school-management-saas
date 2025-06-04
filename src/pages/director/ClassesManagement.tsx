@@ -53,8 +53,9 @@ const ClassesManagement = () => {
     classesName: "",
     description: "",
     status: "Open",
-    capacity: 0,
-    amountFee: 0,
+    capacity: "",
+    amountFee: "",
+    level: "",
     subjects: [],
     studentList: [],
     mainTeacherInfo: "",
@@ -134,9 +135,10 @@ const ClassesManagement = () => {
       classesName: "",
       description: "",
       status: "Open",
-      capacity: 0,
-      amountFee: 0,
+      capacity: "",
+      amountFee: "",
       subjects: [],
+      level: "",
       studentList: [],
       mainTeacherInfo: "",
       year: "",
@@ -150,7 +152,7 @@ const ClassesManagement = () => {
     setForm({
       ...cls,
       mainTeacherInfo: cls.mainTeacherInfo.id,
-      subjects: cls.subjects.map(item => ({
+      subjects: cls.subjects.map((item) => ({
         subjectInfo: item.subjectInfo._id,
         coefficient: item.coefficient,
         teacherInfo: item.teacherInfo.id,
@@ -231,7 +233,7 @@ const ClassesManagement = () => {
       ...form,
       subjects: [
         ...form.subjects,
-        { subjectInfo: "", coefficient: 0, teacherInfo: "" },
+        { subjectInfo: "", coefficient: "", teacherInfo: "" },
       ],
     });
   };
@@ -262,8 +264,9 @@ const ClassesManagement = () => {
                   classesName: "",
                   description: "",
                   status: "Open",
-                  capacity: 0,
-                  amountFee: 0,
+                  capacity: "",
+                  amountFee: "",
+                  level: "",
                   subjects: [],
                   studentList: [],
                   mainTeacherInfo: "",
@@ -299,6 +302,7 @@ const ClassesManagement = () => {
               <TableHead>Nom</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead>Capacité</TableHead>
+              <TableHead>Niveau</TableHead>
               <TableHead>Année</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -309,6 +313,7 @@ const ClassesManagement = () => {
                 <TableCell>{cls.classesName}</TableCell>
                 <TableCell>{cls.status}</TableCell>
                 <TableCell>{cls.capacity}</TableCell>
+                <TableCell>{cls.level}</TableCell>
                 <TableCell>{cls.year}</TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -421,7 +426,10 @@ const ClassesManagement = () => {
                       type="number"
                       value={form.capacity ?? ""}
                       onChange={(e) =>
-                        setForm({ ...form, capacity: Number(e.target.value) })
+                        setForm({
+                          ...form,
+                          capacity: Number(e.target.value) || "",
+                        })
                       }
                     />
                   </div>
@@ -432,21 +440,47 @@ const ClassesManagement = () => {
                       type="number"
                       value={form.amountFee ?? ""}
                       onChange={(e) =>
-                        setForm({ ...form, amountFee: Number(e.target.value) })
+                        setForm({
+                          ...form,
+                          amountFee: Number(e.target.value) || "",
+                        })
                       }
                     />
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1 font-medium">Niveau</label>
+                    <select
+                      className="w-full border p-2 rounded"
+                      value={form.level}
+                      onChange={(e) =>
+                        setForm({ ...form, level: e.target.value })
+                      }
+                    >
+                      <option value="">Sélectionnez un niveau</option>
+                      <option value="Form 1">Form 1</option>
+                      <option value="Form 2">Form 2</option>
+                      <option value="Form 3">Form 3</option>
+                      <option value="Form 4">Form 4</option>
+                      <option value="Form 5">Form 5</option>
+                      <option value="Lower Sixth">Lower Sixth</option>
+                      <option value="Upper Sixth">Upper Sixth</option>
+                    </select>
+                  </div>
 
-                <div>
-                  <Label>Année Académique (YYYY-YYYY)</Label>
-                  <Input
-                    type="text"
-                    value={form.year ?? ""}
-                    pattern="\d{4}-\d{4}"
-                    onChange={(e) => setForm({ ...form, year: e.target.value })}
-                    placeholder="ex: 2024-2025"
-                  />
+                  <div>
+                    <Label>Année Académique (YYYY-YYYY)</Label>
+                    <Input
+                      type="text"
+                      value={form.year ?? ""}
+                      pattern="\d{4}-\d{4}"
+                      onChange={(e) =>
+                        setForm({ ...form, year: e.target.value })
+                      }
+                      placeholder="ex: 2024-2025"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -506,7 +540,7 @@ const ClassesManagement = () => {
                           handleSubjectChange(
                             index,
                             "coefficient",
-                            Number(e.target.value)
+                            Number(e.target.value) || ""
                           )
                         }
                       />

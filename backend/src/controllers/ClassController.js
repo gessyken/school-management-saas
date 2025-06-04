@@ -12,6 +12,7 @@ class ClassController {
         description,
         status,
         capacity,
+        level,
         amountFee,
         subjects,
         mainTeacherInfo,
@@ -34,6 +35,7 @@ class ClassController {
         description,
         status: status || 'Open',
         capacity,
+        level,
         amountFee,
         subjects: subjects || [],
         studentList: [],
@@ -92,10 +94,10 @@ class ClassController {
 
   async updateClass(req, res) {
     try {
-      const { classesName, description, status, capacity, amountFee, mainTeacherInfo,subjects, year } = req.body;
+      const { classesName, description, status, capacity,level, amountFee, mainTeacherInfo,subjects, year } = req.body;
 
       const updatedClass = await Classes.findByIdAndUpdate(req.params.id,
-        { classesName, description, status, capacity, amountFee, mainTeacherInfo,subjects, year },
+        { classesName, description, status, capacity,level, amountFee, mainTeacherInfo,subjects, year },
         { new: true })
         .populate('subjects.subjectInfo')
         .populate('subjects.teacherInfo')

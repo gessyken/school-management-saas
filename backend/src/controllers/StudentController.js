@@ -52,8 +52,9 @@ class StudentController {
   // Create many students sequentially with validation
   async createManyStudents(req, res) {
     try {
-      const studentsArray = req.body;
-
+      const studentsArray = req.body?.students;
+      console.log(!Array.isArray(studentsArray))
+      console.log(studentsArray.length)
       if (!Array.isArray(studentsArray) || studentsArray.length === 0) {
         return res.status(400).json({ message: 'Request body must be a non-empty array of students' });
       }
@@ -63,7 +64,7 @@ class StudentController {
 
       for (let i = 0; i < studentsArray.length; i++) {
         const studentData = studentsArray[i];
-
+        console.log("here ",i)
         // Validate required fields for each student
         const missingFields = validateRequiredFields(studentData);
         if (missingFields.length > 0) {
@@ -79,7 +80,7 @@ class StudentController {
           errors.push({ index: i, error: error.message });
         }
       }
-
+      console.log(`${savedStudents.length} students created, ${errors.length} errors`)
       res.status(207).json({ // 207 Multi-Status to show partial success/fail
         message: `${savedStudents.length} students created, ${errors.length} errors`,
         savedStudents,
