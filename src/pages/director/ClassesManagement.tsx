@@ -524,11 +524,18 @@ const ClassesManagement = () => {
                           <SelectValue placeholder="Matière" />
                         </SelectTrigger>
                         <SelectContent>
-                          {subjects.map((subj) => (
-                            <SelectItem key={subj._id} value={subj._id}>
-                              {subj.subjectName}
-                            </SelectItem>
-                          ))}
+                          {subjects
+                            .filter(
+                              (opt) =>
+                                !form.subjects.some(
+                                  (item) => item.subjectInfo === opt._id
+                                ) || form.subjects[index]?.subjectInfo
+                            )
+                            .map((subj) => (
+                              <SelectItem key={subj._id} value={subj._id}>
+                                {subj.subjectName}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
 
