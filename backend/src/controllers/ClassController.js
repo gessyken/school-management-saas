@@ -92,10 +92,10 @@ class ClassController {
 
   async updateClass(req, res) {
     try {
-      const { classesName, description, status, capacity, amountFee, mainTeacherInfo, year } = req.body;
+      const { classesName, description, status, capacity, amountFee, mainTeacherInfo,subjects, year } = req.body;
 
       const updatedClass = await Classes.findByIdAndUpdate(req.params.id,
-        { classesName, description, status, capacity, amountFee, mainTeacherInfo, year },
+        { classesName, description, status, capacity, amountFee, mainTeacherInfo,subjects, year },
         { new: true })
         .populate('subjects.subjectInfo')
         .populate('subjects.teacherInfo')

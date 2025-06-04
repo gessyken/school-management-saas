@@ -171,7 +171,8 @@ class UserController {
   // Admin functions for user management
   async getAllUsers(req, res) {
     try {
-      const users = await User.find({});
+      console.log(req.query)
+      const users = await User.find(req.query);
       res.json({ users });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });

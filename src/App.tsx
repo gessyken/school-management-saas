@@ -10,7 +10,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 // Pages
 import LoginPage from "@/pages/LoginPage";
 import DirectorDashboard from "@/pages/director/DirectorDashboard";
-import DirectorClasses from "@/pages/director/DirectorClasses";
+import ClassesManagement from "@/pages/director/ClassesManagement";
 import SubjectManagement from "@/pages/director/SubjectManagement";
 import DirectorStudents from "@/pages/director/DirectorStudents";
 import DirectorPayments from "@/pages/director/DirectorPayments";
@@ -62,7 +62,7 @@ const App = () => (
               path="/director/classes"
               element={
                 <ProtectedRoute allowedRoles={['DIRECTOR']}>
-                  <DirectorClasses />
+                  <ClassesManagement />
                 </ProtectedRoute>
               }
             />

@@ -79,26 +79,26 @@ const studentSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-studentSchema.pre('save', async function (next) {
-    if (this.classInfo) {
-        try {
-            const Classes = mongoose.model('Classes');
-            const classInfo = await Classes.findById(this.classInfo);
-            if (classInfo) {
-                if (!classInfo.studentList)
-                    classInfo.studentList = []
+// studentSchema.pre('save', async function (next) {
+//     if (this.classInfo) {
+//         try {
+//             const Classes = mongoose.model('Classes');
+//             const classInfo = await Classes.findById(this.classInfo);
+//             if (classInfo) {
+//                 if (!classInfo.studentList)
+//                     classInfo.studentList = []
 
-                if (!classInfo.studentList.includes(this._id)) {
-                    classInfo.studentList.push(this._id);
-                    await classInfo.save();
-                }
-            }
-        } catch (error) {
-            return next(error);
-        }
-    }
-    next();
-});
+//                 if (!classInfo.studentList.includes(this._id)) {
+//                     classInfo.studentList.push(this._id);
+//                     await classInfo.save();
+//                 }
+//             }
+//         } catch (error) {
+//             return next(error);
+//         }
+//     }
+//     next();
+// });
 
 const Student = mongoose.model('Student', studentSchema);
 export default Student;
