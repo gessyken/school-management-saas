@@ -25,6 +25,7 @@ import TeacherDashboard from "@/pages/teacher/TeacherDashboard";
 import TeacherClasses from "@/pages/teacher/TeacherClasses";
 import TeacherGrades from "@/pages/teacher/TeacherGrades";
 import NotFoundPage from "@/pages/NotFoundPage";
+import ClassesList from "@/pages/director/ClassList";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['DIRECTOR']}>
                   <ClassesManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/director/classes-list"
+              element={
+                <ProtectedRoute allowedRoles={['DIRECTOR']}>
+                  <ClassesList />
                 </ProtectedRoute>
               }
             />

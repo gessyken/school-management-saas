@@ -1,7 +1,7 @@
 import Classes from '../models/Classes.js';
 import Subject from '../models/Subject.js';
 import Student from '../models/Student.js';
-import { AcademicYear } from '../models/AcademicYear.js';
+import AcademicYear  from '../models/AcademicYear.js';
 
 class ClassController {
   // Class management

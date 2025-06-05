@@ -1,4 +1,4 @@
-import { AcademicYear } from '../models/AcademicYear.js';
+import AcademicYear  from '../models/AcademicYear.js';
 import Student from '../models/Student.js';
 import Classes from '../models/Classes.js';
 import AcademicYearDetail from '../models/AcademicYearDetail.js';

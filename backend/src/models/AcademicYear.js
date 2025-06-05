@@ -88,7 +88,7 @@ const academicYearSchema = new mongoose.Schema({
     },
     classes: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Class',
+        ref: 'Classes',
     },
     hasRepeated: { type: Boolean, default: false },
     hasCompleted: { type: Boolean, default: false },
@@ -263,4 +263,5 @@ academicYearSchema.statics.findStudentsAtRisk = async function(year, threshold =
 };
 
 // Create AcademicYear model
-export const AcademicYear = mongoose.model('AcademicYear', academicYearSchema);
+const AcademicYear = mongoose.model('AcademicYear', academicYearSchema);
+export default AcademicYear;

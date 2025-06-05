@@ -1,6 +1,6 @@
 import Student from '../models/Student.js';
 import User from '../models/User.js';
-import { AcademicYear } from '../models/AcademicYear.js';
+import AcademicYear  from '../models/AcademicYear.js';
 import Classes from '../models/Classes.js';
 
 // List of required fields for a student creation
@@ -145,10 +145,13 @@ class StudentController {
   async getAllStudents(req, res) {
     try {
       const students = await Student.find({})
-        // .populate('Classes', 'classesName');
+        .populate({
+          path: 'classInfo'
+        })
 
       res.json({ students });
     } catch (error) {
+      console.log(error)
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }

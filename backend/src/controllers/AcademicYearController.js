@@ -1,53 +1,241 @@
-import { AcademicYear } from '../models/AcademicYear.js';
 import Student from '../models/Student.js';
 import Term from '../models/Term.js';
 import Sequence from '../models/Sequence.js';
 import Subject from '../models/Subject.js';
 import AcademicYearDetail from '../models/AcademicYearDetail.js';
+import AcademicYear from '../models/AcademicYear.js';
+import Class from '../models/Classes.js';
+import mongoose from 'mongoose';
 
 class AcademicYearController {
+
+  async assignStudentsToClassWithSession(req, res) {
+    const session = await mongoose.startSession(); // Start a new session
+    session.startTransaction();
+
+    try {
+      const { studentList, classId, academicYear } = req.body;
+      console.log(req.body);
+
+      if (!Array.isArray(studentList) || !classId || !academicYear) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: 'Invalid input: studentList, classId, academicYear are required.' });
+      }
+
+      const classDoc = await Class.findById(classId);
+      console.log(await Class.find())
+      if (!classDoc) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).json({ message: 'Class not found.' });
+      }
+
+      let created = 0, updated = 0, failed = [];
+
+      for (const studentId of studentList) {
+        try {
+          const studentDoc = await Student.findById(studentId);
+          if (!studentDoc) {
+            console.log(`Student with id: ${studentId} does not exist`);
+            failed.push({ studentId, error: 'Student not found' });
+            continue;
+          }
+
+          let academicDoc = await AcademicYear.findOne({
+            student: studentId, year: academicYear
+          });
+          studentDoc.classInfo = classId;
+
+          if (!academicDoc) {
+            academicDoc = new AcademicYear({
+              student: studentId,
+              year: academicYear,
+              classes: classId,
+              terms: [],
+              fees: []
+            });
+
+            await academicDoc.save({ session });
+            classDoc.student.push(academicDoc._id);
+            created++;
+          } else {
+            academicDoc.classes = classId;
+            await academicDoc.save({ session });
+            classDoc.student.push(academicDoc._id);
+            updated++;
+          }
+
+          await studentDoc.save({ session });
+        } catch (err) {
+          console.log(err)
+          failed.push({ studentId, error: err.message });
+        }
+      }
+
+      await classDoc.save({ session });
+
+      await session.commitTransaction();
+      session.endSession();
+
+      return res.status(200).json({
+        message: 'Academic year processing completed.',
+        summary: {
+          created,
+          updated,
+          failedCount: failed.length,
+          failed
+        }
+      });
+
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      console.error('Error in assignStudentsToClass:', error);
+      return res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
+  async assignStudentsToClass(req, res) {
+    try {
+      const { studentList, classId, academicYear } = req.body;
+      console.log(req.body);
+
+      if (!Array.isArray(studentList) || !classId || !academicYear) {
+        return res.status(400).json({
+          message: 'Invalid input: studentList, classId, academicYear are required.'
+        });
+      }
+
+      const classDoc = await Class.findById(classId);
+      console.log(await Class.find());
+
+      if (!classDoc) {
+        return res.status(404).json({ message: 'Class not found.' });
+      }
+
+      let created = 0, updated = 0, failed = [];
+
+      for (const studentId of studentList) {
+        try {
+          const studentDoc = await Student.findById(studentId);
+          if (!studentDoc) {
+            console.log(`Student with id: ${studentId} does not exist`);
+            failed.push({ studentId, error: 'Student not found' });
+            continue;
+          }
+
+          let academicDoc = await AcademicYear.findOne({
+            student: studentId,
+            year: academicYear
+          });
+
+          studentDoc.classInfo = classId;
+
+          if (!academicDoc) {
+            academicDoc = new AcademicYear({
+              student: studentId,
+              year: academicYear,
+              classes: classId,
+              terms: [],
+              fees: []
+            });
+
+            await academicDoc.save();
+            classDoc.studentList.push(academicDoc._id);
+            created++;
+          } else {
+            academicDoc.classes = classId;
+            await academicDoc.save();
+            classDoc.studentList.push(academicDoc._id);
+            updated++;
+          }
+
+          await studentDoc.save();
+        } catch (err) {
+          console.log(err);
+          failed.push({ studentId, error: err.message });
+        }
+      }
+
+      await classDoc.save();
+
+      return res.status(200).json({
+        message: 'Academic year processing completed.',
+        summary: {
+          created,
+          updated,
+          failedCount: failed.length,
+          failed
+        }
+      });
+
+    } catch (error) {
+      console.error('Error in assignStudentsToClass:', error);
+      return res.status(500).json({
+        message: 'Server error',
+        error: error.message
+      });
+    }
+  }
+
+  async StudentsAcademic(req, res) {
+    try {
+
+      const students = await AcademicYear.find(req.query)
+        .populate('classes')
+        .populate('student')
+
+
+      res.json({ students });
+    } catch (error) {
+      console.log(error)
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
   // Academic year management
   async createAcademicYear(req, res) {
     try {
       const { studentId, year, classesId, terms } = req.body;
-      
+
       // Validate student
       const student = await Student.findById(studentId);
       if (!student) {
         return res.status(404).json({ message: 'Student not found' });
       }
-      
+
       // Check if academic year already exists for student
       const existingYear = await AcademicYear.findOne({ student: studentId, year });
       if (existingYear) {
         return res.status(400).json({ message: 'Academic year already exists for this student' });
       }
-      
+
       // Prepare terms with sequences and subjects
       const processedTerms = [];
-      
+
       for (const term of terms) {
         const termInfo = await Term.findById(term.termId);
         if (!termInfo) {
           return res.status(404).json({ message: `Term with ID ${term.termId} not found` });
         }
-        
+
         const processedSequences = [];
-        
+
         for (const sequence of term.sequences) {
           const sequenceInfo = await Sequence.findById(sequence.sequenceId);
           if (!sequenceInfo) {
             return res.status(404).json({ message: `Sequence with ID ${sequence.sequenceId} not found` });
           }
-          
+
           const processedSubjects = [];
-          
+
           for (const subject of sequence.subjects) {
             const subjectInfo = await Subject.findById(subject.subjectId);
             if (!subjectInfo) {
               return res.status(404).json({ message: `Subject with ID ${subject.subjectId} not found` });
             }
-            
+
             processedSubjects.push({
               subjectInfo: subject.subjectId,
               isActive: true,
@@ -58,7 +246,7 @@ class AcademicYearController {
               }
             });
           }
-          
+
           processedSequences.push({
             sequenceInfo: sequence.sequenceId,
             isActive: true,
@@ -68,7 +256,7 @@ class AcademicYearController {
             subjects: processedSubjects
           });
         }
-        
+
         processedTerms.push({
           termInfo: term.termId,
           average: 0,
@@ -77,7 +265,7 @@ class AcademicYearController {
           discipline: 'Good'
         });
       }
-      
+
       // Create new academic year
       const academicYear = new AcademicYear({
         student: studentId,
@@ -88,15 +276,15 @@ class AcademicYearController {
         terms: processedTerms,
         fees: []
       });
-      
+
       await academicYear.save();
-      
+
       // Update student with academic year reference
       await Student.findByIdAndUpdate(
         studentId,
         { $addToSet: { academicYears: academicYear._id } }
       );
-      
+
       res.status(201).json({
         message: 'Academic year created successfully',
         academicYear
@@ -105,7 +293,7 @@ class AcademicYearController {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
-  
+
   async getAcademicYearById(req, res) {
     try {
       const academicYear = await AcademicYear.findById(req.params.id)
@@ -123,40 +311,40 @@ class AcademicYearController {
           path: 'terms.sequences.subjects.subjectInfo',
           model: 'Subject'
         });
-      
+
       if (!academicYear) {
         return res.status(404).json({ message: 'Academic year not found' });
       }
-      
+
       res.json({ academicYear });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
-  
+
   // Update student marks
   async updateStudentMark(req, res) {
     try {
       const { termIndex, sequenceIndex, subjectIndex, newMark } = req.body;
-      
+
       // Find academic year
       const academicYear = await AcademicYear.findById(req.params.id);
       if (!academicYear) {
         return res.status(404).json({ message: 'Academic year not found' });
       }
-      
+
       // Create modified by object
       const modifiedBy = {
         name: `${req.user.firstName} ${req.user.lastName}`,
         userId: req.user.id
       };
-      
+
       // Update mark
       await academicYear.updateMark(termIndex, sequenceIndex, subjectIndex, newMark, modifiedBy);
-      
+
       // Recalculate averages
       await academicYear.calculateAverages();
-      
+
       res.json({
         message: 'Mark updated successfully',
         academicYear
@@ -165,18 +353,18 @@ class AcademicYearController {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
-  
+
   // Add fee payment
   async addFeePayment(req, res) {
     try {
       const { billID, type, amount } = req.body;
-      
+
       // Find academic year
       const academicYear = await AcademicYear.findById(req.params.id);
       if (!academicYear) {
         return res.status(404).json({ message: 'Academic year not found' });
       }
-      
+
       // Add fee
       const feeData = {
         billID,
@@ -184,9 +372,9 @@ class AcademicYearController {
         amount,
         date: new Date()
       };
-      
+
       await academicYear.addFee(feeData);
-      
+
       res.json({
         message: 'Fee payment added successfully',
         academicYear
@@ -195,7 +383,7 @@ class AcademicYearController {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
-  
+
   // Check year completion
   async checkYearCompletion(req, res) {
     try {
@@ -204,10 +392,10 @@ class AcademicYearController {
       if (!academicYear) {
         return res.status(404).json({ message: 'Academic year not found' });
       }
-      
+
       // Check completion
       await academicYear.checkYearCompletion();
-      
+
       res.json({
         message: 'Year completion checked',
         hasCompleted: academicYear.hasCompleted,
@@ -217,33 +405,33 @@ class AcademicYearController {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
-  
+
   // Get students at risk
   async getStudentsAtRisk(req, res) {
     try {
       const { year, threshold } = req.query;
-      
+
       if (!year) {
         return res.status(400).json({ message: 'Year parameter is required' });
       }
-      
+
       const studentsAtRisk = await AcademicYear.findStudentsAtRisk(
         year,
         threshold ? parseFloat(threshold) : 10
       );
-      
+
       res.json({ studentsAtRisk });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
-  
+
   // Generate report card
   async generateReportCard(req, res) {
     try {
       const { id } = req.params;
       const { termIndex } = req.query;
-      
+
       // Find academic year with all necessary data
       const academicYear = await AcademicYear.findById(id)
         .populate('student')
@@ -268,22 +456,22 @@ class AcademicYearController {
           path: 'terms.sequences.subjects.subjectInfo',
           model: 'Subject'
         });
-      
+
       if (!academicYear) {
         return res.status(404).json({ message: 'Academic year not found' });
       }
-      
+
       // Generate report card data
       let reportCardData;
-      
+
       if (termIndex !== undefined) {
         // Generate report for specific term
         if (!academicYear.terms[termIndex]) {
           return res.status(404).json({ message: 'Term not found' });
         }
-        
+
         const term = academicYear.terms[termIndex];
-        
+
         reportCardData = {
           student: {
             id: academicYear.student._id,
@@ -333,22 +521,22 @@ class AcademicYearController {
           }
         };
       }
-      
+
       res.json({ reportCard: reportCardData });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
-  
+
   // Get class rankings
   async getClassRankings(req, res) {
     try {
       const { classId, year, termIndex } = req.query;
-      
+
       if (!classId || !year) {
         return res.status(400).json({ message: 'Class ID and year parameters are required' });
       }
-      
+
       // Find all academic years for the class and year
       const academicYears = await AcademicYear.find({
         classes: classId,
@@ -361,13 +549,13 @@ class AcademicYearController {
           select: 'firstName lastName'
         }
       });
-      
+
       if (!academicYears.length) {
         return res.status(404).json({ message: 'No academic records found for this class and year' });
       }
-      
+
       let rankings;
-      
+
       if (termIndex !== undefined) {
         // Get rankings for specific term
         rankings = academicYears
@@ -399,7 +587,7 @@ class AcademicYearController {
             rank: index + 1
           }));
       }
-      
+
       res.json({ rankings });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
@@ -410,13 +598,13 @@ class AcademicYearController {
   async calculateAverages(req, res) {
     try {
       const academicYear = await AcademicYear.findById(req.params.id);
-      
+
       if (!academicYear) {
         return res.status(404).json({ message: 'Academic year not found' });
       }
-      
+
       await academicYear.calculateAverages();
-      
+
       res.json({
         message: 'Averages calculated successfully',
         academicYear
@@ -425,25 +613,25 @@ class AcademicYearController {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
-  
+
   // Delete an academic year
   async deleteAcademicYear(req, res) {
     try {
       const academicYear = await AcademicYear.findById(req.params.id);
-      
+
       if (!academicYear) {
         return res.status(404).json({ message: 'Academic year not found' });
       }
-      
+
       // Remove reference from student
       await Student.findByIdAndUpdate(
         academicYear.student,
         { $pull: { academicYears: academicYear._id } }
       );
-      
+
       // Delete the academic year
       await AcademicYear.findByIdAndDelete(req.params.id);
-      
+
       res.json({ message: 'Academic year deleted successfully' });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });

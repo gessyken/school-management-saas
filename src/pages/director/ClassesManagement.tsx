@@ -151,8 +151,8 @@ const ClassesManagement = () => {
   const handleEdit = (cls: any) => {
     setForm({
       ...cls,
-      mainTeacherInfo: cls.mainTeacherInfo.id,
-      subjects: cls.subjects.map((item) => ({
+      mainTeacherInfo: cls?.mainTeacherInfo?.id,
+      subjects: cls?.subjects?.map((item) => ({
         subjectInfo: item.subjectInfo._id,
         coefficient: item.coefficient,
         teacherInfo: item.teacherInfo.id,
@@ -301,6 +301,7 @@ const ClassesManagement = () => {
             <TableRow>
               <TableHead>Nom</TableHead>
               <TableHead>Statut</TableHead>
+              <TableHead>student</TableHead>
               <TableHead>Capacité</TableHead>
               <TableHead>Niveau</TableHead>
               <TableHead>Année</TableHead>
@@ -312,6 +313,7 @@ const ClassesManagement = () => {
               <TableRow key={cls._id}>
                 <TableCell>{cls.classesName}</TableCell>
                 <TableCell>{cls.status}</TableCell>
+                <TableCell>{cls.studentList.length}</TableCell>
                 <TableCell>{cls.capacity}</TableCell>
                 <TableCell>{cls.level}</TableCell>
                 <TableCell>{cls.year}</TableCell>

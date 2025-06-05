@@ -16,7 +16,13 @@ class SettingController {
 
   async getAcademicYears(req, res) {
     try {
-      const years = await AcademicYearDetail.find(req.query).populate('terms');
+      const years = await AcademicYearDetail.find(req.query)
+      .populate({
+        path: 'terms',
+        populate: {
+            path: 'sequences'
+        }
+    })
       res.json(years);
     } catch (error) {
       res.status(500).json({ error: error.message });

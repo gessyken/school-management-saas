@@ -437,7 +437,7 @@ export default function StudentManagement() {
                   <TableRow>
                     <TableHead>Matricule</TableHead>
                     <TableHead>Nom complet</TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead>classe</TableHead>
                     <TableHead>Niveau</TableHead>
                     <TableHead>Sexe</TableHead>
                     <TableHead>Statut</TableHead>
@@ -453,7 +453,7 @@ export default function StudentManagement() {
                           {student.fullName ||
                             `${student.firstName} ${student.lastName}`}
                         </TableCell>
-                        <TableCell>{student.email}</TableCell>
+                        <TableCell>{student?.classInfo?.classesName || "N/A"}</TableCell>
                         <TableCell>{student.level}</TableCell>
                         <TableCell>{student.gender}</TableCell>
                         <TableCell>{student.status}</TableCell>
