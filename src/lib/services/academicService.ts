@@ -42,11 +42,11 @@ export interface AcademicFee {
   date?: string;
 }
 
-export interface AcademicYear {
+export interface AcademicYearStudent {
   _id?: string;
-  student: string;
+  student: any;
   year: string;
-  classes: string;
+  classes: any;
   hasRepeated?: boolean;
   hasCompleted?: boolean;
   terms: AcademicTerm[];
@@ -71,13 +71,17 @@ export const academicService = {
   },
 
   // Create new academic year
-  create: async (data: AcademicYear) => {
-    const response = await axios.post(API_BASE, data);
+  assignStudent: async (selectedStudents: any,selectedClass:any,selectedYear:any) => {
+    const response = await axios.post(`${API_BASE}/assign`, {
+      studentList: selectedStudents,
+      classId: selectedClass,
+      academicYear: selectedYear,
+    });
     return response.data;
   },
 
   // Update academic year
-  update: async (id: string, data: Partial<AcademicYear>) => {
+  update: async (id: string, data: Partial<AcademicYearStudent>) => {
     const response = await axios.put(`${API_BASE}/${id}`, data);
     return response.data;
   },
@@ -126,7 +130,7 @@ export const academicService = {
   },
 
   // Optionally: bulk import academic years
-  bulkImport: async (data: AcademicYear[]) => {
+  bulkImport: async (data: AcademicYearStudent[]) => {
     const response = await axios.post(`${API_BASE}/import`, {
       academicYears: data,
     });

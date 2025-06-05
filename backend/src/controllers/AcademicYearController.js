@@ -107,15 +107,19 @@ class AcademicYearController {
         });
       }
 
-      const classDoc = await Class.findById(classId);
-      console.log(await Class.find());
+      const academicDetailDoc = await AcademicYearDetail.findOne({ name: academicYear });
+      if (!academicDetailDoc) {
+        return res.status(404).json({ message: 'Academic Year not found.' });
+      }
+      if (!academicDetailDoc.isCurrent)
+        return res.status(404).json({ message: 'Academic Year is not active.' });
 
+      const classDoc = await Class.findById(classId);
       if (!classDoc) {
         return res.status(404).json({ message: 'Class not found.' });
       }
 
       let created = 0, updated = 0, failed = [];
-
       for (const studentId of studentList) {
         try {
           const studentDoc = await Student.findById(studentId);
@@ -124,7 +128,11 @@ class AcademicYearController {
             failed.push({ studentId, error: 'Student not found' });
             continue;
           }
-
+          if (studentDoc.level !== classDoc.level) {
+            console.log(`Student ${studentDoc.email} is no in the level for class ${classDoc.className}`);
+            failed.push({ studentId, error: 'Student not found' });
+            continue;
+          }
           let academicDoc = await AcademicYear.findOne({
             student: studentId,
             year: academicYear
@@ -159,7 +167,11 @@ class AcademicYearController {
       }
 
       await classDoc.save();
-
+      console.log(
+        created,
+        updated,
+        failed.length,
+      )
       return res.status(200).json({
         message: 'Academic year processing completed.',
         summary: {

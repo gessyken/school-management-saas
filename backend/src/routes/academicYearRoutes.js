@@ -5,7 +5,7 @@ import { authenticate, authorizeRoles } from '../middleware/auth.middleware.js';
 const router = express.Router();
 
 // Academic year routes
-router.post('/', AcademicYearController.assignStudentsToClass);
+router.post('/assign', AcademicYearController.assignStudentsToClass);
 router.get('/', AcademicYearController.StudentsAcademic);
 router.get('/:id', authenticate, AcademicYearController.getAcademicYearById);
 // router.put('/:id', authenticate, authorizeRoles(['admin']), AcademicYearController.updateAcademicYear);

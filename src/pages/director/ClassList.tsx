@@ -36,14 +36,21 @@ import autoTable from "jspdf-autotable";
 import { usePagination } from "@/components/ui/usePagination";
 import { AcademicYear, settingService } from "@/lib/services/settingService";
 import { classService, SchoolClass } from "@/lib/services/classService";
+import {
+  academicService,
+  AcademicYearStudent,
+} from "@/lib/services/academicService";
+import { useSearchParams } from "react-router-dom";
+import AssignStudentsToClass from "./AssignStudentsToClass";
 import Classes from "../../../backend/src/models/Classes";
-import { academicService } from "@/lib/services/academicService";
 
 const itemsPerPage = 5;
 
 export default function ClassesList() {
   const [students, setStudents] = useState<Student[]>([]);
-  const [academicStudents, setAcademicStudents] = useState<Student[]>([]);
+  const [academicStudents, setAcademicStudents] = useState<
+    AcademicYearStudent[]
+  >([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [showModal, setShowModal] = useState(false);
@@ -60,6 +67,8 @@ export default function ClassesList() {
     status: "",
     academicYear: "",
   });
+    const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const { toast } = useToast();
 
@@ -69,12 +78,15 @@ export default function ClassesList() {
     fetchStudents();
     fetchAcademicYear();
   }, []);
-  
+
   const loadAcademicYearDetail = async () => {
     const data = await settingService.getAcademicYears();
     setAcademicYears(data);
     if (data.length > 0 && filter.academicYear === "") {
-      setFilter({ ...filter, academicYear: data[data.length - 1].name });
+      setFilter({
+        ...filter,
+        academicYear: data.find((opt) => opt.isCurrent)?.name,
+      });
     }
   };
   const fetchClasses = async () => {
@@ -103,7 +115,7 @@ export default function ClassesList() {
   const fetchAcademicYear = async () => {
     try {
       const data = await academicService.getAll();
-      console.log("fetchAcademicYear",data);
+      console.log("fetchAcademicYear", data);
       setAcademicStudents(data.students);
     } catch (error) {
       console.error("Failed to fetch students", error);
@@ -123,11 +135,30 @@ export default function ClassesList() {
         student.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.matricule?.toLowerCase().includes(searchTerm.toLowerCase())
     )
+    .filter((student) =>
+      filter.level ? student?.level === filter.level : true
+    );
+  const filteredAcademicStudents = academicStudents
     .filter(
-      (student) =>
-        (filter.level ? student.level === filter.level : true) &&
-        // (filter.academicYear ? student.gender === filter.academicYear : true) &&
-        (filter.level ? student.status === filter.level : true)
+      (academic) =>
+        academic?.student?.fullName
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        academic?.student?.firstName
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        academic?.student?.lastName
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        academic?.student?.matricule
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase())
+    )
+    .filter(
+      (academic) =>
+        (filter.level ? academic?.classes?.level === filter.level : true) &&
+        (filter.academicYear ? academic?.year === filter.academicYear : true) &&
+        (filter.classes ? academic?.classes?._id === filter.classes : true)
     );
 
   const filteredClasses = classes.filter((item) =>
@@ -141,35 +172,80 @@ export default function ClassesList() {
     goToNextPage,
     goToPreviousPage,
     goToPage,
-  } = usePagination(academicStudents, itemsPerPage); // subjects is your full data list
+  } = usePagination(filteredAcademicStudents, itemsPerPage); // subjects is your full data list
 
   const exportExcel = () => {
-    const formattedStudents = students.map((student) => ({
-      Matricule: student.matricule,
-      firstName: student.firstName,
-      lastName: student.lastName,
-      Email: student.email || "N/A",
-      Téléphone: student.phoneNumber || "N/A",
-      Genre: student.gender || "N/A",
-      "Date de naissance": student.dateOfBirth || "N/A",
-      Niveau: student.level,
-      Statut: student.status || "N/A",
-      "Adresse - Rue": student.address?.street || "N/A",
-      "Adresse - Ville": student.address?.city || "N/A",
-      "Adresse - Région/État": student.address?.state || "N/A",
-      "Adresse - Pays": student.address?.country || "N/A",
-      "Contact d'urgence - Nom": student.emergencyContact?.name || "N/A",
-      "Contact d'urgence - Relation":
-        student.emergencyContact?.relationship || "N/A",
-      "Contact d'urgence - Téléphone": student.emergencyContact?.phone || "N/A",
-      "Date de création": student.createdAt || "N/A",
-      "Date de mise à jour": student.updatedAt || "N/A",
-    }));
+    try {
+      const formattedData = [];
 
-    const ws = XLSX.utils.json_to_sheet(formattedStudents);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Étudiants");
-    XLSX.writeFile(wb, "etudiants.xlsx");
+      currentData.forEach((record) => {
+        const student = record.student || {};
+        const classInfo = record.classes || {};
+        const year = record.year;
+
+        // Flatten each term
+        record.terms.forEach((term) => {
+          const termName = term.termInfo?.name || "N/A";
+          const termAverage = term.average || 0;
+          const termRank = term.rank ?? "N/A";
+          const termDiscipline = term.discipline || "N/A";
+
+          term.sequences.forEach((sequence) => {
+            const sequenceName = sequence.sequenceInfo?.name || "N/A";
+            const sequenceAverage = sequence.average || 0;
+            const sequenceRank = sequence.rank ?? "N/A";
+            const absences = sequence.absences || 0;
+
+            sequence.subjects.forEach((subject) => {
+              const subjectName = subject.subjectInfo?.name || "N/A";
+              const currentMark = subject.marks?.currentMark ?? "N/A";
+
+              // Handle modifications
+              const modifications =
+                (subject.marks?.modified || [])
+                  .map((mod) => {
+                    return `${mod.dateModified.toLocaleDateString()} by ${
+                      mod.modifiedBy?.name
+                    }: ${mod.preMark} → ${mod.modMark}`;
+                  })
+                  .join(" | ") || "No Modifications";
+
+              formattedData.push({
+                "Année Académique": year,
+                "Nom de l'étudiant": `${student.firstName || "N/A"} ${
+                  student.lastName || ""
+                }`,
+                Classe: classInfo.name || "N/A",
+                Terme: termName,
+                "Moyenne Terme": termAverage,
+                "Rang Terme": termRank,
+                Discipline: termDiscipline,
+                Séquence: sequenceName,
+                "Moyenne Séquence": sequenceAverage,
+                "Rang Séquence": sequenceRank,
+                Absences: absences,
+                Matière: subjectName,
+                "Note Actuelle": currentMark,
+                "Modifications de Note": modifications,
+                "Créé le": record.createdAt.toLocaleString(),
+                "Mis à jour le": record.updatedAt.toLocaleString(),
+              });
+            });
+          });
+        });
+      });
+
+      // Convert to Excel
+      const ws = XLSX.utils.json_to_sheet(formattedData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Année Académique");
+      XLSX.writeFile(wb, "academic_years.xlsx");
+    } catch (error) {
+      console.error(
+        "Erreur lors de l'exportation des années académiques:",
+        error
+      );
+    }
   };
 
   const exportPDF = () => {
@@ -228,7 +304,12 @@ export default function ClassesList() {
     // Save
     doc.save(`matieres_${date.replace(/\//g, "-")}.pdf`);
   };
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "";
 
+  const handleTabChange = (tabKey: string) => {
+    setSearchParams({ tab: tabKey });
+  };
   return (
     <AppLayout>
       <div className="p-4 space-y-4">
@@ -263,6 +344,14 @@ export default function ClassesList() {
                   PDF
                 </Button>
               </div>
+              <Button
+                variant={activeTab ? "default" : "outline"}
+                onClick={() =>
+                  handleTabChange(activeTab === "" ? "assign-student" : "")
+                }
+              >
+                {activeTab === "" ? "Assign Student" : "view list"}
+              </Button>
             </div>
 
             {/* Filter Section */}
@@ -280,6 +369,7 @@ export default function ClassesList() {
                       status: "",
                       classes: "",
                     });
+                    setSelectedStudents([])
                   }}
                   className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                 >
@@ -311,6 +401,8 @@ export default function ClassesList() {
                     onChange={(e) => {
                       goToPage(1);
                       setFilter({ ...filter, level: e.target.value });
+                      console.log("filteredStudents",filteredStudents)
+                      setSelectedStudents([])
                     }}
                   >
                     <option value="">Tous</option>
@@ -336,11 +428,9 @@ export default function ClassesList() {
                       setFilter({ ...filter, classes: classId });
                     }}
                   >
-                    <option value="" disabled>
-                      Select a Class
-                    </option>
+                    <option value="">Tous</option>
                     {filteredClasses.map((item) => (
-                      <option key={item._id} value={item.classesName}>
+                      <option key={item._id} value={item._id}>
                         {item.classesName}
                       </option>
                     ))}
@@ -369,117 +459,112 @@ export default function ClassesList() {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-700">
-                    Statut
-                  </label>
-                  <select
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={filter.status}
-                    onChange={(e) => {
-                      goToPage(1);
-                      setFilter({ ...filter, status: e.target.value });
-                    }}
-                  >
-                    <option value="">Tous</option>
-                    <option value="active">Actif</option>
-                    <option value="suspended">Suspendu</option>
-                    <option value="graduated">Diplômé</option>
-                    <option value="withdrawn">Abandonné</option>
-                  </select>
-                </div>
               </div>
             </div>
           </div>
-
-          {loading ? (
-            <div className="flex justify-center items-center p-8">
-              <Loader2 className="animate-spin h-6 w-6 text-gray-500" />
-            </div>
-          ) : (
+          {activeTab === "" ? (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Matricule</TableHead>
-                    <TableHead>Nom complet</TableHead>
-                    <TableHead>classe</TableHead>
-                    <TableHead>Niveau</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentData.length > 0 ? (
-                    currentData.map((academic) => (
-                      <TableRow key={academic._id}>
-                        <TableCell>{academic?.student?.matricule}</TableCell>
-                        <TableCell>
-                          {academic?.student?.fullName ||
-                            `${academic?.student?.firstName} ${academic?.student?.lastName}`}
-                        </TableCell>
-                        <TableCell>
-                          {academic?.classes?.classesName || "N/A"}
-                        </TableCell>
-                        <TableCell>{academic?.student?.level}</TableCell>
-                        <TableCell>{academic?.student?.status}</TableCell>
-                        <TableCell>
-                          {/* <Eye
+              {loading ? (
+                <div className="flex justify-center items-center p-8">
+                  <Loader2 className="animate-spin h-6 w-6 text-gray-500" />
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Matricule</TableHead>
+                        <TableHead>Nom complet</TableHead>
+                        <TableHead>classe</TableHead>
+                        <TableHead>Niveau</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {currentData.length > 0 ? (
+                        currentData.map((academic) => (
+                          <TableRow key={academic._id}>
+                            <TableCell>
+                              {academic?.student?.matricule}
+                            </TableCell>
+                            <TableCell>
+                              {academic?.student?.fullName ||
+                                `${academic?.student?.firstName} ${academic?.student?.lastName}`}
+                            </TableCell>
+                            <TableCell>
+                              {academic?.classes?.classesName || "N/A"}
+                            </TableCell>
+                            <TableCell>{academic?.student?.level}</TableCell>
+                            <TableCell>{academic?.student?.status}</TableCell>
+                            <TableCell>
+                              {/* <Eye
                             onClick={() => openModal("view", student)}
                             className="w-4 h-4 mr-2"
                           >
                             {" "}
                             Voir
                           </Eye> */}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="text-center text-muted-foreground"
-                      >
-                        Aucun étudiant trouvé.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-              <div className="flex justify-between items-center mt-4">
-                <button
-                  className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-                  onClick={goToPreviousPage}
-                  disabled={currentPage === 1}
-                >
-                  Précédent
-                </button>
-
-                <div className="space-x-2">
-                  {Array.from({ length: totalPages }, (_, index) => (
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell
+                            colSpan={7}
+                            className="text-center text-muted-foreground"
+                          >
+                            Aucun étudiant trouvé.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                  <div className="flex justify-between items-center mt-4">
                     <button
-                      key={index + 1}
-                      className={`px-3 py-1 rounded ${
-                        currentPage === index + 1
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                      onClick={() => goToPage(index + 1)}
+                      className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                      onClick={goToPreviousPage}
+                      disabled={currentPage === 1}
                     >
-                      {index + 1}
+                      Précédent
                     </button>
-                  ))}
-                </div>
 
-                <button
-                  className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-                  onClick={goToNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  Suivant
-                </button>
-              </div>
+                    <div className="space-x-2">
+                      {Array.from({ length: totalPages }, (_, index) => (
+                        <button
+                          key={index + 1}
+                          className={`px-3 py-1 rounded ${
+                            currentPage === index + 1
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                          onClick={() => goToPage(index + 1)}
+                        >
+                          {index + 1}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                      onClick={goToNextPage}
+                      disabled={currentPage === totalPages}
+                    >
+                      Suivant
+                    </button>
+                  </div>
+                </>
+              )}
             </>
+          ) : (
+            <AssignStudentsToClass
+              students={filteredStudents}
+              selectedClass={filter.classes}
+              selectedYear={filter.academicYear}
+              selectedStudents={selectedStudents}
+              setSelectedStudents={setSelectedStudents}
+              fetchStudents = {fetchStudents}
+            />
           )}
         </Card>
       </div>
