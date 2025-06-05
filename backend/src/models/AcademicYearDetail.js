@@ -11,18 +11,29 @@ const academicYearDetailSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    createdAt: {
+    startDate: {
         type: Date,
-        default: Date.now
+        required: true,
+        validate: {
+            validator: function (value) {
+                return value < this.endDate;
+            },
+            message: 'Start date must be before end date.'
+        }
     },
-    updatedAt: {
+    endDate: {
         type: Date,
-        default: Date.now
+        required: true,
+        validate: {
+            validator: function (value) {
+                return value > this.startDate;
+            },
+            message: 'End date must be after start date.'
+        }
     },
     terms: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Term'
-
     }]
 }, {
     timestamps: true

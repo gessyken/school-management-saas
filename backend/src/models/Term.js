@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const termSchema = new mongoose.Schema({
     name: {
         type: String,
-        enum: ['Term 1', 'Term 2',"Term 3"],
+        enum: ['Term 1', 'Term 2', "Term 3", "Term 4"],
         required: true,
         trim: true
     },
@@ -17,7 +17,7 @@ const termSchema = new mongoose.Schema({
         type: Date,
         required: true,
         validate: {
-            validator: function(value) {
+            validator: function (value) {
                 return value < this.endDate;
             },
             message: 'Start date must be before end date.'
@@ -31,7 +31,7 @@ const termSchema = new mongoose.Schema({
         type: Date,
         required: true,
         validate: {
-            validator: function(value) {
+            validator: function (value) {
                 return value > this.startDate;
             },
             message: 'End date must be after start date.'
@@ -39,7 +39,7 @@ const termSchema = new mongoose.Schema({
     },
     isActive: {
         type: Boolean,
-        default: false // Marks if the semester is currently ongoing
+        default: false
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -52,16 +52,17 @@ termSchema.index({ academicYear: 1, name: 1 }, { unique: true });
 termSchema.index({ academicYear: 1 }); // Index for faster queries by academicYear
 
 // Optional: Middleware to automatically update `isActive` based on dates
-termSchema.pre('save', function(next) {
-    const currentDate = new Date();
-    // Automatically set isActive based on current date and start/end dates
-    if (this.startDate <= currentDate && this.endDate >= currentDate) {
-        this.isActive = true;
-    } else {
-        this.isActive = false;
-    }
-    next();
-});
+// termSchema.pre('save', function (next) {
+//     const currentDate = new Date();
+//     console.log(currentDate)
+//     // Automatically set isActive based on current date and start/end dates
+//     if (this.startDate <= currentDate && this.endDate >= currentDate) {
+//         this.isActive = true;
+//     } else {
+//         this.isActive = false;
+//     }
+//     next();
+// });
 
 const Term = mongoose.model('Term', termSchema);
 export default Term;

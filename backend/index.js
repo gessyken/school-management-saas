@@ -9,6 +9,7 @@ import studentRoutes from './src/routes/studentRoutes.js';
 import subjectRoutes from './src/routes/subjectRoutes.js';
 import reportCardRoutes from './src/routes/reportCardRoutes.js';
 import academicYearRoutes from './src/routes/academicYearRoutes.js';
+import settingRoutes from './src/routes/settingRoutes.js';
 import classRoutes from './src/routes/classRoutes.js';
 import "express-async-errors";
 
@@ -50,6 +51,7 @@ app.use('/api/subjects', subjectRoutes);
 app.use('/api/report-cards', reportCardRoutes);
 app.use('/api/academic-years', academicYearRoutes);
 app.use('/api/classes', classRoutes);
+app.use('/api/settings', settingRoutes);
 
 
 // Middleware for handling not found routes

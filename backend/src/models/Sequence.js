@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const sequenceSchema = new mongoose.Schema({
     name: {
         type: String,
-        enum: ['Sequence 1', 'Sequence 2'],
+        enum: ['Sequence 1', 'Sequence 2','Sequence 3','Sequence 4'],
         required: true,
         trim: true
     },
@@ -17,17 +17,33 @@ const sequenceSchema = new mongoose.Schema({
         ref: 'Term',
         required: true
     },
-    year: {
-        type: String,
+    startDate: {
+        type: Date,
         required: true,
-        match: [/^\d{4}-\d{4}$/, 'Academic year must be in format YYYY-YYYY'],
-        trim: true
+        validate: {
+            validator: function (value) {
+                return value < this.endDate;
+            },
+            message: 'Start date must be before end date.'
+        }
+    },
+    endDate: {
+        type: Date,
+        required: true,
+        validate: {
+            validator: function (value) {
+                return value > this.startDate;
+            },
+            message: 'End date must be after start date.'
+        }
     },
 }, {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
 });
+sequenceSchema.index({ term: 1, name: 1 }, { unique: true });
+sequenceSchema.index({ term: 1 }); // Index for faster queries by academicYear
 
 
 // Middleware to handle adding module to term

@@ -11,6 +11,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
 import DirectorDashboard from "@/pages/director/DirectorDashboard";
 import ClassesManagement from "@/pages/director/ClassesManagement";
+import SettingManagement from "@/pages/director/SettingManagement";
 import SubjectManagement from "@/pages/director/SubjectManagement";
 import DirectorStudents from "@/pages/director/StudentManagement";
 import DirectorPayments from "@/pages/director/DirectorPayments";
@@ -63,6 +64,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['DIRECTOR']}>
                   <ClassesManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/director/settings"
+              element={
+                <ProtectedRoute allowedRoles={['DIRECTOR']}>
+                  <SettingManagement />
                 </ProtectedRoute>
               }
             />

@@ -34,6 +34,7 @@ export const AppSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
           { name: 'Classes', path: '/director/classes', icon: BookOpen },
           { name: 'Subject', path: '/director/subjects', icon: BookOpen },
           { name: 'Élèves', path: '/director/students', icon: Users },
+          { name: 'Settings', path: '/director/settings', icon: Users },
           { name: 'Paiements', path: '/director/payments', icon: CreditCard },
           { name: 'Notes', path: '/director/grades', icon: GraduationCap },
           { name: 'Statistiques', path: '/director/statistics', icon: BarChart3 },
