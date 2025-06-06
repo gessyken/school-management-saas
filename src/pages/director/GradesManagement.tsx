@@ -468,6 +468,7 @@ export default function GradesManagement() {
                 value={filter.term}
                 onChange={(e) => {
                   setFilter({ ...filter, term: e.target.value });
+                  // setSequences()
                 }}
               >
                 <option value="">Select a Term</option>
