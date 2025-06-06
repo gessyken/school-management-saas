@@ -60,16 +60,21 @@ const termSchema = new mongoose.Schema({
 const feeSchema = new mongoose.Schema({
     billID: {
         type: String,
-        trim: true
+        trim: true,
+        unique: true,
     },
     type: {
+        type: String,
+        trim: true
+    },
+    paymentMethod: {
         type: String,
         trim: true
     },
     amount: {
         type: Number,
     },
-    date: { type: Date }
+    paymentDate: { type: Date }
 }, { _id: false });
 
 // Define academic year schema

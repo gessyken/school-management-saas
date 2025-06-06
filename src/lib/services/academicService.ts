@@ -13,7 +13,7 @@ export interface AcademicSubject {
         name: string;
         userId: string;
       };
-      dateModified: string|"";
+      dateModified: string | "";
     }[];
   };
 }
@@ -39,7 +39,8 @@ export interface AcademicFee {
   billID?: string;
   type?: string;
   amount: number;
-  date?: string;
+  paymentDate?: string;
+  paymentMethod?: string;
 }
 
 export interface AcademicYearStudent {
@@ -71,7 +72,11 @@ export const academicService = {
   },
 
   // Create new academic year
-  assignStudent: async (selectedStudents: any,selectedClass:any,selectedYear:any) => {
+  assignStudent: async (
+    selectedStudents: any,
+    selectedClass: any,
+    selectedYear: any
+  ) => {
     const response = await axios.post(`${API_BASE}/assign`, {
       studentList: selectedStudents,
       classId: selectedClass,
@@ -92,9 +97,30 @@ export const academicService = {
     return response.data;
   },
 
-  // Add a fee to a student for a specific academic year
+  // ✅ 6. Get all fees for an academic year
+  getFees: async (id: string) => {
+    const response = await axios.get(`${API_BASE}/${id}/fees`);
+    return response.data;
+  },
+
+  // ✅ 7. Add a fee to an academic year
   addFee: async (id: string, feeData: AcademicFee) => {
-    const response = await axios.post(`${API_BASE}/${id}/add-fee`, feeData);
+    const response = await axios.post(`${API_BASE}/${id}/fees`, feeData);
+    return response.data;
+  },
+
+  // ✅ 8. Update a specific fee by billID
+  updateFee: async (id: string, billID: string, updatedData: AcademicFee) => {
+    const response = await axios.put(
+      `${API_BASE}/${id}/fees/${billID}`,
+      updatedData
+    );
+    return response.data;
+  },
+
+  // ✅ 9. Delete a fee by billID
+  deleteFee: async (id: string, billID: string) => {
+    const response = await axios.delete(`${API_BASE}/${id}/fees/${billID}`);
     return response.data;
   },
 
@@ -104,7 +130,7 @@ export const academicService = {
     termInfo: string,
     sequenceInfo: string,
     subjectInfo: string,
-    newMark: number,
+    newMark: number
     // modifiedBy: { name: string; userId: string }
   ) => {
     const response = await axios.put(`${API_BASE}/${id}/marks`, {
@@ -146,7 +172,7 @@ export const academicService = {
   // Get students at risk for a year
   getStudentsAtRisk: async (year: string, threshold = 10) => {
     const response = await axios.get(`${API_BASE}/students-at-risk`, {
-      params: { year, threshold }
+      params: { year, threshold },
     });
     return response.data;
   },

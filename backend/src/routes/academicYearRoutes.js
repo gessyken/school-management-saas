@@ -15,4 +15,11 @@ router.delete('/:id', authenticate, authorizeRoles(['admin']), AcademicYearContr
 router.put('/:id/marks', AcademicYearController.updateStudentMarks);
 router.put('/:id/calculate-averages', authenticate, AcademicYearController.calculateAverages);
 
+// Fee MAnagement
+router.get('/:academicYearId/fees', AcademicYearController.getFees);
+router.post('/:academicYearId/fees', AcademicYearController.addFee);
+router.put('/:academicYearId/fees/:billID', AcademicYearController.updateFee);
+router.delete('/:academicYearId/fees/:billID', AcademicYearController.deleteFee);
+
+
 export default router;

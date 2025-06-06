@@ -48,9 +48,6 @@ import {
   AcademicTerm,
   AcademicYearStudent,
 } from "@/lib/services/academicService";
-import { useSearchParams } from "react-router-dom";
-import AssignStudentsToClass from "./AssignStudentsToClass";
-import Classes from "../../../backend/src/models/Classes";
 
 const itemsPerPage = 5;
 

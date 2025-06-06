@@ -43,6 +43,7 @@ import {
 import { useSearchParams } from "react-router-dom";
 import AssignStudentsToClass from "./AssignStudentsToClass";
 import Classes from "../../../backend/src/models/Classes";
+import PaymentForm from "./setting/PaymentForm";
 
 const itemsPerPage = 5;
 
@@ -55,7 +56,6 @@ export default function ClassesList() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [showModal, setShowModal] = useState(false);
 
-  const [selectedStudent, setSelectedStudent] = useState(null);
   const [modalMode, setModalMode] = useState<"view" | "edit" | "create" | null>(
     null
   );
@@ -67,8 +67,8 @@ export default function ClassesList() {
     status: "",
     academicYear: "",
   });
-    const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
-  
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const { toast } = useToast();
 
@@ -310,6 +310,34 @@ export default function ClassesList() {
   const handleTabChange = (tabKey: string) => {
     setSearchParams({ tab: tabKey });
   };
+  const [openPaymentForm, setOpenPaymentForm] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+
+  const handleOpenPaymentForm = (student) => {
+    setSelectedStudent({
+      studentId: student._id,
+      studentName: student.student.firstName + " " + student.student.firstName,
+      studentClass: student.classes.classesName,
+      year: student.year,
+    });
+    setOpenPaymentForm(true);
+  };
+  const handlePaymentSubmit = async (student, fee) => {
+    // refresh data or show notification
+    try {
+      await academicService.addFee(student.studentId, fee);
+      toast({
+        title: "success",
+        description: "Fee added successfully",
+      });
+      setOpenPaymentForm(false);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Failed to add fee",
+      });
+    }
+  };
   return (
     <AppLayout>
       <div className="p-4 space-y-4">
@@ -369,7 +397,7 @@ export default function ClassesList() {
                       status: "",
                       classes: "",
                     });
-                    setSelectedStudents([])
+                    setSelectedStudents([]);
                   }}
                   className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                 >
@@ -401,8 +429,8 @@ export default function ClassesList() {
                     onChange={(e) => {
                       goToPage(1);
                       setFilter({ ...filter, level: e.target.value });
-                      console.log("filteredStudents",filteredStudents)
-                      setSelectedStudents([])
+                      console.log("filteredStudents", filteredStudents);
+                      setSelectedStudents([]);
                     }}
                   >
                     <option value="">Tous</option>
@@ -498,13 +526,12 @@ export default function ClassesList() {
                             <TableCell>{academic?.student?.level}</TableCell>
                             <TableCell>{academic?.student?.status}</TableCell>
                             <TableCell>
-                              {/* <Eye
-                            onClick={() => openModal("view", student)}
-                            className="w-4 h-4 mr-2"
-                          >
-                            {" "}
-                            Voir
-                          </Eye> */}
+                              <button
+                                onClick={() => handleOpenPaymentForm(academic)} // Replace row._id with the academic year or student ID
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded"
+                              >
+                                Add Payment
+                              </button>
                             </TableCell>
                           </TableRow>
                         ))
@@ -563,8 +590,27 @@ export default function ClassesList() {
               selectedYear={filter.academicYear}
               selectedStudents={selectedStudents}
               setSelectedStudents={setSelectedStudents}
-              fetchStudents = {fetchStudents}
+              fetchStudents={fetchStudents}
             />
+          )}
+          {openPaymentForm && selectedStudent && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setOpenPaymentForm(false);
+              }}
+            >
+              <div
+                className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg"
+                // max height = 90% of viewport height
+              >
+                <PaymentForm
+                  student={selectedStudent}
+                  onCancel={() => setOpenPaymentForm(false)}
+                  onSubmit={handlePaymentSubmit}
+                />
+              </div>
+            </div>
           )}
         </Card>
       </div>

@@ -206,6 +206,141 @@ class AcademicYearController {
     }
   }
 
+  // Update student marks
+  async updateStudentMarks(req, res) {
+    try {
+      const { termInfo, sequenceInfo, subjectInfo, newMark } = req.body;
+
+      // Find academic year
+      console.log(req.body)
+      const academicYear = await AcademicYear.findById(req.params.id);
+      if (!academicYear) {
+        return res.status(404).json({ message: 'Academic year not found' });
+      }
+
+      // Create modified by object
+      // const modifiedBy = {
+      //   name: `${req.user.firstName} ${req.user.lastName}`,
+      //   userId: req.user.id
+      // };
+      const modifiedBy = {
+        name: `Jessica Doe`,
+        userId: "683cc2c64d5579397f53f727"
+      };
+      // Update mark
+      await academicYear.updateMark(termInfo, sequenceInfo, subjectInfo, newMark, modifiedBy);
+
+      // Recalculate averages
+      await academicYear.calculateAverages();
+
+      res.json({
+        message: 'Mark updated successfully',
+        academicYear
+      });
+    } catch (error) {
+      console.log(error)
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
+  async getFees(req, res) {
+    try {
+      const { academicYearId } = req.params;
+      const academicYear = await AcademicYear.findById(academicYearId);
+      if (!academicYear) {
+        return res.status(404).json({ message: 'Academic year not found' });
+      }
+      res.status(200).json(academicYear.fees);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
+  // POST a new fee
+  async addFee(req, res) {
+    try {
+      const { academicYearId } = req.params;
+      const { billID, type, amount, paymentMethod,paymentDate} = req.body;
+
+      const academicYear = await AcademicYear.findById(academicYearId);
+      if (!academicYear) {
+        return res.status(404).json({ message: 'Academic year not found' });
+      }
+
+      const feeExists = academicYear.fees.some(f => f.billID === billID);
+      if (feeExists) {
+        return res.status(400).json({ message: 'Fee with this billID already exists' });
+      }
+
+      const feeData = {
+        billID,
+        type,
+        amount,
+        paymentMethod,
+        paymentDate
+      };
+      await academicYear.addFee(feeData);
+
+      res.status(201).json({ message: 'Fee added successfully', fees: academicYear.fees });
+    } catch (error) {
+      console.log(error)
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
+  // PUT update a fee
+  async updateFee(req, res) {
+    try {
+      const { academicYearId, billID } = req.params;
+      const { type, amount, paymentDate,paymentMethod } = req.body;
+
+      const academicYear = await AcademicYear.findById(academicYearId);
+      if (!academicYear) {
+        return res.status(404).json({ message: 'Academic year not found' });
+      }
+
+      const fee = academicYear.fees.find(f => f.billID === billID);
+      if (!fee) {
+        return res.status(404).json({ message: 'Fee not found' });
+      }
+
+      if (type !== undefined) fee.type = type;
+      if (amount !== undefined) fee.amount = amount;
+      if (paymentMethod !== undefined) fee.paymentMethod = paymentMethod;
+      if (paymentDate !== undefined) fee.paymentDate = paymentDate;
+
+      await academicYear.save();
+
+      res.status(200).json({ message: 'Fee updated successfully', fee });
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
+  // DELETE a fee
+  async deleteFee(req, res) {
+    try {
+      const { academicYearId, billID } = req.params;
+
+      const academicYear = await AcademicYear.findById(academicYearId);
+      if (!academicYear) {
+        return res.status(404).json({ message: 'Academic year not found' });
+      }
+
+      const initialLength = academicYear.fees.length;
+      academicYear.fees = academicYear.fees.filter(f => f.billID !== billID);
+
+      if (academicYear.fees.length === initialLength) {
+        return res.status(404).json({ message: 'Fee not found' });
+      }
+
+      await academicYear.save();
+      res.status(200).json({ message: 'Fee deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
   // Academic year management
   async createAcademicYear(req, res) {
     try {
@@ -329,73 +464,6 @@ class AcademicYearController {
       }
 
       res.json({ academicYear });
-    } catch (error) {
-      res.status(500).json({ message: 'Server error', error: error.message });
-    }
-  }
-
-  // Update student marks
-  async updateStudentMarks(req, res) {
-    try {
-      const { termInfo, sequenceInfo, subjectInfo, newMark } = req.body;
-
-      // Find academic year
-      console.log(req.body)
-      const academicYear = await AcademicYear.findById(req.params.id);
-      if (!academicYear) {
-        return res.status(404).json({ message: 'Academic year not found' });
-      }
-
-      // Create modified by object
-      // const modifiedBy = {
-      //   name: `${req.user.firstName} ${req.user.lastName}`,
-      //   userId: req.user.id
-      // };
-      const modifiedBy = {
-        name: `Jessica Doe`,
-        userId: "683cc2c64d5579397f53f727"
-      };
-      // Update mark
-      await academicYear.updateMark(termInfo, sequenceInfo, subjectInfo, newMark, modifiedBy);
-
-      // Recalculate averages
-      await academicYear.calculateAverages();
-
-      res.json({
-        message: 'Mark updated successfully',
-        academicYear
-      });
-    } catch (error) {
-      console.log(error)
-      res.status(500).json({ message: 'Server error', error: error.message });
-    }
-  }
-
-  // Add fee payment
-  async addFeePayment(req, res) {
-    try {
-      const { billID, type, amount } = req.body;
-
-      // Find academic year
-      const academicYear = await AcademicYear.findById(req.params.id);
-      if (!academicYear) {
-        return res.status(404).json({ message: 'Academic year not found' });
-      }
-
-      // Add fee
-      const feeData = {
-        billID,
-        type,
-        amount,
-        date: new Date()
-      };
-
-      await academicYear.addFee(feeData);
-
-      res.json({
-        message: 'Fee payment added successfully',
-        academicYear
-      });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
