@@ -42,7 +42,10 @@ import {
 } from "@/lib/services/settingService";
 import { classService, SchoolClass } from "@/lib/services/classService";
 import {
+  AcademicSequence,
   academicService,
+  AcademicSubject,
+  AcademicTerm,
   AcademicYearStudent,
 } from "@/lib/services/academicService";
 import { useSearchParams } from "react-router-dom";
@@ -72,6 +75,7 @@ export default function GradesManagement() {
     subject: "",
   });
   const [terms, setTerms] = useState<Term[]>([]);
+  const [studentsMarks, setStudentsMarks] = useState<any>({});
   const [classesSubjects, setClassesSubjects] = useState<any[]>([]);
 
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -116,6 +120,7 @@ export default function GradesManagement() {
       const data = await academicService.getAll();
       console.log("fetchAcademicYear", data);
       setAcademicStudents(data.students);
+      generateMarksMap(data.students);
     } catch (error) {
       console.error("Failed to fetch students", error);
     } finally {
@@ -309,66 +314,86 @@ export default function GradesManagement() {
       {children}
     </div>
   );
-  console.log("filter", filter);
-  // const handleMarkUpdate = (
-  //   academicInfo,
-  //   termInfo,
-  //   sequenceInfo,
-  //   subjectInfo,
-  //   newMark
-  // ) => {
-  //   console.log(academicInfo, termInfo, sequenceInfo, subjectInfo, newMark);
-  // };
-  const getStudentMark = (
+  console.log("filter", studentsMarks);
+  const handleMarkUpdate = async (
     academicInfo,
     termInfo,
     sequenceInfo,
-    subjectInfo
+    subjectInfo,
+    newMark
   ) => {
-    console.log({
-      academicInfo: academicInfo,
-      termInfo: termInfo,
-      sequenceInfo: sequenceInfo,
-      subjectInfo: subjectInfo,
-    });
-    const record = academicStudents.find(
-      (a) => a._id.toString() === academicInfo
-    );
-    console.log(record);
-    const termExist = record.terms.some(
-      (t) => t.termInfo.toString() === termInfo
-    );
-    if (!termExist) {
-      return 0;
+    try {
+      console.log(academicInfo, termInfo, sequenceInfo, subjectInfo, newMark);
+      let student = await academicService.updateMark(
+        academicInfo,
+        termInfo,
+        sequenceInfo,
+        subjectInfo,
+        newMark
+      );
+      const record = academicStudents.find(
+        (a) => a._id.toString() === academicInfo
+      );
+      record.terms = student?.academicYear?.terms;
+      toast({
+        title: "Success",
+        description: `Students ${
+          subjectInfo === "absences" ? "absences" : "mark"
+        } update successfully`,
+      });
+    } catch (error) {
+      console.error("Failed to update students", error);
+      toast({
+        title: "Erreur",
+        description: `Failed to update students ${
+          subjectInfo === "absences" ? "Absences" : "Mark"
+        }`,
+      });
     }
-    const term = record.terms.find((t) => t.termInfo.toString() === termInfo);
-    const seqExist = term.sequences.some(
-      (s) => s.sequenceInfo.toString() === sequenceInfo
-    );
-    if (!seqExist) {
-      return 0;
-    }
-    const sequence = term.sequences.find(
-      (s) => s.sequenceInfo.toString() === sequenceInfo
-    );
-    const subjectExist = sequence.subjects.some(
-      (s) => s.subjectInfo.toString() === subjectInfo
-    );
-    if (!subjectExist) {
-      return 0;
-    }
-    const subject = sequence.subjects.find(
-      (s) => s.subjectInfo.toString() === subjectInfo
-    );
-    if (!subject) {
-      return 0;
-    }
-    return subject?.marks?.currentMark;
   };
-  // const filteredSeq = sequences
-  //   .filter((seq) => currentTerms.some((opt) => opt._id === seq.term._id))
-  //   .filter((seq) => (filter.term ? seq.term._id === filter.term : true));
+  const handleStudentMarkChange = (
+    academicInfo,
+    termInfo,
+    sequenceInfo,
+    subjectInfo,
+    mark
+  ) => {
+    setStudentsMarks({
+      ...studentsMarks,
+      [`${academicInfo}-${termInfo}-${sequenceInfo}-${subjectInfo}`]:
+        Number(mark) || "",
+    });
+  };
 
+  const generateMarksMap = (academicStudents) => {
+    const marksMap = {};
+
+    academicStudents.forEach((student) => {
+      const academicId = student._id.toString();
+
+      student.terms?.forEach((term) => {
+        const termId = term.termInfo.toString();
+
+        term.sequences?.forEach((sequence) => {
+          const sequenceId = sequence.sequenceInfo.toString();
+          const key = `${academicId}-${termId}-${sequenceId}-absences`;
+          marksMap[key] = sequence.absences ?? 0;
+          sequence.subjects?.forEach((subject) => {
+            const subjectId = subject.subjectInfo.toString();
+            const key = `${academicId}-${termId}-${sequenceId}-${subjectId}`;
+            marksMap[key] = subject?.marks?.currentMark ?? 0;
+          });
+        });
+      });
+    });
+
+    setStudentsMarks(marksMap);
+  };
+
+  const filteredSeq = sequences
+    .filter((seq) => filteredTerms.some((opt) => opt._id === seq.term._id))
+    .filter((seq) => (filter.term ? seq.term._id === filter.term : false));
+  // console.log("filteredSeq", filteredSeq);
   return (
     <AppLayout>
       <div className="p-4 space-y-6">
@@ -424,6 +449,7 @@ export default function GradesManagement() {
                     filteredClasses.find((c) => c._id === classId).subjects ||
                       []
                   );
+                  generateMarksMap(academicStudents);
                 }}
               >
                 <option value="">Select a classe</option>
@@ -445,9 +471,11 @@ export default function GradesManagement() {
                 onChange={(e) => {
                   const subjectId = e.target.value;
                   setFilter({ ...filter, subject: subjectId });
+                  generateMarksMap(academicStudents);
                 }}
               >
                 <option value="">Select a Subject</option>
+                <option value="absences">absences</option>
                 {classesSubjects.map((item) => (
                   <option
                     key={item?.subjectInfo?._id}
@@ -468,7 +496,7 @@ export default function GradesManagement() {
                 value={filter.term}
                 onChange={(e) => {
                   setFilter({ ...filter, term: e.target.value });
-                  // setSequences()
+                  generateMarksMap(academicStudents);
                 }}
               >
                 <option value="">Select a Term</option>
@@ -483,30 +511,67 @@ export default function GradesManagement() {
 
           {/* 📌 Subject Details */}
           {filter.subject && (
-            <div className="border rounded p-4 bg-gray-50 mt-4">
-              {(() => {
-                const selected = classesSubjects.find(
-                  (opt) => opt.subjectInfo?._id === filter.subject
-                );
-                return (
-                  selected && (
-                    <div className="text-sm text-gray-700 space-y-1">
-                      <p>
-                        <strong>Nom:</strong> {selected.subjectInfo.subjectName}
-                      </p>
-                      <p>
-                        <strong>Code:</strong>{" "}
-                        {selected.subjectInfo.subjectCode}
-                      </p>
-                      <p>
-                        <strong>Coefficient:</strong> {selected.coefficient}
-                      </p>
-                    </div>
-                  )
-                );
-              })()}
+            <div className="border rounded-lg p-4 bg-gray-50 mt-4 shadow-sm">
+              {filter.subject === "absences" ? (
+                <>
+                  <div className="text-sm text-gray-700 space-y-2">
+                    <p className="font-semibold text-red-600">
+                      ⚠️ Absences sélectionnées
+                    </p>
+                    <p>
+                      Ici, vous pouvez enregistrer ou afficher les absences des
+                      élèves pour le trimestre{" "}
+                      <strong>
+                        {filteredTerms.find((t) => t._id === filter.term)?.name}
+                      </strong>
+                      de l'année académique{" "}
+                      <strong>{filter.academicYear}</strong>.
+                    </p>
+                    <p>
+                      Veuillez utiliser la section de saisie ou de visualisation
+                      d'absences ci-dessous.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                (() => {
+                  const selected = classesSubjects.find(
+                    (opt) => opt.subjectInfo?._id === filter.subject
+                  );
+                  return (
+                    selected && (
+                      <div className="text-sm text-gray-700 space-y-2">
+                        <p>
+                          <strong>📘 Nom:</strong>{" "}
+                          {selected.subjectInfo.subjectName}
+                        </p>
+                        <p>
+                          <strong>🔢 Code:</strong>{" "}
+                          {selected.subjectInfo.subjectCode}
+                        </p>
+                        <p>
+                          <strong>🎯 Coefficient:</strong>{" "}
+                          {selected.coefficient}
+                        </p>
+                        <p>
+                          <strong>📅 Trimestre:</strong>{" "}
+                          {
+                            filteredTerms.find((t) => t._id === filter.term)
+                              ?.name
+                          }
+                        </p>
+                        <p>
+                          <strong>🗓️ Année académique:</strong>{" "}
+                          {filter.academicYear}
+                        </p>
+                      </div>
+                    )
+                  );
+                })()
+              )}
             </div>
           )}
+
           {/* <Card className="p-6 space-y-6 shadow-sm"> */}
           {/* 🔍 Search + Export */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -530,7 +595,7 @@ export default function GradesManagement() {
                   <TableRow>
                     <TableHead>Matricule</TableHead>
                     <TableHead>Nom complet</TableHead>
-                    {sequences
+                    {filteredSeq
                       .filter((s) => s.isActive)
                       .map((seq) => (
                         <TableHead key={seq._id}>{seq.name}</TableHead>
@@ -547,7 +612,7 @@ export default function GradesManagement() {
                             `${record.student.firstName} ${record.student.lastName}`}
                         </TableCell>
                         {filter.subject &&
-                          sequences
+                          filteredSeq
                             .filter((s) => s.isActive)
                             .map((seq) => (
                               <TableCell key={seq._id}>
@@ -556,32 +621,28 @@ export default function GradesManagement() {
                                   min="0"
                                   max="20"
                                   value={
-                                    0
-                                    // getStudentMark(
-                                    //   record._id,
-                                    //   filter.term,
-                                    //   seq._id,
-                                    //   filter.subject
-                                    // )
+                                    studentsMarks[
+                                      `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
+                                    ] ?? 0
                                   }
                                   className="w-full"
                                   onChange={(e) => {
-                                    let mark = getStudentMark(
+                                    handleStudentMarkChange(
                                       record._id,
                                       filter.term,
-                                      seq,
-                                      filter.subject
+                                      seq._id,
+                                      filter.subject,
+                                      e.target.value
                                     );
-                                    console.log(
-                                      `mark of ${record._id} is ${mark}`
+                                  }}
+                                  onBlur={(e) => {
+                                    handleMarkUpdate(
+                                      record._id,
+                                      filter.term,
+                                      seq._id,
+                                      filter.subject,
+                                      e.target.value
                                     );
-                                    // handleMarkUpdate(
-                                    //   record._id,
-                                    //   filter.term,
-                                    //   seq._id,
-                                    //   filter.subject,
-                                    //   e.target.value
-                                    // );
                                   }}
                                 />
                               </TableCell>

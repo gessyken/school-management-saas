@@ -251,25 +251,29 @@ academicYearSchema.methods.updateMark = async function (termInfo, sequenceInfo, 
         }
         const sequence = term.sequences.find(s => s.sequenceInfo.toString() === seqDetail._id.toString())
         console.log("this.term")
-        const subjectExist = sequence.subjects.some(s => s.subjectInfo.toString() === subjectInfo.toString())
-        if (!subjectExist) {
-            sequence.subjects.push({
-                subjectInfo: subjectInfo
-            })
+        if (subjectInfo === "absences") {
+            sequence.absences = newMark
+        } else {
+            const subjectExist = sequence.subjects.some(s => s.subjectInfo.toString() === subjectInfo.toString())
+            if (!subjectExist) {
+                sequence.subjects.push({
+                    subjectInfo: subjectInfo
+                })
+            }
+            const subject = sequence.subjects.find(s => s.subjectInfo.toString() === subjectInfo.toString())
+            const preMark = subject.marks.currentMark;
+
+            // Add to modification history
+            subject.marks.modified.push({
+                preMark: preMark,
+                modMark: newMark,
+                modifiedBy: modifiedBy,
+                dateModified: new Date()
+            });
+
+            // Update current mark
+            subject.marks.currentMark = newMark;
         }
-        const subject = sequence.subjects.find(s => s.subjectInfo.toString() === subjectInfo.toString())
-        const preMark = subject.marks.currentMark;
-
-        // Add to modification history
-        subject.marks.modified.push({
-            preMark: preMark,
-            modMark: newMark,
-            modifiedBy: modifiedBy,
-            dateModified: new Date()
-        });
-
-        // Update current mark
-        subject.marks.currentMark = newMark;
         // Recalculate averages
         await this.calculateAverages();
 

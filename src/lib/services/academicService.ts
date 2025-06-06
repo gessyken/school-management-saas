@@ -13,7 +13,7 @@ export interface AcademicSubject {
         name: string;
         userId: string;
       };
-      dateModified: string;
+      dateModified: string|"";
     }[];
   };
 }
@@ -101,18 +101,18 @@ export const academicService = {
   // Update a specific mark
   updateMark: async (
     id: string,
-    termIndex: number,
-    sequenceIndex: number,
-    subjectIndex: number,
+    termInfo: string,
+    sequenceInfo: string,
+    subjectInfo: string,
     newMark: number,
-    modifiedBy: { name: string; userId: string }
+    // modifiedBy: { name: string; userId: string }
   ) => {
-    const response = await axios.post(`${API_BASE}/${id}/update-mark`, {
-      termIndex,
-      sequenceIndex,
-      subjectIndex,
+    const response = await axios.put(`${API_BASE}/${id}/marks`, {
+      termInfo,
+      sequenceInfo,
+      subjectInfo,
       newMark,
-      modifiedBy,
+      // modifiedBy,
     });
     return response.data;
   },
