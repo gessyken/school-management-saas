@@ -12,7 +12,7 @@ router.get('/:id', authenticate, AcademicYearController.getAcademicYearById);
 router.delete('/:id', authenticate, authorizeRoles(['admin']), AcademicYearController.deleteAcademicYear);
 
 // Mark management routes
-// router.put('/:id/marks', authenticate, authorizeRoles(['admin']), AcademicYearController.updateStudentMarks);
+router.put('/:id/marks', AcademicYearController.updateStudentMarks);
 router.put('/:id/calculate-averages', authenticate, AcademicYearController.calculateAverages);
 
 export default router;

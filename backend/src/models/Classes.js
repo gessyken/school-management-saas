@@ -25,6 +25,10 @@ const classesSchema = new mongoose.Schema({
             ref: 'Subject'
         },
         coefficient: { type: Number, default: 0, min: 0, max: 100 },
+        isActive: {
+            type: Boolean,
+            default: true 
+        },
         teacherInfo: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'

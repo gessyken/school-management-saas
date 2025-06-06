@@ -335,24 +335,28 @@ class AcademicYearController {
   }
 
   // Update student marks
-  async updateStudentMark(req, res) {
+  async updateStudentMarks(req, res) {
     try {
-      const { termIndex, sequenceIndex, subjectIndex, newMark } = req.body;
+      const { termInfo, sequenceInfo, subjectInfo, newMark } = req.body;
 
       // Find academic year
+      console.log(req.body)
       const academicYear = await AcademicYear.findById(req.params.id);
       if (!academicYear) {
         return res.status(404).json({ message: 'Academic year not found' });
       }
 
       // Create modified by object
+      // const modifiedBy = {
+      //   name: `${req.user.firstName} ${req.user.lastName}`,
+      //   userId: req.user.id
+      // };
       const modifiedBy = {
-        name: `${req.user.firstName} ${req.user.lastName}`,
-        userId: req.user.id
+        name: `Jessica Doe`,
+        userId: "683cc2c64d5579397f53f727"
       };
-
       // Update mark
-      await academicYear.updateMark(termIndex, sequenceIndex, subjectIndex, newMark, modifiedBy);
+      await academicYear.updateMark(termInfo, sequenceInfo, subjectInfo, newMark, modifiedBy);
 
       // Recalculate averages
       await academicYear.calculateAverages();

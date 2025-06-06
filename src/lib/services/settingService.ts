@@ -19,16 +19,16 @@ export interface Term {
   endDate: string;
   academicYear?: string;
   sequences?: Sequence[];
-  isActive?:boolean;
+  isActive?: boolean;
 }
 
 export interface Sequence {
   _id?: string;
   name: string;
-  startDate: string;  
+  startDate: string;
   endDate: string;
   term?: any;
-  isActive?:boolean;
+  isActive?: boolean;
 }
 
 export const settingService = {
@@ -63,8 +63,8 @@ export const settingService = {
     return res.data;
   },
 
-  getTerms: async () => {
-    const res = await axios.get(`${BASE_URL}/term`);
+  getTerms: async (params = {}) => {
+    const res = await axios.get(`${BASE_URL}/term`, { params });
     return res.data;
   },
 

@@ -15,7 +15,7 @@ import SettingManagement from "@/pages/director/SettingManagement";
 import SubjectManagement from "@/pages/director/SubjectManagement";
 import DirectorStudents from "@/pages/director/StudentManagement";
 import DirectorPayments from "@/pages/director/DirectorPayments";
-import DirectorGrades from "@/pages/director/DirectorGrades";
+import GradesManagement from "@/pages/director/GradesManagement";
 import DirectorStatistics from "@/pages/director/DirectorStatistics";
 import SecretaryDashboard from "@/pages/secretary/SecretaryDashboard";
 import SecretaryClasses from "@/pages/secretary/SecretaryClasses";
@@ -104,7 +104,7 @@ const App = () => (
               path="/director/grades"
               element={
                 <ProtectedRoute allowedRoles={['DIRECTOR']}>
-                  <DirectorGrades />
+                  <GradesManagement />
                 </ProtectedRoute>
               }
             />
