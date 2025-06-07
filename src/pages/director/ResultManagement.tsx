@@ -54,7 +54,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import "../../assets/style.css";
 const itemsPerPage = 5;
 
-export default function GradesManagement() {
+export default function ResultManagement() {
   const [students, setStudents] = useState<Student[]>([]);
   const [academicStudents, setAcademicStudents] = useState<
     AcademicYearStudent[]
@@ -335,7 +335,7 @@ export default function GradesManagement() {
         (a) => a._id.toString() === academicInfo
       );
       record.terms = student?.academicYear?.terms;
-      generateMarksMap(academicStudents);
+      generateMarksMap(academicStudents)
       toast({
         title: "Success",
         description: `Students ${
@@ -359,7 +359,6 @@ export default function GradesManagement() {
     subjectInfo,
     mark
   ) => {
-    if(filter.subject !== "absences" ){
     setStudentsMarks({
       ...studentsMarks,
       [`${academicInfo}-${termInfo}-${sequenceInfo}-${subjectInfo}`]: {
@@ -374,12 +373,6 @@ export default function GradesManagement() {
         },
       },
     });
-  }else{
-    setStudentsMarks({
-      ...studentsMarks,
-      [`${academicInfo}-${termInfo}-${sequenceInfo}-${subjectInfo}`]:  Number(mark) || "",
-    });
-  }
   };
 
   const generateMarksMap = (academicStudents) => {
@@ -439,11 +432,11 @@ export default function GradesManagement() {
     .filter((seq) => (filter.term ? seq.term._id === filter.term : false));
   // console.log("filteredSeq", filteredSeq);
   function formatToMax2Decimals(value) {
-    if (typeof value !== "number") return value;
-
+    if (typeof value !== 'number') return value;
+  
     const str = value.toString();
-    const decimalPart = str.split(".")[1];
-
+    const decimalPart = str.split('.')[1];
+    
     // If decimal part exists and length > 2, fix to 2 decimals
     if (decimalPart && decimalPart.length > 2) {
       return value.toFixed(2);
@@ -451,7 +444,7 @@ export default function GradesManagement() {
     // else return original string (no change)
     return str;
   }
-
+  
   return (
     <AppLayout>
       <div className="p-4 space-y-6">
@@ -668,35 +661,33 @@ export default function GradesManagement() {
                       .filter((s) => s.isActive)
                       .map((seq) => (
                         <TableHead
-                          colSpan={filter.subject !== "absences" ? 3 : 1}
+                          colSpan={3}
                           key={seq._id}
                           className="text-center align-middle"
                         >
                           <div className="d-flex align-items-center justify-content-center gap-2">
                             <span>{seq.name}</span>
-                            {filter.subject !== "absences" && (
-                              <Button
-                                size="sm"
-                                className="tooltip-button"
-                                title="Calculate rank"
-                                aria-label={`Calculate rank for ${seq.name}`}
-                                onClick={() => {
-                                  /* Add your calculate rank handler here */
-                                  calculateRank(
-                                    filter.classes,
-                                    filter.academicYear,
-                                    filter.term,
-                                    seq._id,
-                                    filter.subject
-                                  );
-                                }}
-                              >
-                                <Calculator size={16} />
-                                <span className="tooltip-text">
-                                  Calculate rank
-                                </span>
-                              </Button>
-                            )}
+                            <Button
+                              size="sm"
+                              className="tooltip-button"
+                              title="Calculate rank"
+                              aria-label={`Calculate rank for ${seq.name}`}
+                              onClick={() => {
+                                /* Add your calculate rank handler here */
+                                calculateRank(
+                                  filter.classes,
+                                  filter.academicYear,
+                                  filter.term,
+                                  seq._id,
+                                  filter.subject
+                                );
+                              }}
+                            >
+                              <Calculator size={16} />
+                              <span className="tooltip-text">
+                                Calculate rank
+                              </span>
+                            </Button>
                           </div>
                         </TableHead>
                       ))}
@@ -706,26 +697,10 @@ export default function GradesManagement() {
                     {filteredSeq
                       .filter((s) => s.isActive)
                       .map((seq) => (
-                        <React.Fragment key={`${seq._id}-su(bheaders`}>
-                          {filter.subject !== "absences" ? (
-                            <>
-                              <TableHead className="text-center">
-                                Mark
-                              </TableHead>
-                              <TableHead className="text-center">
-                                Rank
-                              </TableHead>
-                              <TableHead className="text-center">
-                                Discipline
-                              </TableHead>
-                            </>
-                          ) : (
-                            <>
-                              <TableHead className="text-center">
-                                Absences
-                              </TableHead>
-                            </>
-                          )}
+                        <React.Fragment key={`${seq._id}-subheaders`}>
+                          <TableHead className="text-center">Mark</TableHead>
+                          <TableHead className="text-center">Rank</TableHead>
+                          <TableHead className="text-center">Discipline</TableHead>
                         </React.Fragment>
                       ))}
                   </TableRow>
@@ -752,112 +727,70 @@ export default function GradesManagement() {
                             .filter((s) => s.isActive)
                             .map((seq) => (
                               <React.Fragment key={seq._id}>
-                                {filter.subject !== "absences" ? (
-                                  <>
-                                    <TableCell className="py-2 px-3">
-                                      <Input
-                                        type="number"
-                                        min="0"
-                                        max="20"
-                                        step="0.01"
-                                        value={(() => {
-                                          const mark =
-                                            studentsMarks[
-                                              `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
-                                            ]?.marks?.currentMark ?? 0;
-
-                                          const str = mark.toString();
-                                          const decimalPart = str.split(".")[1];
-
-                                          if (
-                                            decimalPart &&
-                                            decimalPart.length > 2
-                                          ) {
-                                            return mark.toFixed(2);
-                                          }
-                                          return str;
-                                        })()}
-                                        className="w-[10ch] text-center text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        onChange={(e) => {
-                                          handleStudentMarkChange(
-                                            record._id,
-                                            filter.term,
-                                            seq._id,
-                                            filter.subject,
-                                            e.target.value
-                                          );
-                                        }}
-                                        onBlur={(e) => {
-                                          handleMarkUpdate(
-                                            record._id,
-                                            filter.term,
-                                            seq._id,
-                                            filter.subject,
-                                            e.target.value
-                                          );
-                                        }}
-                                      />
-                                    </TableCell>
-                                    <TableCell className="py-2 px-3">
-                                      <Input
-                                        type="number"
-                                        readOnly
-                                        value={
-                                          studentsMarks[
-                                            `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
-                                          ]?.rank ?? ""
-                                        }
-                                        className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
-                                      />
-                                    </TableCell>
-                                    <TableCell className="py-2 px-3">
-                                      <Input
-                                        type="text"
-                                        readOnly
-                                        value={
-                                          studentsMarks[
-                                            `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
-                                          ]?.discipline ?? ""
-                                        }
-                                        className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
-                                      />
-                                    </TableCell>
-                                  </>
-                                ) : (
-                                  <>
-                                    <TableCell className="py-2 px-3">
-                                      <Input
-                                        type="number"
-                                        min="0"
-                                        max="20"
-                                        step="0.01"
-                                        value={
-                                            studentsMarks[
-                                              `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
-                                            ]??0}
-                                        className="w-[10ch] text-center text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        onChange={(e) => {
-                                          handleStudentMarkChange(
-                                            record._id,
-                                            filter.term,
-                                            seq._id,
-                                            filter.subject,
-                                            e.target.value
-                                          );
-                                        }}
-                                        onBlur={(e) => {
-                                          handleMarkUpdate(
-                                            record._id,
-                                            filter.term,
-                                            seq._id,
-                                            filter.subject,
-                                            e.target.value
-                                          );
-                                        }}
-                                      />
-                                    </TableCell>
-                                  </>
-                                )}
+                                <TableCell className="py-2 px-3">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="20"
+                                    step="0.01"
+                                    value={(() => {
+                                      const mark = studentsMarks[
+                                        `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
+                                      ]?.marks?.currentMark ?? 0;
+                                  
+                                      const str = mark.toString();
+                                      const decimalPart = str.split('.')[1];
+                                  
+                                      if (decimalPart && decimalPart.length > 2) {
+                                        return mark.toFixed(2);
+                                      }
+                                      return str;
+                                    })()}
+                                    className="w-[10ch] text-center text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    onChange={(e) => {
+                                      handleStudentMarkChange(
+                                        record._id,
+                                        filter.term,
+                                        seq._id,
+                                        filter.subject,
+                                        e.target.value
+                                      );
+                                    }}
+                                    onBlur={(e) => {
+                                      handleMarkUpdate(
+                                        record._id,
+                                        filter.term,
+                                        seq._id,
+                                        filter.subject,
+                                        e.target.value
+                                      );
+                                    }}
+                                  />
+                                </TableCell>
+                                <TableCell className="py-2 px-3">
+                                  <Input
+                                    type="number"
+                                    readOnly
+                                    value={
+                                      studentsMarks[
+                                        `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
+                                      ]?.rank ?? ""
+                                    }
+                                    className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
+                                  />
+                                </TableCell>
+                                <TableCell className="py-2 px-3">
+                                  <Input
+                                    type="text"
+                                    readOnly
+                                    value={
+                                      studentsMarks[
+                                        `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
+                                      ]?.discipline ?? ""
+                                    }
+                                    className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
+                                  />
+                                </TableCell>
                               </React.Fragment>
                             ))}
                       </TableRow>

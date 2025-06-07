@@ -1,0 +1,37 @@
+.tooltip-button {
+    position: relative;
+    cursor: pointer;
+    border: 1px solid #007bff; /* example outline */
+    background: transparent;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .tooltip-button .tooltip-text {
+    visibility: hidden;
+    width: max-content;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    border-radius: 4px;
+    padding: 4px 8px;
+    position: absolute;
+    z-index: 10;
+    bottom: 125%; /* place above button */
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+  
+  .tooltip-button:hover .tooltip-text,
+  .tooltip-button:focus .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+  }
+  

@@ -12,7 +12,8 @@ import {
   GraduationCap, 
   BarChart3,
   Settings,
-  LogOut
+  LogOut,
+  Newspaper
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -33,6 +34,7 @@ export const AppSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
           { name: 'Dashboard', path: '/director/dashboard', icon: Home },
           { name: 'Classes', path: '/director/classes', icon: BookOpen },
           { name: 'Subject', path: '/director/subjects', icon: BookOpen },
+          { name: 'Result', path: '/director/results', icon: Newspaper },
           { name: 'Élèves', path: '/director/students', icon: Users },
           { name: 'Classes List', path: '/director/classes-list', icon: Users },
           { name: 'Settings', path: '/director/settings', icon: Users },

@@ -16,6 +16,8 @@ export interface AcademicSubject {
       dateModified: string | "";
     }[];
   };
+  rank?: number;
+  discipline?: string;
 }
 
 export interface AcademicSequence {
@@ -23,6 +25,7 @@ export interface AcademicSequence {
   isActive: boolean;
   average: number;
   rank?: number;
+  discipline?: string;
   absences?: number;
   subjects: AcademicSubject[];
 }
@@ -31,8 +34,8 @@ export interface AcademicTerm {
   termInfo: string;
   average: number;
   rank?: number;
+  discipline?: string;
   sequences: AcademicSequence[];
-  discipline?: "Excellent" | "Good" | "Average" | "Poor";
 }
 
 export interface AcademicFee {
@@ -155,24 +158,65 @@ export const academicService = {
     return response.data;
   },
 
-  // Optionally: bulk import academic years
-  bulkImport: async (data: AcademicYearStudent[]) => {
-    const response = await axios.post(`${API_BASE}/import`, {
-      academicYears: data,
+  subjectRank: async (
+    classId: string,
+    year: string,
+    termId: string,
+    sequenceId: string,
+    subjectId: string
+  ) => {
+    const response = await axios.put(`${API_BASE}/subject-rank`, {
+      classId,
+      year,
+      termId,
+      sequenceId,
+      subjectId,
     });
     return response.data;
   },
-
-  // Get all academic years for a specific student
-  getByStudent: async (studentId: string) => {
-    const response = await axios.get(`${API_BASE}/student/${studentId}`);
+  sequenceRank: async (
+    classId: string,
+    year: string,
+    termId: string,
+    sequenceId: string
+  ) => {
+    const response = await axios.put(`${API_BASE}/sequence-rank`, {
+      classId,
+      year,
+      termId,
+      sequenceId,
+    });
     return response.data;
   },
-
-  // Get students at risk for a year
-  getStudentsAtRisk: async (year: string, threshold = 10) => {
-    const response = await axios.get(`${API_BASE}/students-at-risk`, {
-      params: { year, threshold },
+  termRank: async (
+    classId: string,
+    year: string,
+    termId: string,
+  ) => {
+    const response = await axios.put(`${API_BASE}/term-rank`, {
+      classId,
+      year,
+      termId,
+    });
+    return response.data;
+  },
+  academicRank: async (
+    classId: string,
+    year: string
+  ) => {
+    const response = await axios.put(`${API_BASE}/academic-rank`, {
+      classId,
+      year
+    });
+    return response.data;
+  },
+  promoStudents: async (
+    classId: string,
+    year: string
+  ) => {
+    const response = await axios.put(`${API_BASE}/promo-student`, {
+      classId,
+      year
     });
     return response.data;
   },

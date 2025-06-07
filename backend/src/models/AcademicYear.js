@@ -1,5 +1,13 @@
 import mongoose from 'mongoose';
 
+const getDiscipline = (average) => {
+    if (average >= 16) return 'Excellent';
+    if (average >= 14) return 'Very Good';
+    if (average >= 12) return 'Good';
+    if (average >= 10) return 'Average';
+    return 'Below Average';
+}
+
 // Define subject schema
 const subjectSchema = new mongoose.Schema({
     subjectInfo: {
@@ -8,6 +16,8 @@ const subjectSchema = new mongoose.Schema({
         required: true
     },
     isActive: { type: Boolean, default: true },
+    discipline: { type: String, enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average', "Not Avaliable"], default: 'Not Avaliable' },
+    rank: { type: Number, default: null },
     marks: {
         currentMark: { type: Number, default: 0, min: 0, max: 20 },
         isActive: { type: Boolean, default: true },
@@ -38,6 +48,7 @@ const sequenceSchema = new mongoose.Schema({
         type: [subjectSchema],
         required: true
     },
+    discipline: { type: String, enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average', "Not Avaliable"], default: 'Not Avaliable' },
 }, { _id: false });
 
 // Define term schema
@@ -53,7 +64,7 @@ const termSchema = new mongoose.Schema({
         type: [sequenceSchema],
         required: true
     },
-    discipline: { type: String, enum: ['Excellent', 'Good', 'Average', 'Poor', "Not Avaliable"], default: 'Not Avaliable' }
+    discipline: { type: String, enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average', "Not Avaliable"], default: 'Not Avaliable' },
 }, { _id: false });
 
 // Define fee schema
@@ -105,6 +116,7 @@ const academicYearSchema = new mongoose.Schema({
         type: [feeSchema],
         required: true
     },
+    rank: { type: Number, default: null },
 }, {
     timestamps: true,
     toJSON: { virtuals: true },
@@ -197,6 +209,7 @@ academicYearSchema.methods.calculateAverages = async function () {
 
                         sequence.average = validSubjects > 0 ?
                             parseFloat((totalMarks / validSubjects).toFixed(2)) : 0;
+                        sequence.discipline = getDiscipline(sequence.average)
                     }
                 });
 
@@ -213,6 +226,7 @@ academicYearSchema.methods.calculateAverages = async function () {
 
                 term.average = validSequences > 0 ?
                     parseFloat((totalSequenceAvg / validSequences).toFixed(2)) : 0;
+                term.discipline = getDiscipline(term.average)
             }
         });
     }
@@ -278,6 +292,7 @@ academicYearSchema.methods.updateMark = async function (termInfo, sequenceInfo, 
 
             // Update current mark
             subject.marks.currentMark = newMark;
+            subject.discipline = getDiscipline(newMark)
         }
         // Recalculate averages
         await this.calculateAverages();
@@ -287,6 +302,489 @@ academicYearSchema.methods.updateMark = async function (termInfo, sequenceInfo, 
     }
 
     return this;
+};
+// method to find rank of students of a given class in a given subject
+academicYearSchema.statics.calculateSubjectRank = async function (classId, year, termId, sequenceId, subjectId) {
+    const academicYears = await this.find({ classes: classId, year });
+
+    const academicAverages = [];
+    const termAverages = [];
+    const sequenceAverages = [];
+    const subjectMarks = [];
+
+    for (const student of academicYears) {
+        academicAverages.push({
+            studentId: student._id.toString(),
+            average: student.overallAverage
+        });
+        const term = student.terms.find(t => t.termInfo.toString() === termId.toString());
+        if (!term) continue;
+        termAverages.push({
+            studentId: student._id.toString(),
+            average: term.average
+        });
+        const sequence = term.sequences.find(s => s.sequenceInfo.toString() === sequenceId.toString());
+        if (!sequence || !sequence.isActive) continue;
+        sequenceAverages.push({
+            studentId: student._id,
+            average: sequence.average
+        });
+        const subject = sequence.subjects.find(s => s.subjectInfo.toString() === subjectId.toString());
+        if (!subject || !subject.isActive || !subject.marks.isActive) continue;
+
+        subjectMarks.push({
+            studentId: student._id,
+            mark: subject.marks.currentMark
+        });
+    }
+
+    // Sort by mark descending
+    subjectMarks.sort((a, b) => b.mark - a.mark);
+
+    // Assign ranks with tie support
+    let currentRank = 1;
+    for (let i = 0; i < subjectMarks.length; i++) {
+        if (i > 0 && subjectMarks[i].mark < subjectMarks[i - 1].mark) {
+            currentRank = i + 1;
+        }
+
+        const studentDoc = academicYears.find(s => s._id.toString() === subjectMarks[i].studentId.toString());
+        const term = studentDoc.terms.find(t => t.termInfo.toString() === termId.toString());
+        const sequence = term.sequences.find(s => s.sequenceInfo.toString() === sequenceId.toString());
+        const subject = sequence.subjects.find(s => s.subjectInfo.toString() === subjectId.toString());
+
+        subject.rank = currentRank;
+        await studentDoc.save();
+    }
+
+    return subjectMarks;
+};
+// methed to sequence average of sequence of a given student
+academicYearSchema.methods.calculateSequenceAverage = async function (termId, sequenceId) {
+    const Classes = mongoose.model('Classes');
+    const classDetail = await Classes.findById(this.classes);
+
+    if (!classDetail) {
+        throw new Error('Class not found');
+    }
+
+    const term = this.terms.find(t => t.termInfo.toString() === termId.toString());
+    if (!term) throw new Error('Term not found');
+
+    const sequence = term.sequences.find(s => s.sequenceInfo.toString() === sequenceId.toString());
+    if (!sequence || !sequence.subjects) throw new Error('Sequence not found or has no subjects');
+
+    let totalWeightedMarks = 0;
+    let totalCoefficients = 0;
+
+    sequence.subjects.forEach(subject => {
+        const subjectDetail = classDetail.subjects.find(s =>
+            s.subjectInfo.toString() === subject.subjectInfo.toString()
+        );
+
+        if (
+            subjectDetail &&
+            subjectDetail.isActive &&
+            subject.isActive &&
+            subject.marks.isActive
+        ) {
+            const coefficient = subjectDetail.coefficient || 1;
+            totalWeightedMarks += subject.marks.currentMark * coefficient;
+            totalCoefficients += coefficient;
+        }
+    });
+
+    sequence.average = totalCoefficients > 0
+        ? parseFloat((totalWeightedMarks / totalCoefficients).toFixed(2))
+        : 0;
+    sequence.discipline = getDiscipline(sequence.average)
+    return this.save(); // Save updated average
+};
+// method to find rank of students of a given class in a given sequence
+academicYearSchema.statics.calculateSequenceRank = async function (classId, year, termId, sequenceId) {
+    const academicYears = await this.find({ classes: classId, year });
+
+    // Build a list of students with their sequence average
+    const sequenceAverages = [];
+
+    for (const student of academicYears) {
+        const term = student.terms.find(t => t.termInfo.toString() === termId.toString());
+        if (!term) continue;
+
+        const sequence = term.sequences.find(s => s.sequenceInfo.toString() === sequenceId.toString());
+        if (!sequence || !sequence.isActive) continue;
+
+        sequenceAverages.push({
+            studentId: student._id,
+            average: sequence.average || 0
+        });
+    }
+
+    // Sort by average descending
+    sequenceAverages.sort((a, b) => b.average - a.average);
+
+    // Assign ranks
+    let currentRank = 1;
+    for (let i = 0; i < sequenceAverages.length; i++) {
+        if (i > 0 && sequenceAverages[i].average < sequenceAverages[i - 1].average) {
+            currentRank = i + 1;
+        }
+
+        // Update the student document's sequence rank
+        const studentDoc = academicYears.find(s => s._id.toString() === sequenceAverages[i].studentId.toString());
+        const term = studentDoc.terms.find(t => t.termInfo.toString() === termId.toString());
+        const sequence = term.sequences.find(s => s.sequenceInfo.toString() === sequenceId.toString());
+
+        sequence.rank = currentRank;
+        await studentDoc.save();
+    }
+
+    return sequenceAverages;
+};
+// methed to sequence average of term of a given student
+academicYearSchema.methods.calculateTermAverage = async function (termId) {
+    const term = this.terms.find(t => t.termInfo.toString() === termId.toString());
+
+    if (!term) throw new Error('Term not found');
+
+    if (!term.sequences || term.sequences.length === 0) {
+        term.average = 0;
+        return this.save();
+    }
+
+    let total = 0;
+    let count = 0;
+
+    term.sequences.forEach(seq => {
+        if (seq.isActive && typeof seq.average === 'number') {
+            total += seq.average;
+            count++;
+        }
+    });
+
+    term.average = count > 0 ? parseFloat((total / count).toFixed(2)) : 0;
+    term.discipline = getDiscipline(term.average)
+
+    return this.save(); // Save updated average
+};
+// method to find rank of students of a given class in a given term
+academicYearSchema.statics.calculateTermRank = async function (classId, year, termId) {
+    const AcademicYear = this;
+
+    // Fetch all students from the same class and academic year
+    const allStudents = await AcademicYear.find({
+        classes: classId,
+        year: year
+    });
+
+    // Extract term averages for the specified term
+    const averages = allStudents.map(student => {
+        const term = student.terms.find(t => t.termInfo.toString() === termId.toString());
+        return {
+            studentId: student._id.toString(),
+            average: term ? term.average || 0 : 0
+        };
+    });
+
+    // Sort descending by average
+    averages.sort((a, b) => b.average - a.average);
+
+    // Assign rank (1-based)
+    averages.forEach((entry, index) => {
+        const student = allStudents.find(s => s._id.toString() === entry.studentId);
+        const term = student.terms.find(t => t.termInfo.toString() === termId.toString());
+        if (term) {
+            term.rank = index + 1;
+        }
+    });
+
+    // Save all students after updating their rank
+    await Promise.all(allStudents.map(s => s.save()));
+};
+// find all ranks
+academicYearSchema.statics.calculateAllRanks = async function (classId, year, termId, sequenceId, subjectId) {
+    const academicYears = await this.find({ classes: classId, year });
+
+    // Arrays to hold marks/averages for ranking
+    const subjectMarks = [];
+    const sequenceAverages = [];
+    const termAverages = [];
+    const academicAverages = [];
+
+    for (const student of academicYears) {
+        // Academic overall average
+        academicAverages.push({
+            studentId: student._id.toString(),
+            average: student.overallAverage || 0
+        });
+
+        const term = student.terms.find(t => t.termInfo.toString() === termId.toString());
+        if (!term) continue;
+
+        // Term average
+        termAverages.push({
+            studentId: student._id.toString(),
+            average: term.average || 0
+        });
+
+        const sequence = term.sequences.find(s => s.sequenceInfo.toString() === sequenceId.toString());
+        if (!sequence || !sequence.isActive) continue;
+
+        // Sequence average
+        sequenceAverages.push({
+            studentId: student._id.toString(),
+            average: sequence.average || 0
+        });
+
+        const subject = sequence.subjects.find(s => s.subjectInfo.toString() === subjectId.toString());
+        if (!subject || !subject.isActive || !subject.marks.isActive) continue;
+
+        // Subject mark
+        subjectMarks.push({
+            studentId: student._id.toString(),
+            mark: subject.marks.currentMark || 0
+        });
+    }
+
+    // Utility function to assign ranks with tie support
+    function assignRanks(arr, keyName, rankField, findStudentFn) {
+        arr.sort((a, b) => b[keyName] - a[keyName]);
+        let currentRank = 1;
+        for (let i = 0; i < arr.length; i++) {
+            if (i > 0 && arr[i][keyName] < arr[i - 1][keyName]) {
+                currentRank = i + 1;
+            }
+            const studentDoc = findStudentFn(arr[i].studentId);
+            if (!studentDoc) continue;
+
+            // Assign rank to correct nested path
+            if (rankField === 'subjectRank') {
+                const term = studentDoc.terms.find(t => t.termInfo.toString() === termId.toString());
+                if (!term) continue;
+                const sequence = term.sequences.find(s => s.sequenceInfo.toString() === sequenceId.toString());
+                if (!sequence) continue;
+                const subject = sequence.subjects.find(s => s.subjectInfo.toString() === subjectId.toString());
+                if (!subject) continue;
+
+                subject.rank = currentRank;
+            } else if (rankField === 'sequenceRank') {
+                const term = studentDoc.terms.find(t => t.termInfo.toString() === termId.toString());
+                if (!term) continue;
+                const sequence = term.sequences.find(s => s.sequenceInfo.toString() === sequenceId.toString());
+                if (!sequence) continue;
+
+                sequence.rank = currentRank;
+            } else if (rankField === 'termRank') {
+                const term = studentDoc.terms.find(t => t.termInfo.toString() === termId.toString());
+                if (!term) continue;
+
+                term.rank = currentRank;
+            } else if (rankField === 'academicRank') {
+                studentDoc.rank = currentRank;
+            }
+        }
+    }
+
+    // Helper to find student document by string id
+    const findStudentById = (id) => academicYears.find(s => s._id.toString() === id);
+
+    // Assign ranks
+    assignRanks(subjectMarks, 'mark', 'subjectRank', findStudentById);
+    assignRanks(sequenceAverages, 'average', 'sequenceRank', findStudentById);
+    assignRanks(termAverages, 'average', 'termRank', findStudentById);
+    assignRanks(academicAverages, 'average', 'academicRank', findStudentById);
+
+    // Save all updated documents at once
+    await Promise.all(academicYears.map(s => s.save()));
+
+    return {
+        subjectRanks: subjectMarks,
+        sequenceRanks: sequenceAverages,
+        termRanks: termAverages,
+        academicRanks: academicAverages,
+    };
+};
+// calculate Ranks For all students in Class in a given Year
+academicYearSchema.statics.calculateRanksForClassYear = async function (classId, year) {
+    const academicYears = await this.find({ classes: classId, year });
+
+    // We'll gather marks/averages for:
+    // - all terms: { termId: [{ studentId, average }] }
+    // - all sequences: { termId_sequenceId: [{ studentId, average }] }
+    // - all subjects: { termId_sequenceId_subjectId: [{ studentId, mark }] }
+    // Also gather academic averages for ranking
+    const academicAverages = [];
+    const termAveragesMap = new Map();
+    const sequenceAveragesMap = new Map();
+    const subjectMarksMap = new Map();
+
+    for (const student of academicYears) {
+        // Academic overall average
+        academicAverages.push({
+            studentId: student._id.toString(),
+            average: student.overallAverage || 0
+        });
+
+        for (const term of student.terms) {
+            if (!term.average) continue;
+
+            // Term average for ranking
+            if (!termAveragesMap.has(term.termInfo.toString())) {
+                termAveragesMap.set(term.termInfo.toString(), []);
+            }
+            termAveragesMap.get(term.termInfo.toString()).push({
+                studentId: student._id.toString(),
+                average: term.average || 0
+            });
+
+            for (const sequence of term.sequences) {
+                if (!sequence.isActive || !sequence.average) continue;
+
+                const seqKey = `${term.termInfo.toString()}_${sequence.sequenceInfo.toString()}`;
+                if (!sequenceAveragesMap.has(seqKey)) {
+                    sequenceAveragesMap.set(seqKey, []);
+                }
+                sequenceAveragesMap.get(seqKey).push({
+                    studentId: student._id.toString(),
+                    average: sequence.average || 0
+                });
+
+                for (const subject of sequence.subjects) {
+                    if (!subject.isActive || !subject.marks.isActive) continue;
+
+                    const subjKey = `${term.termInfo.toString()}_${sequence.sequenceInfo.toString()}_${subject.subjectInfo.toString()}`;
+                    if (!subjectMarksMap.has(subjKey)) {
+                        subjectMarksMap.set(subjKey, []);
+                    }
+                    subjectMarksMap.get(subjKey).push({
+                        studentId: student._id.toString(),
+                        mark: subject.marks.currentMark || 0
+                    });
+                }
+            }
+        }
+    }
+
+    // Helper function to assign ranks with tie support
+    function assignRanks(arr, keyName, rankField, findStudentFn, extraIds = {}) {
+        arr.sort((a, b) => b[keyName] - a[keyName]);
+        let currentRank = 1;
+        for (let i = 0; i < arr.length; i++) {
+            if (i > 0 && arr[i][keyName] < arr[i - 1][keyName]) {
+                currentRank = i + 1;
+            }
+            const studentDoc = findStudentFn(arr[i].studentId);
+            if (!studentDoc) continue;
+
+            if (rankField === 'academicRank') {
+                studentDoc.rank = currentRank;
+            } else if (rankField === 'termRank') {
+                const term = studentDoc.terms.find(t => t.termInfo.toString() === extraIds.termId);
+                if (!term) continue;
+                term.rank = currentRank;
+            } else if (rankField === 'sequenceRank') {
+                const term = studentDoc.terms.find(t => t.termInfo.toString() === extraIds.termId);
+                if (!term) continue;
+                const sequence = term.sequences.find(s => s.sequenceInfo.toString() === extraIds.sequenceId);
+                if (!sequence) continue;
+                sequence.rank = currentRank;
+            } else if (rankField === 'subjectRank') {
+                const term = studentDoc.terms.find(t => t.termInfo.toString() === extraIds.termId);
+                if (!term) continue;
+                const sequence = term.sequences.find(s => s.sequenceInfo.toString() === extraIds.sequenceId);
+                if (!sequence) continue;
+                const subject = sequence.subjects.find(s => s.subjectInfo.toString() === extraIds.subjectId);
+                if (!subject) continue;
+
+                subject.rank = currentRank;
+            }
+        }
+    }
+
+    // Helper to find student document by string id
+    const findStudentById = (id) => academicYears.find(s => s._id.toString() === id);
+
+    // Assign academic ranks
+    assignRanks(academicAverages, 'average', 'academicRank', findStudentById);
+
+    // Assign term ranks
+    for (const [termId, averages] of termAveragesMap.entries()) {
+        assignRanks(averages, 'average', 'termRank', findStudentById, { termId });
+    }
+
+    // Assign sequence ranks
+    for (const [seqKey, averages] of sequenceAveragesMap.entries()) {
+        const [termId, sequenceId] = seqKey.split('_');
+        assignRanks(averages, 'average', 'sequenceRank', findStudentById, { termId, sequenceId });
+    }
+
+    // Assign subject ranks
+    for (const [subjKey, marks] of subjectMarksMap.entries()) {
+        const [termId, sequenceId, subjectId] = subjKey.split('_');
+        assignRanks(marks, 'mark', 'subjectRank', findStudentById, { termId, sequenceId, subjectId });
+    }
+
+    // Save all updated student documents
+    await Promise.all(academicYears.map(s => s.save()));
+
+    return {
+        academicRanks: academicAverages,
+        termRanks: Object.fromEntries(termAveragesMap),
+        sequenceRanks: Object.fromEntries(sequenceAveragesMap),
+        subjectRanks: Object.fromEntries(subjectMarksMap),
+    };
+};
+
+academicYearSchema.statics.promoteStudents = async function (
+    classId,
+    year,
+    currentLevel,
+    passedLevel,
+    newYear,
+    passedClassId,
+    failClassId
+) {
+    const AcademicYear = this;
+    const Student = mongoose.model('Student');
+
+    // Fetch all AcademicYear docs for this class and year
+    const studentsAcademicYears = await AcademicYear.find({
+        classes: classId,
+        year: year
+    });
+
+    // For each student in the current academic year
+    for (const studentRecord of studentsAcademicYears) {
+        const studentId = studentRecord.student; // assuming you have a ref to student
+
+        // Check overallAverage (assuming it's a field on AcademicYear doc)
+        const overallAverage = studentRecord.overallAverage || 0;
+
+        // Determine if promoted or repeated
+        const isPromoted = overallAverage > 10;
+
+        // Prepare new AcademicYear document for next year
+        const newAcademicYear = new AcademicYear({
+            student: studentId,
+            year: newYear,
+            classes: isPromoted ? passedClassId : failClassId,
+            level: isPromoted ? passedLevel : currentLevel,
+            hasRepeated: !isPromoted,
+            // Copy any other needed fields, e.g. reset terms, averages, etc.
+            terms: [], // reset terms for new year
+            overallAverage: 0
+        });
+
+        // Save the new academic year record
+        await newAcademicYear.save();
+
+        // Update the Student document's level attribute
+        await Student.findByIdAndUpdate(studentId, {
+            $set: {
+                levels: isPromoted ? passedLevel : currentLevel
+            }
+        });
+    }
 };
 
 // Method to add a new fee record

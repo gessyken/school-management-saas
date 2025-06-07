@@ -15,6 +15,14 @@ router.delete('/:id', authenticate, authorizeRoles(['admin']), AcademicYearContr
 router.put('/:id/marks', AcademicYearController.updateStudentMarks);
 router.put('/:id/calculate-averages', authenticate, AcademicYearController.calculateAverages);
 
+// average and rank management
+router.put('/subject-rank', AcademicYearController.calculateSubjectRank);
+router.put('/sequence-rank', AcademicYearController.calculateSequenceRank);
+router.put('/term-rank', AcademicYearController.calculateTermRank);
+router.put('/academic-rank', AcademicYearController.calculateRanksForClassYear);
+router.put('/promo-student', AcademicYearController.promoteStudents);
+
+
 // Fee MAnagement
 router.get('/:academicYearId/fees', AcademicYearController.getFees);
 router.post('/:academicYearId/fees', AcademicYearController.addFee);

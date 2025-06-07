@@ -260,7 +260,7 @@ class AcademicYearController {
   async addFee(req, res) {
     try {
       const { academicYearId } = req.params;
-      const { billID, type, amount, paymentMethod,paymentDate} = req.body;
+      const { billID, type, amount, paymentMethod, paymentDate } = req.body;
 
       const academicYear = await AcademicYear.findById(academicYearId);
       if (!academicYear) {
@@ -292,7 +292,7 @@ class AcademicYearController {
   async updateFee(req, res) {
     try {
       const { academicYearId, billID } = req.params;
-      const { type, amount, paymentDate,paymentMethod } = req.body;
+      const { type, amount, paymentDate, paymentMethod } = req.body;
 
       const academicYear = await AcademicYear.findById(academicYearId);
       if (!academicYear) {
@@ -341,6 +341,168 @@ class AcademicYearController {
     }
   }
 
+  async calculateSubjectRank(req, res) {
+    try {
+      // Extract parameters from request (query or body)
+      const { classId, year, termId, sequenceId, subjectId } = req.body;
+
+      // Basic validation
+      if (!classId || !year || !termId || !sequenceId || !subjectId) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+      }
+
+      // Call the static method on the model
+      const result = await AcademicYear.calculateAllRanks(
+        classId,
+        year,
+        termId,
+        sequenceId,
+        subjectId
+      );
+
+      // Return the ranking result
+      return res.status(200).json({
+        message: 'Ranks calculated successfully',
+        ranks: result
+      });
+    } catch (error) {
+      console.error('Error calculating ranks:', error);
+      return res.status(500).json({
+        error: 'An error occurred while calculating ranks',
+        details: error.message
+      });
+    }
+  }
+  async calculateSequenceRank(req, res) {
+    try {
+      // Extract parameters from request (query or body)
+      const { classId, year, termId, sequenceId } = req.body;
+
+      // Basic validation
+      if (!classId || !year || !termId || !sequenceId) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+      }
+
+      // Call the static method on the model
+      const result = await AcademicYear.calculateSequenceRank(
+        classId,
+        year,
+        termId,
+        sequenceId,
+      );
+
+      // Return the ranking result
+      return res.status(200).json({
+        message: 'Ranks calculated successfully',
+        ranks: result
+      });
+    } catch (error) {
+      console.error('Error calculating ranks:', error);
+      return res.status(500).json({
+        error: 'An error occurred while calculating ranks',
+        details: error.message
+      });
+    }
+  }
+  async calculateTermRank(req, res) {
+    try {
+      // Extract parameters from request (query or body)
+      const { classId, year, termId } = req.body;
+
+      // Basic validation
+      if (!classId || !year || !termId) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+      }
+
+      // Call the static method on the model
+      const result = await AcademicYear.calculateTermRank(
+        classId,
+        year,
+        termId,
+      );
+
+      // Return the ranking result
+      return res.status(200).json({
+        message: 'Ranks calculated successfully',
+        ranks: result
+      });
+    } catch (error) {
+      console.error('Error calculating ranks:', error);
+      return res.status(500).json({
+        error: 'An error occurred while calculating ranks',
+        details: error.message
+      });
+    }
+  }
+  async calculateRanksForClassYear(req, res) {
+    try {
+      // Extract parameters from request (query or body)
+      const { classId, year } = req.body;
+
+      // Basic validation
+      if (!classId || !year) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+      }
+
+      // Call the static method on the model
+      const result = await AcademicYear.calculateRanksForClassYear(
+        classId,
+        year,
+      );
+
+      // Return the ranking result
+      return res.status(200).json({
+        message: 'Ranks calculated successfully',
+        ranks: result
+      });
+    } catch (error) {
+      console.error('Error calculating ranks:', error);
+      return res.status(500).json({
+        error: 'An error occurred while calculating ranks',
+        details: error.message
+      });
+    }
+  }
+  async promoteStudents(req, res) {
+    try {
+      // Extract parameters from request (query or body)
+      const { classId, year } = req.body;
+
+      // Basic validation
+      if (!classId || !year) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+      }
+
+      // Call the static method on the model
+      await AcademicYear.promoteStudents(
+        classId,
+        year,
+        currentLevel,
+        passedLevel,
+        newYear,
+        passedClassId,
+        failClassId
+      );
+
+      // Return the ranking result
+      return res.status(200).json({
+        message: 'Students promoted successfully',
+      });
+    } catch (error) {
+      console.error('Error calculating ranks:', error);
+      return res.status(500).json({
+        error: 'An error occurred while calculating ranks',
+        details: error.message
+      });
+    }
+  }
+
+
+
+
+
+
+  // not yet used
   // Academic year management
   async createAcademicYear(req, res) {
     try {
