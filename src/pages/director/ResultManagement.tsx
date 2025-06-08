@@ -52,6 +52,8 @@ import {
 } from "@/lib/services/academicService";
 import { Tooltip } from "@/components/ui/tooltip";
 import "../../assets/style.css";
+import ReportCardManagement from "./ReportCardManagement";
+import { useSearchParams } from "react-router-dom";
 const itemsPerPage = 5;
 
 export default function ResultManagement() {
@@ -73,6 +75,7 @@ export default function ResultManagement() {
     term: "",
     academicYear: "",
     subject: "",
+    sequence: "",
   });
   const [terms, setTerms] = useState<Term[]>([]);
   const [studentsMarks, setStudentsMarks] = useState<any>({});
@@ -80,7 +83,12 @@ export default function ResultManagement() {
 
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "";
 
+  const handleTabChange = (tabKey: string) => {
+    setSearchParams({ tab: tabKey });
+  };
   useEffect(() => {
     fetchClasses();
     loadAcademicYearDetail();
@@ -133,9 +141,11 @@ export default function ResultManagement() {
     setTerms(data);
   };
   const filteredTerms = terms.filter((term) =>
-    filter.academicYear ? term.academicYear === filter.academicYear : true
+    !filter.academicYear ? false : term.academicYear === filter.academicYear
   );
-  console.log("terms", terms);
+  const showTerms = filteredTerms.filter((term) =>
+    filter.term ? term._id === filter.term : true
+  );
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
@@ -158,7 +168,9 @@ export default function ResultManagement() {
     )
     .filter(
       (academic) =>
-        (filter.academicYear ? academic?.year === filter.academicYear : true) &&
+        (!filter.academicYear
+          ? false
+          : academic?.year === filter.academicYear) &&
         (!filter.classes ? false : academic?.classes?._id === filter.classes)
     );
 
@@ -306,75 +318,6 @@ export default function ResultManagement() {
     doc.save(`matieres_${date.replace(/\//g, "-")}.pdf`);
   };
 
-  const FilterBlock = ({ label, children }) => (
-    <div>
-      <label className="block mb-1 text-sm font-medium text-gray-700">
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-  console.log("filter", studentsMarks);
-  const handleMarkUpdate = async (
-    academicInfo,
-    termInfo,
-    sequenceInfo,
-    subjectInfo,
-    newMark
-  ) => {
-    try {
-      console.log(academicInfo, termInfo, sequenceInfo, subjectInfo, newMark);
-      let student = await academicService.updateMark(
-        academicInfo,
-        termInfo,
-        sequenceInfo,
-        subjectInfo,
-        newMark
-      );
-      const record = academicStudents.find(
-        (a) => a._id.toString() === academicInfo
-      );
-      record.terms = student?.academicYear?.terms;
-      generateMarksMap(academicStudents)
-      toast({
-        title: "Success",
-        description: `Students ${
-          subjectInfo === "absences" ? "absences" : "mark"
-        } update successfully`,
-      });
-    } catch (error) {
-      console.error("Failed to update students", error);
-      toast({
-        title: "Erreur",
-        description: `Failed to update students ${
-          subjectInfo === "absences" ? "Absences" : "Mark"
-        }`,
-      });
-    }
-  };
-  const handleStudentMarkChange = (
-    academicInfo,
-    termInfo,
-    sequenceInfo,
-    subjectInfo,
-    mark
-  ) => {
-    setStudentsMarks({
-      ...studentsMarks,
-      [`${academicInfo}-${termInfo}-${sequenceInfo}-${subjectInfo}`]: {
-        ...studentsMarks[
-          `${academicInfo}-${termInfo}-${sequenceInfo}-${subjectInfo}`
-        ],
-        marks: {
-          ...studentsMarks[
-            `${academicInfo}-${termInfo}-${sequenceInfo}-${subjectInfo}`
-          ]?.marks,
-          currentMark: Number(mark) || "",
-        },
-      },
-    });
-  };
-
   const generateMarksMap = (academicStudents) => {
     const marksMap = {};
 
@@ -383,11 +326,12 @@ export default function ResultManagement() {
 
       student.terms?.forEach((term) => {
         const termId = term.termInfo.toString();
-
+        const key = `${academicId}-${termId}-summary`;
+        marksMap[key] = term;
         term.sequences?.forEach((sequence) => {
           const sequenceId = sequence.sequenceInfo.toString();
-          const key = `${academicId}-${termId}-${sequenceId}-absences`;
-          marksMap[key] = sequence.absences ?? 0;
+          const key = `${academicId}-${termId}-${sequenceId}-summary`;
+          marksMap[key] = sequence;
           sequence.subjects?.forEach((subject) => {
             const subjectId = subject.subjectInfo.toString();
             const key = `${academicId}-${termId}-${sequenceId}-${subjectId}`;
@@ -429,29 +373,52 @@ export default function ResultManagement() {
   };
   const filteredSeq = sequences
     .filter((seq) => filteredTerms.some((opt) => opt._id === seq.term._id))
-    .filter((seq) => (filter.term ? seq.term._id === filter.term : false));
-  // console.log("filteredSeq", filteredSeq);
-  function formatToMax2Decimals(value) {
-    if (typeof value !== 'number') return value;
-  
-    const str = value.toString();
-    const decimalPart = str.split('.')[1];
-    
-    // If decimal part exists and length > 2, fix to 2 decimals
-    if (decimalPart && decimalPart.length > 2) {
-      return value.toFixed(2);
-    }
-    // else return original string (no change)
-    return str;
-  }
-  
+    .filter((seq) => (filter.term ? seq.term._id === filter.term : true));
+  const showSeq = filteredSeq.filter((seq) =>
+    filter.sequence ? seq._id === filter.sequence : true
+  );
+  const showSubject = classesSubjects.filter((subject) =>
+    filter.subject ? subject.subjectInfo._id === filter.subject : true
+  );
+
+  console.log("filteredSeq", showSubject);
+
   return (
     <AppLayout>
       <div className="p-4 space-y-6">
-        <h1 className="text-3xl font-bold text-gray-800">
-          📘 Grade Management
-        </h1>
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+          <h1 className="text-3xl font-bold text-gray-800">
+            📘 Result Management
+          </h1>
 
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={exportExcel}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Excel
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={exportPDF}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              PDF
+            </Button>
+          </div>
+          <Button
+            variant={activeTab ? "default" : "outline"}
+            onClick={() =>
+              handleTabChange(activeTab === "" ? "report-card" : "")
+            }
+          >
+            {activeTab === "" ? "report-card" : "Result"}
+          </Button>
+        </div>
         <Card className="p-6 space-y-6 shadow-sm">
           {/* 🔍 Search + Export */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -478,152 +445,163 @@ export default function ResultManagement() {
           </div>
 
           {/* 📚 Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <FilterBlock label="Academic Year">
-              <Input readOnly value={filter.academicYear} />
-            </FilterBlock>
-            <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700">
-                Classes
-              </label>
-              <select
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-                value={filter.classes}
-                onChange={(e) => {
-                  const classId = e.target.value;
-                  setFilter({ ...filter, classes: classId, subject: "" });
-                  console.log(
-                    filteredClasses.find((c) => c._id === classId).subjects
-                  );
-                  setClassesSubjects(
-                    filteredClasses.find((c) => c._id === classId).subjects ||
-                      []
-                  );
-                  generateMarksMap(academicStudents);
+          <div className="bg-white p-6 rounded-xl shadow border">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">Filtres</h2>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  goToPage(1);
+                  setSearchTerm("");
+                  setFilter({
+                    level: "",
+                    classes: "",
+                    term: "",
+                    academicYear: "",
+                    // academicYear: filter.academicYear,
+                    subject: "",
+                    sequence: "",
+                  });
                 }}
+                className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
               >
-                <option value="">Select a classe</option>
-                {filteredClasses.map((item) => (
-                  <option key={item._id} value={item._id}>
-                    {item.classesName}
-                  </option>
-                ))}
-              </select>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                Réinitialiser
+              </Button>
             </div>
-            <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700">
-                Subject
-              </label>
-              <select
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-                value={filter.subject}
-                onChange={(e) => {
-                  const subjectId = e.target.value;
-                  setFilter({ ...filter, subject: subjectId });
-                  generateMarksMap(academicStudents);
-                }}
-              >
-                <option value="">Select a Subject</option>
-                <option value="absences">absences</option>
-                {classesSubjects.map((item) => (
-                  <option
-                    key={item?.subjectInfo?._id}
-                    value={item?.subjectInfo?._id}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Academic Year
+                </label>
+                <select
+                  required
+                  value={filter.academicYear}
+                  onChange={(e) => {
+                    const yearId = e.target.value;
+                    setFilter({ ...filter, academicYear: yearId });
+                  }}
+                  className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="" disabled>
+                    Select Academic Year
+                  </option>
+                  {academicYears.map((year) => (
+                    <option key={year._id} value={year.name}>
+                      {year.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Classes
+                </label>
+                <select
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  value={filter.classes}
+                  onChange={(e) => {
+                    const classId = e.target.value;
+                    setFilter({ ...filter, classes: classId, subject: "" });
+                    console.log(
+                      filteredClasses.find((c) => c._id === classId).subjects
+                    );
+                    setClassesSubjects(
+                      filteredClasses.find((c) => c._id === classId).subjects ||
+                        []
+                    );
+                  }}
+                >
+                  <option value="">Select a classe</option>
+                  {filteredClasses.map((item) => (
+                    <option key={item._id} value={item._id}>
+                      {item.classesName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Term
+                </label>
+                <select
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  value={filter.term}
+                  onChange={(e) => {
+                    setFilter({ ...filter, term: e.target.value });
+                  }}
+                >
+                  <option value="">Tous</option>
+                  {filteredTerms.map((term) => (
+                    <option key={term._id} value={term._id}>
+                      {term.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Sequence
+                </label>
+                <select
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  value={filter.sequence}
+                  onChange={(e) => {
+                    setFilter({ ...filter, sequence: e.target.value });
+                  }}
+                >
+                  <option value="">Tous</option>
+                  {filteredSeq.map((seq) => (
+                    <option key={seq._id} value={seq._id}>
+                      {seq.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {activeTab === "" && (
+                <div>
+                  <label className="block mb-1 text-sm font-medium text-gray-700">
+                    Subject
+                  </label>
+                  <select
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                    value={filter.subject}
+                    onChange={(e) => {
+                      const subjectId = e.target.value;
+                      setFilter({ ...filter, subject: subjectId });
+                    }}
                   >
-                    {item?.subjectInfo?.subjectName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700">
-                Term
-              </label>
-              <select
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-                value={filter.term}
-                onChange={(e) => {
-                  setFilter({ ...filter, term: e.target.value });
-                  generateMarksMap(academicStudents);
-                }}
-              >
-                <option value="">Select a Term</option>
-                {filteredTerms.map((term) => (
-                  <option key={term._id} value={term._id}>
-                    {term.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* 📌 Subject Details */}
-          {filter.subject && (
-            <div className="border rounded-lg p-4 bg-gray-50 mt-4 shadow-sm">
-              {filter.subject === "absences" ? (
-                <>
-                  <div className="text-sm text-gray-700 space-y-2">
-                    <p className="font-semibold text-red-600">
-                      ⚠️ Absences sélectionnées
-                    </p>
-                    <p>
-                      Ici, vous pouvez enregistrer ou afficher les absences des
-                      élèves pour le trimestre{" "}
-                      <strong>
-                        {filteredTerms.find((t) => t._id === filter.term)?.name}
-                      </strong>
-                      de l'année académique{" "}
-                      <strong>{filter.academicYear}</strong>.
-                    </p>
-                    <p>
-                      Veuillez utiliser la section de saisie ou de visualisation
-                      d'absences ci-dessous.
-                    </p>
-                  </div>
-                </>
-              ) : (
-                (() => {
-                  const selected = classesSubjects.find(
-                    (opt) => opt.subjectInfo?._id === filter.subject
-                  );
-                  return (
-                    selected && (
-                      <div className="text-sm text-gray-700 space-y-2">
-                        <p>
-                          <strong>📘 Nom:</strong>{" "}
-                          {selected.subjectInfo.subjectName}
-                        </p>
-                        <p>
-                          <strong>🔢 Code:</strong>{" "}
-                          {selected.subjectInfo.subjectCode}
-                        </p>
-                        <p>
-                          <strong>🎯 Coefficient:</strong>{" "}
-                          {selected.coefficient}
-                        </p>
-                        <p>
-                          <strong>📅 Trimestre:</strong>{" "}
-                          {
-                            filteredTerms.find((t) => t._id === filter.term)
-                              ?.name
-                          }
-                        </p>
-                        <p>
-                          <strong>🗓️ Année académique:</strong>{" "}
-                          {filter.academicYear}
-                        </p>
-                      </div>
-                    )
-                  );
-                })()
+                    <option value="">Tous</option>
+                    <option value="absences">absences</option>
+                    {classesSubjects.map((item) => (
+                      <option
+                        key={item?.subjectInfo?._id}
+                        value={item?.subjectInfo?._id}
+                      >
+                        {item?.subjectInfo?.subjectName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
             </div>
-          )}
-
-          {/* <Card className="p-6 space-y-6 shadow-sm"> */}
+          </div>
           {/* 🔍 Search + Export */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <Input
@@ -633,211 +611,477 @@ export default function ResultManagement() {
               value={searchTerm}
             />
           </div>
-          {/* </Card> */}
           {/* 📊 Grades Table */}
-          {loading ? (
-            <div className="flex justify-center items-center p-8">
-              <Loader2 className="animate-spin h-6 w-6 text-gray-500" />
-            </div>
+          {activeTab === "" ? (
+            <>
+              {loading ? (
+                <div className="flex justify-center items-center p-8">
+                  <Loader2 className="animate-spin h-6 w-6 text-gray-500" />
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead
+                          rowSpan={4}
+                          style={{
+                            position: "sticky",
+                            left: 0,
+                            backgroundColor: "white",
+                            zIndex: 10,
+                            verticalAlign: "middle",
+                            textAlign: "center",
+                            borderRight: "2px solid #aaa",
+                            borderBottom: "2px solid #aaa",
+                            minWidth: "120px",
+                          }}
+                        >
+                          Matricule
+                        </TableHead>
+                        <TableHead
+                          rowSpan={4}
+                          style={{
+                            position: "sticky",
+                            left: "120px",
+                            backgroundColor: "white",
+                            zIndex: 10,
+                            verticalAlign: "middle",
+                            textAlign: "center",
+                            borderRight: "2px solid #aaa",
+                            borderBottom: "2px solid #aaa",
+                            minWidth: "180px",
+                          }}
+                        >
+                          Nom complet
+                        </TableHead>
+
+                        {showTerms.map((term) => (
+                          <TableHead
+                            colSpan={
+                              showSeq
+                                .filter((seq) => seq.term._id === term._id)
+                                .filter((s) => s.isActive).length *
+                                (3 *
+                                  showSubject.filter((s) => s.isActive).length +
+                                  4) +
+                              3
+                            }
+                            key={term._id}
+                            className="text-center align-middle"
+                            style={{
+                              borderRight: "2px solid #aaa",
+                              borderBottom: "2px solid #aaa",
+                            }}
+                          >
+                            <div className="d-flex align-items-center justify-content-center gap-2">
+                              <span>{term.name}</span>
+                              <Button
+                                size="sm"
+                                className="tooltip-button"
+                                title={`Calculate rank for ${term.name}`}
+                                aria-label={`Calculate rank for ${term.name}`}
+                                onClick={() => {
+                                  /* Add your calculate rank handler here */
+                                }}
+                              >
+                                <Calculator size={16} />
+                                <span className="tooltip-text">
+                                  Calculate rank for {term.name}
+                                </span>
+                              </Button>
+                            </div>
+                          </TableHead>
+                        ))}
+                      </TableRow>
+
+                      <TableRow>
+                        {showTerms.map((term) => (
+                          <>
+                            {showSeq
+                              .filter((s) => s.isActive)
+                              .filter((seq) => seq.term._id === term._id)
+                              .map((seq) => (
+                                <TableHead
+                                  colSpan={
+                                    3 *
+                                      showSubject.filter((s) => s.isActive)
+                                        .length +
+                                    4
+                                  }
+                                  key={seq._id}
+                                  className="text-center align-middle"
+                                  style={{
+                                    borderRight: "2px solid #aaa",
+                                    borderBottom: "2px solid #aaa",
+                                  }}
+                                >
+                                  <div className="d-flex align-items-center justify-content-center gap-2">
+                                    <span>{seq.name}</span>
+                                    <Button
+                                      size="sm"
+                                      className="tooltip-button"
+                                      title={`Calculate rank for ${seq.name}`}
+                                      aria-label={`Calculate rank for ${seq.name}`}
+                                      onClick={() => {
+                                        /* Add your calculate rank handler here */
+                                      }}
+                                    >
+                                      <Calculator size={16} />
+                                      <span className="tooltip-text">
+                                        Calculate rank for {seq.name}
+                                      </span>
+                                    </Button>
+                                  </div>
+                                </TableHead>
+                              ))}
+                            {["Average", "Rank", "Discipline"].map((item) => (
+                              <TableHead
+                                rowSpan={3}
+                                key={`${item}`}
+                                className="text-center align-middle"
+                                style={{
+                                  whiteSpace: "nowrap",
+                                  borderRight: "2px solid #aaa",
+                                  borderBottom: "2px solid #aaa",
+                                }}
+                              >
+                                {item}
+                              </TableHead>
+                            ))}
+                          </>
+                        ))}
+                      </TableRow>
+
+                      <TableRow>
+                        {showTerms.map((term) => (
+                          <>
+                            {showSeq
+                              .filter((s) => s.isActive)
+                              .filter((seq) => seq.term._id === term._id)
+                              .map((seq) => (
+                                <>
+                                  {showSubject
+                                    .filter((s) => s.isActive)
+                                    .map((subject) => (
+                                      <TableHead
+                                        colSpan={3}
+                                        key={subject.subjectInfo._id}
+                                        className="text-center align-middle"
+                                        style={{
+                                          whiteSpace: "nowrap",
+                                          borderRight: "2px solid #aaa",
+                                          borderBottom: "2px solid #aaa",
+                                        }}
+                                      >
+                                        <div className="d-flex align-items-center justify-content-center gap-2">
+                                          <span>
+                                            {subject.subjectInfo?.subjectName}
+                                          </span>
+                                          <Button
+                                            size="sm"
+                                            className="tooltip-button"
+                                            title={`Calculate rank for ${subject.subjectInfo?.subjectName}`}
+                                            aria-label={`Calculate rank for ${subject.subjectInfo?.subjectName}`}
+                                            onClick={() => {
+                                              /* Add your calculate rank handler here */
+                                            }}
+                                          >
+                                            <Calculator size={16} />
+                                            <span className="tooltip-text">
+                                              Calculate rank for{" "}
+                                              {subject.subjectInfo?.subjectName}
+                                            </span>
+                                          </Button>
+                                        </div>
+                                      </TableHead>
+                                    ))}
+                                  {[
+                                    "Average",
+                                    "absences",
+                                    "Rank",
+                                    "Discipline",
+                                  ].map((item) => (
+                                    <TableHead
+                                      rowSpan={2}
+                                      key={`${item}`}
+                                      className="text-center align-middle"
+                                      style={{
+                                        whiteSpace: "nowrap",
+                                        borderRight: "2px solid #aaa",
+                                        borderBottom: "2px solid #aaa",
+                                      }}
+                                    >
+                                      {item}
+                                    </TableHead>
+                                  ))}
+                                </>
+                              ))}
+                          </>
+                        ))}
+                      </TableRow>
+                      <TableRow>
+                        {showTerms.map((term) => (
+                          <>
+                            {showSeq
+                              .filter((s) => s.isActive)
+                              .filter((seq) => seq.term._id === term._id)
+                              .map((seq) => (
+                                <>
+                                  {showSubject
+                                    .filter((s) => s.isActive)
+                                    .map((subject) => (
+                                      <React.Fragment
+                                        key={`${seq._id}-su(bheaders`}
+                                      >
+                                        {["Mark", "Rank", "Discipline"].map(
+                                          (item) => (
+                                            <TableHead
+                                              colSpan={1}
+                                              key={`${subject.subjectInfo._id}-${item}`}
+                                              className="text-center align-middle"
+                                              style={{
+                                                whiteSpace: "nowrap",
+                                                borderRight: "2px solid #aaa",
+                                                borderBottom: "2px solid #aaa",
+                                              }}
+                                            >
+                                              {item}
+                                            </TableHead>
+                                          )
+                                        )}
+                                      </React.Fragment>
+                                    ))}
+                                </>
+                              ))}
+                          </>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+
+                    <TableBody>
+                      {currentData.length > 0 ? (
+                        currentData.map((record, rowIndex) => (
+                          <TableRow
+                            key={record._id}
+                            className={`${
+                              rowIndex % 2 === 0 ? "bg-gray-50" : "bg-white"
+                            } hover:bg-gray-100 transition-colors`}
+                          >
+                            {/* Sticky Matricule column */}
+                            <TableCell className="py-2 px-3 font-medium text-gray-700 border border-gray-300 sticky left-0 bg-white z-20">
+                              {record?.student?.matricule}
+                            </TableCell>
+
+                            {/* Sticky Full Name column */}
+                            <TableCell className="py-2 px-3 font-medium text-gray-700 border border-gray-300 sticky left-[120px] bg-white z-20">
+                              {record?.student?.fullName ||
+                                `${record.student.firstName} ${record.student.lastName}`}
+                            </TableCell>
+
+                            {/* Dynamic terms, sequences, subjects and extra metrics */}
+                            {showTerms.map((term) => {
+                              return (
+                                <React.Fragment key={`${term._id}`}>
+                                  {showSeq
+                                    .filter(
+                                      (seq) =>
+                                        seq.isActive &&
+                                        seq.term._id === term._id
+                                    )
+                                    .map((seq) => {
+                                      const activeSubjects = showSubject.filter(
+                                        (s) => s.isActive
+                                      );
+                                      return (
+                                        <React.Fragment
+                                          key={`${term._id}-${seq._id}`}
+                                        >
+                                          {/* For each subject: 3 cells */}
+                                          {activeSubjects.map((subject) => {
+                                            const key = `${record._id}-${term._id}-${seq._id}-${subject.subjectInfo._id}`;
+                                            const marksData =
+                                              studentsMarks[key] ?? {};
+
+                                            return (
+                                              <React.Fragment key={key}>
+                                                {/* Mark Input */}
+                                                <TableCell className="py-2 px-3 border border-gray-300">
+                                                  <Input
+                                                    type="number"
+                                                    min="0"
+                                                    max="20"
+                                                    step="0.01"
+                                                    value={(() => {
+                                                      const mark =
+                                                        marksData.marks
+                                                          ?.currentMark ?? 0;
+                                                      const str =
+                                                        mark.toString();
+                                                      const decimalPart =
+                                                        str.split(".")[1];
+                                                      return decimalPart &&
+                                                        decimalPart.length > 2
+                                                        ? mark.toFixed(2)
+                                                        : str;
+                                                    })()}
+                                                    className="w-[10ch] text-center text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    onChange={(e) => {
+                                                      // TODO: handle mark change
+                                                    }}
+                                                  />
+                                                </TableCell>
+
+                                                {/* Rank */}
+                                                <TableCell className="py-2 px-3 border border-gray-300">
+                                                  <Input
+                                                    type="number"
+                                                    readOnly
+                                                    value={marksData.rank ?? ""}
+                                                    className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
+                                                  />
+                                                </TableCell>
+
+                                                {/* Discipline */}
+                                                <TableCell className="py-2 px-3 border border-gray-300">
+                                                  <Input
+                                                    type="text"
+                                                    readOnly
+                                                    value={
+                                                      marksData.discipline ?? ""
+                                                    }
+                                                    className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
+                                                  />
+                                                </TableCell>
+                                              </React.Fragment>
+                                            );
+                                          })}
+
+                                          {/* Extra columns: Average, Absences, Rank, Discipline */}
+                                          {[
+                                            "average",
+                                            "absences",
+                                            "rank",
+                                            "discipline",
+                                          ].map((metric) => {
+                                            const key = `${record._id}-${term._id}-${seq._id}-summary`;
+                                            const summary =
+                                              studentsMarks[key] ?? {};
+                                            return (
+                                              <TableCell
+                                                key={`${key}-${metric}`}
+                                                className="py-2 px-3 border border-gray-300"
+                                              >
+                                                <Input
+                                                  type="text"
+                                                  readOnly
+                                                  value={summary[metric] ?? ""}
+                                                  className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
+                                                />
+                                              </TableCell>
+                                            );
+                                          })}
+                                        </React.Fragment>
+                                      );
+                                    })}
+                                  {["average", "rank", "discipline"].map(
+                                    (metric) => {
+                                      const key = `${record._id}-${term._id}-summary`;
+                                      const summary = studentsMarks[key] ?? {};
+                                      return (
+                                        <TableCell
+                                          key={`${key}-${metric}`}
+                                          className="py-2 px-3 border border-gray-300"
+                                        >
+                                          <Input
+                                            type="text"
+                                            readOnly
+                                            value={summary[metric] ?? ""}
+                                            className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
+                                          />
+                                        </TableCell>
+                                      );
+                                    }
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell
+                            colSpan={
+                              2 +
+                              showTerms.reduce((total, term) => {
+                                const activeSeqCount = showSeq.filter(
+                                  (seq) =>
+                                    seq.isActive && seq.term._id === term._id
+                                ).length;
+                                const activeSubjectsCount = showSubject.filter(
+                                  (s) => s.isActive
+                                ).length;
+                                return (
+                                  total +
+                                  activeSeqCount * (activeSubjectsCount * 3 + 4) // +4 for [Average, Absences, Rank, Discipline]
+                                );
+                              }, 0)
+                            }
+                            className="text-center text-gray-400 italic py-4 border border-gray-300"
+                          >
+                            Aucun étudiant trouvé.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+
+                  {/* 🔁 Pagination */}
+                  <div className="flex justify-between items-center mt-4">
+                    <Button
+                      onClick={goToPreviousPage}
+                      disabled={currentPage === 1}
+                      className="bg-gray-100"
+                    >
+                      Précédent
+                    </Button>
+
+                    <div className="space-x-2">
+                      {Array.from({ length: totalPages }, (_, i) => (
+                        <Button
+                          key={i + 1}
+                          variant={
+                            currentPage === i + 1 ? "default" : "outline"
+                          }
+                          onClick={() => goToPage(i + 1)}
+                        >
+                          {i + 1}
+                        </Button>
+                      ))}
+                    </div>
+
+                    <Button
+                      onClick={goToNextPage}
+                      disabled={currentPage === totalPages}
+                      className="bg-gray-100"
+                    >
+                      Suivant
+                    </Button>
+                  </div>
+                </>
+              )}
+            </>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead
-                      rowSpan={2}
-                      style={{ verticalAlign: "middle", textAlign: "center" }}
-                    >
-                      Matricule
-                    </TableHead>
-                    <TableHead
-                      rowSpan={2}
-                      style={{ verticalAlign: "middle", textAlign: "center" }}
-                    >
-                      Nom complet
-                    </TableHead>
-
-                    {filteredSeq
-                      .filter((s) => s.isActive)
-                      .map((seq) => (
-                        <TableHead
-                          colSpan={3}
-                          key={seq._id}
-                          className="text-center align-middle"
-                        >
-                          <div className="d-flex align-items-center justify-content-center gap-2">
-                            <span>{seq.name}</span>
-                            <Button
-                              size="sm"
-                              className="tooltip-button"
-                              title="Calculate rank"
-                              aria-label={`Calculate rank for ${seq.name}`}
-                              onClick={() => {
-                                /* Add your calculate rank handler here */
-                                calculateRank(
-                                  filter.classes,
-                                  filter.academicYear,
-                                  filter.term,
-                                  seq._id,
-                                  filter.subject
-                                );
-                              }}
-                            >
-                              <Calculator size={16} />
-                              <span className="tooltip-text">
-                                Calculate rank
-                              </span>
-                            </Button>
-                          </div>
-                        </TableHead>
-                      ))}
-                  </TableRow>
-
-                  <TableRow>
-                    {filteredSeq
-                      .filter((s) => s.isActive)
-                      .map((seq) => (
-                        <React.Fragment key={`${seq._id}-subheaders`}>
-                          <TableHead className="text-center">Mark</TableHead>
-                          <TableHead className="text-center">Rank</TableHead>
-                          <TableHead className="text-center">Discipline</TableHead>
-                        </React.Fragment>
-                      ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentData.length > 0 ? (
-                    currentData.map((record, rowIndex) => (
-                      <TableRow
-                        key={record._id}
-                        className={`${
-                          rowIndex % 2 === 0 ? "bg-gray-50" : "bg-white"
-                        } hover:bg-gray-100 transition-colors`}
-                      >
-                        <TableCell className="py-2 px-3 font-medium text-gray-700">
-                          {record?.student?.matricule}
-                        </TableCell>
-                        <TableCell className="py-2 px-3 font-medium text-gray-700">
-                          {record?.student?.fullName ||
-                            `${record.student.firstName} ${record.student.lastName}`}
-                        </TableCell>
-
-                        {filter.subject &&
-                          filteredSeq
-                            .filter((s) => s.isActive)
-                            .map((seq) => (
-                              <React.Fragment key={seq._id}>
-                                <TableCell className="py-2 px-3">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    max="20"
-                                    step="0.01"
-                                    value={(() => {
-                                      const mark = studentsMarks[
-                                        `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
-                                      ]?.marks?.currentMark ?? 0;
-                                  
-                                      const str = mark.toString();
-                                      const decimalPart = str.split('.')[1];
-                                  
-                                      if (decimalPart && decimalPart.length > 2) {
-                                        return mark.toFixed(2);
-                                      }
-                                      return str;
-                                    })()}
-                                    className="w-[10ch] text-center text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    onChange={(e) => {
-                                      handleStudentMarkChange(
-                                        record._id,
-                                        filter.term,
-                                        seq._id,
-                                        filter.subject,
-                                        e.target.value
-                                      );
-                                    }}
-                                    onBlur={(e) => {
-                                      handleMarkUpdate(
-                                        record._id,
-                                        filter.term,
-                                        seq._id,
-                                        filter.subject,
-                                        e.target.value
-                                      );
-                                    }}
-                                  />
-                                </TableCell>
-                                <TableCell className="py-2 px-3">
-                                  <Input
-                                    type="number"
-                                    readOnly
-                                    value={
-                                      studentsMarks[
-                                        `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
-                                      ]?.rank ?? ""
-                                    }
-                                    className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
-                                  />
-                                </TableCell>
-                                <TableCell className="py-2 px-3">
-                                  <Input
-                                    type="text"
-                                    readOnly
-                                    value={
-                                      studentsMarks[
-                                        `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
-                                      ]?.discipline ?? ""
-                                    }
-                                    className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
-                                  />
-                                </TableCell>
-                              </React.Fragment>
-                            ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={sequences.length * 2 + 2}
-                        className="text-center text-gray-400 italic py-4"
-                      >
-                        Aucun étudiant trouvé.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-
-              {/* 🔁 Pagination */}
-              <div className="flex justify-between items-center mt-4">
-                <Button
-                  onClick={goToPreviousPage}
-                  disabled={currentPage === 1}
-                  className="bg-gray-100"
-                >
-                  Précédent
-                </Button>
-
-                <div className="space-x-2">
-                  {Array.from({ length: totalPages }, (_, i) => (
-                    <Button
-                      key={i + 1}
-                      variant={currentPage === i + 1 ? "default" : "outline"}
-                      onClick={() => goToPage(i + 1)}
-                    >
-                      {i + 1}
-                    </Button>
-                  ))}
-                </div>
-
-                <Button
-                  onClick={goToNextPage}
-                  disabled={currentPage === totalPages}
-                  className="bg-gray-100"
-                >
-                  Suivant
-                </Button>
-              </div>
+              {currentData[0] && (
+                <ReportCardManagement
+                  student={currentData[0]}
+                  terms={showTerms}
+                  sequences={showSeq}
+                  subjects={showSubject}
+                  studentMarks={studentsMarks}
+                />
+              )}
             </>
           )}
         </Card>

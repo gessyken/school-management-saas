@@ -1,7 +1,7 @@
 import axios from "@/lib/api"; // Adjust to your axios instance
 
 export interface AcademicSubject {
-  subjectInfo: string;
+  subjectInfo: any;
   isActive: boolean;
   marks: {
     currentMark: number;
