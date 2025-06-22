@@ -66,7 +66,11 @@ const schoolSchema = new mongoose.Schema({
         enum: ['active', 'suspended', 'blocked'],
         default: 'active'
     },
-
+    joinRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    memberShipAccessStatus: {
+        type: Boolean,
+        default: true
+    },
     blockReason: {
         type: String,
         default: ''

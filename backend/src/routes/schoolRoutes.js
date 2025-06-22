@@ -3,7 +3,13 @@ import {
   registerSchool,
   getAllSchools,
   updateSchoolAccess,
-  switchSchool
+  switchSchool,
+  requestJoinSchool,
+  getJoinRequests,
+  approveJoinRequest,
+  rejectJoinRequest,
+  getSchoolById,
+  updateSchool,
 } from '../controllers/schoolController.js';
 import { protect } from '../middleware/auth.middleware.js';
 
@@ -20,5 +26,10 @@ router.put('/:id/access', protect, updateSchoolAccess);
 
 // Switch current active school for logged-in user
 router.post('/switch', protect, switchSchool);
-
+router.post("/:schoolId/request-join", protect, requestJoinSchool);
+router.get("/:schoolId/join-requests", protect, getJoinRequests);
+router.post("/:schoolId/join-requests/:userId/approve", protect, approveJoinRequest);
+router.delete("/:schoolId/join-requests/:userId/reject", protect, rejectJoinRequest);
+router.get("/:schoolId", protect, getSchoolById);
+router.put("/:schoolId", protect, updateSchool);
 export default router;

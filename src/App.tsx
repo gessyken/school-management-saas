@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,6 +28,9 @@ import NotFoundPage from "@/pages/NotFoundPage";
 import ClassesList from "@/pages/director/ClassList";
 import ResultManagement from "./pages/director/ResultManagement";
 import SchoolSelectPage from "./pages/SchoolSelectPage";
+import SchoolDashboardLayout from "./pages/school/SchoolDashboardLayout";
+import EditSchoolPage from "./pages/school/EditSchoolPage";
+import JoinRequestsPage from "./pages/school/JoinRequestsPage";
 
 const queryClient = new QueryClient();
 
@@ -44,15 +46,22 @@ const App = () => (
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/schools-select" element={<SchoolSelectPage />} />
-            
+            <Route path="/school-dashboard" element={<SchoolDashboardLayout />}>
+              {/* <Route path="overview" element={<OverviewPage />} /> */}
+              <Route path="edit" element={<EditSchoolPage />} />
+              <Route path="join-requests" element={<JoinRequestsPage />} />
+              {/* <Route path="members" element={<ManageMembersPage />} /> */}
+              {/* <Route path="billing" element={<BillingPage />} /> */}
+            </Route>
+
             {/* Redirect from root to login */}
             <Route path="/" element={<Navigate to="/login" replace />} />
-            
+
             {/* Director Routes */}
             <Route
               path="/director/dashboard"
               element={
-                <ProtectedRoute allowedRoles={['DIRECTOR']}>
+                <ProtectedRoute allowedRoles={["DIRECTOR"]}>
                   <DirectorDashboard />
                 </ProtectedRoute>
               }
@@ -60,7 +69,7 @@ const App = () => (
             <Route
               path="/director/subjects"
               element={
-                <ProtectedRoute allowedRoles={['DIRECTOR']}>
+                <ProtectedRoute allowedRoles={["DIRECTOR"]}>
                   <SubjectManagement />
                 </ProtectedRoute>
               }
@@ -68,15 +77,15 @@ const App = () => (
             <Route
               path="/director/classes"
               element={
-                <ProtectedRoute allowedRoles={['DIRECTOR']}>
+                <ProtectedRoute allowedRoles={["DIRECTOR"]}>
                   <ClassesManagement />
                 </ProtectedRoute>
               }
             />
-             <Route
+            <Route
               path="/director/results"
               element={
-                <ProtectedRoute allowedRoles={['DIRECTOR']}>
+                <ProtectedRoute allowedRoles={["DIRECTOR"]}>
                   <ResultManagement />
                 </ProtectedRoute>
               }
@@ -84,7 +93,7 @@ const App = () => (
             <Route
               path="/director/classes-list"
               element={
-                <ProtectedRoute allowedRoles={['DIRECTOR']}>
+                <ProtectedRoute allowedRoles={["DIRECTOR"]}>
                   <ClassesList />
                 </ProtectedRoute>
               }
@@ -92,7 +101,7 @@ const App = () => (
             <Route
               path="/director/settings"
               element={
-                <ProtectedRoute allowedRoles={['DIRECTOR']}>
+                <ProtectedRoute allowedRoles={["DIRECTOR"]}>
                   <SettingManagement />
                 </ProtectedRoute>
               }
@@ -100,7 +109,7 @@ const App = () => (
             <Route
               path="/director/students"
               element={
-                <ProtectedRoute allowedRoles={['DIRECTOR']}>
+                <ProtectedRoute allowedRoles={["DIRECTOR"]}>
                   <DirectorStudents />
                 </ProtectedRoute>
               }
@@ -108,7 +117,7 @@ const App = () => (
             <Route
               path="/director/payments"
               element={
-                <ProtectedRoute allowedRoles={['DIRECTOR']}>
+                <ProtectedRoute allowedRoles={["DIRECTOR"]}>
                   <FeesManagement />
                 </ProtectedRoute>
               }
@@ -116,7 +125,7 @@ const App = () => (
             <Route
               path="/director/grades"
               element={
-                <ProtectedRoute allowedRoles={['DIRECTOR']}>
+                <ProtectedRoute allowedRoles={["DIRECTOR"]}>
                   <GradesManagement />
                 </ProtectedRoute>
               }
@@ -124,17 +133,17 @@ const App = () => (
             <Route
               path="/director/statistics"
               element={
-                <ProtectedRoute allowedRoles={['DIRECTOR']}>
+                <ProtectedRoute allowedRoles={["DIRECTOR"]}>
                   <DirectorStatistics />
                 </ProtectedRoute>
               }
             />
-            
+
             {/* Secretary Routes */}
             <Route
               path="/secretary/dashboard"
               element={
-                <ProtectedRoute allowedRoles={['SECRETARY']}>
+                <ProtectedRoute allowedRoles={["SECRETARY"]}>
                   <SecretaryDashboard />
                 </ProtectedRoute>
               }
@@ -142,7 +151,7 @@ const App = () => (
             <Route
               path="/secretary/classes"
               element={
-                <ProtectedRoute allowedRoles={['SECRETARY']}>
+                <ProtectedRoute allowedRoles={["SECRETARY"]}>
                   <SecretaryClasses />
                 </ProtectedRoute>
               }
@@ -150,7 +159,7 @@ const App = () => (
             <Route
               path="/secretary/students"
               element={
-                <ProtectedRoute allowedRoles={['SECRETARY']}>
+                <ProtectedRoute allowedRoles={["SECRETARY"]}>
                   <SecretaryStudents />
                 </ProtectedRoute>
               }
@@ -158,17 +167,17 @@ const App = () => (
             <Route
               path="/secretary/payments"
               element={
-                <ProtectedRoute allowedRoles={['SECRETARY']}>
+                <ProtectedRoute allowedRoles={["SECRETARY"]}>
                   <SecretaryPayments />
                 </ProtectedRoute>
               }
             />
-            
+
             {/* Teacher Routes */}
             <Route
               path="/teacher/dashboard"
               element={
-                <ProtectedRoute allowedRoles={['TEACHER']}>
+                <ProtectedRoute allowedRoles={["TEACHER"]}>
                   <TeacherDashboard />
                 </ProtectedRoute>
               }
@@ -176,7 +185,7 @@ const App = () => (
             <Route
               path="/teacher/classes"
               element={
-                <ProtectedRoute allowedRoles={['TEACHER']}>
+                <ProtectedRoute allowedRoles={["TEACHER"]}>
                   <TeacherClasses />
                 </ProtectedRoute>
               }
@@ -184,12 +193,12 @@ const App = () => (
             <Route
               path="/teacher/grades"
               element={
-                <ProtectedRoute allowedRoles={['TEACHER']}>
+                <ProtectedRoute allowedRoles={["TEACHER"]}>
                   <TeacherGrades />
                 </ProtectedRoute>
               }
             />
-            
+
             {/* Catch-all route - 404 */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

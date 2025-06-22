@@ -47,16 +47,6 @@ export const loginUser = async (req, res) => {
       select: 'name email subdomain accessStatus' // select fields you want to expose
     });
 
-    // Prepare the schools list with roles and status
-    const schools = user.memberships.map(m => ({
-      schoolId: m.school._id,
-      name: m.school.name,
-      email: m.school.email,
-      subdomain: m.school.subdomain,
-      accessStatus: m.school.accessStatus,
-      roles: m.roles,
-      status: m.status
-    }));
 
     // Return user info WITHOUT password, and schools list
     const userData = user.toObject();
@@ -66,9 +56,10 @@ export const loginUser = async (req, res) => {
     // Token without school selected yet, user just logged in
     const token = generateToken(user._id, null);
 
-    res.status(200).json({ token, user: userData, schools });
+    res.status(200).json({ token, user: userData, });
 
   } catch (err) {
+    console.log(err)
     res.status(500).json({ message: 'Login failed', error: err.message });
   }
 };
