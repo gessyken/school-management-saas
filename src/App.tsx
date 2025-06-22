@@ -31,6 +31,7 @@ import SchoolSelectPage from "./pages/SchoolSelectPage";
 import SchoolDashboardLayout from "./pages/school/SchoolDashboardLayout";
 import EditSchoolPage from "./pages/school/EditSchoolPage";
 import JoinRequestsPage from "./pages/school/JoinRequestsPage";
+import ManageMembersPage from "./pages/school/ManageMembersPage";
 
 const queryClient = new QueryClient();
 
@@ -50,7 +51,7 @@ const App = () => (
               {/* <Route path="overview" element={<OverviewPage />} /> */}
               <Route path="edit" element={<EditSchoolPage />} />
               <Route path="join-requests" element={<JoinRequestsPage />} />
-              {/* <Route path="members" element={<ManageMembersPage />} /> */}
+              <Route path="members" element={<ManageMembersPage />} />
               {/* <Route path="billing" element={<BillingPage />} /> */}
             </Route>
 

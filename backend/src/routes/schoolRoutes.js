@@ -10,8 +10,10 @@ import {
   rejectJoinRequest,
   getSchoolById,
   updateSchool,
+  getSchoolMembers,
+  updateMemberRoles,
 } from '../controllers/schoolController.js';
-import { protect } from '../middleware/auth.middleware.js';
+import { getUserRolesForSchool, protect } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -32,4 +34,7 @@ router.post("/:schoolId/join-requests/:userId/approve", protect, approveJoinRequ
 router.delete("/:schoolId/join-requests/:userId/reject", protect, rejectJoinRequest);
 router.get("/:schoolId", protect, getSchoolById);
 router.put("/:schoolId", protect, updateSchool);
+router.get("/:schoolId/members", protect, getSchoolMembers);
+router.patch("/:schoolId/members/:memberId/roles", protect,getUserRolesForSchool, updateMemberRoles);
+
 export default router;

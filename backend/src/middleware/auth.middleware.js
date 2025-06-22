@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import School from '../models/School.js';
 
 export const protect = async (req, res, next) => {
   try {
@@ -15,4 +16,26 @@ export const protect = async (req, res, next) => {
   } catch (err) {
     res.status(401).json({ message: 'Unauthorized', error: err.message });
   }
+};
+
+export const getUserRolesForSchool = async (req, res, next) => {
+  try {
+    const schoolId = req.schoolId
+    const userId = req.userId
+    const school = await School.findById(schoolId);
+    if (!school) return [];
+
+    const user = await User.findById(userId);
+    if (!user) return [];
+
+    const membership = user.memberships?.find(
+      (m) => m.school.toString() === schoolId.toString()
+    );
+
+    req.roles = membership?.roles || [];
+  } catch (error) {
+    console.error("Failed to get user roles:", error);
+    req.roles =[];
+  }
+  next();
 };

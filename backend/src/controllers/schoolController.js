@@ -29,7 +29,7 @@ export const registerSchool = async (req, res) => {
       roles: ['ADMIN', 'DIRECTOR'],
       status: 'active'
     });
-
+    console.log(user.memberships)
     await user.save();
 
     const token = generateToken(user._id, school._id); // now user is tied to school
@@ -282,5 +282,80 @@ export const updateSchool = async (req, res) => {
   } catch (error) {
     console.error("Update school error:", error);
     res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+// GET /api/schools/:schoolId/members
+export const getSchoolMembers = async (req, res) => {
+  const { schoolId } = req.params;
+
+  try {
+    const school = await School.findById(schoolId)
+    .populate("members", "name email roles memberships")
+    .populate("members.memberships", "name email roles");
+
+    if (!school) {
+      return res.status(404).json({ message: "School not found" });
+    }
+
+    res.status(200).json(school.members);
+  } catch (error) {
+    console.error("Error fetching school members:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// PATCH /api/schools/:schoolId/members/:memberId/roles
+export const updateMemberRoles = async (req, res) => {
+  const { schoolId, memberId } = req.params;
+  const { roles } = req.body; // roles: string[] (e.g., ["admin", "teacher"])
+
+  const currentUserId = req.user._id;
+
+  try {
+    const school = await School.findById(schoolId);
+    if (!school) {
+      return res.status(404).json({ message: "School not found" });
+    }
+
+    // Check if the current user is an admin in the school
+    const currentUserMembership = school.members.find((id) => id.toString() === currentUserId.toString());
+    if (!currentUserMembership) {
+      return res.status(403).json({ message: "You are not a member of this school." });
+    }
+
+    const user = await User.findById(currentUserId);
+    const member = await User.findById(memberId);
+    if (!member) return res.status(404).json({ message: "Member not found" });
+
+    const currentUserRoleEntry = user.memberships.find(
+      (m) => m.school.toString() === schoolId.toString()
+    );
+    console.log(currentUserRoleEntry)
+    const memberRoleEntry = member.memberships.find(
+      (m) => m.school.toString() === schoolId.toString()
+    );
+
+    if (!currentUserRoleEntry?.roles?.includes("ADMIN")) {
+      return res.status(403).json({ message: "Only admins can update roles." });
+    }
+
+    if (memberId.toString() === currentUserId.toString()) {
+      return res.status(400).json({ message: "You cannot update your own roles." });
+    }
+
+    // Update roles
+    if (memberRoleEntry) {
+      memberRoleEntry.roles = roles;
+    } else {
+      member.memberships.push({ school: school._id, roles });
+    }
+
+    await member.save();
+
+    res.status(200).json({ message: "Roles updated successfully" });
+  } catch (error) {
+    console.error("Error updating roles:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
