@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Pages
 import LoginPage from "@/pages/LoginPage";
+import RegisterPage from "@/pages/RegisterPage";
 import DirectorDashboard from "@/pages/director/DirectorDashboard";
 import ClassesManagement from "@/pages/director/ClassesManagement";
 import SettingManagement from "@/pages/director/SettingManagement";
@@ -27,6 +28,7 @@ import TeacherGrades from "@/pages/teacher/TeacherGrades";
 import NotFoundPage from "@/pages/NotFoundPage";
 import ClassesList from "@/pages/director/ClassList";
 import ResultManagement from "./pages/director/ResultManagement";
+import SchoolSelectPage from "./pages/SchoolSelectPage";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +42,8 @@ const App = () => (
           <Routes>
             {/* Public route */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/schools-select" element={<SchoolSelectPage />} />
             
             {/* Redirect from root to login */}
             <Route path="/" element={<Navigate to="/login" replace />} />

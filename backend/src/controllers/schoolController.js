@@ -10,8 +10,8 @@ export const registerSchool = async (req, res) => {
 
     const { name, email, phone, address, subdomain } = req.body;
 
-    const existingSchool = await School.findOne({ email });
-    if (existingSchool) return res.status(400).json({ message: 'School already exists' });
+    // const existingSchool = await School.findOne({ email });
+    // if (existingSchool) return res.status(400).json({ message: 'School already exists' });
 
     const school = await School.create({
       name,
@@ -19,6 +19,7 @@ export const registerSchool = async (req, res) => {
       phone,
       address,
       subdomain,
+      members:[user._id],
       createdBy: user._id
     });
 
@@ -34,6 +35,7 @@ export const registerSchool = async (req, res) => {
     const token = generateToken(user._id, school._id); // now user is tied to school
     res.status(201).json({ token, user, school });
   } catch (err) {
+    console.log(err)
     res.status(500).json({ message: 'Failed to create school', error: err.message });
   }
 };
@@ -41,7 +43,8 @@ export const registerSchool = async (req, res) => {
 // Get all schools (for admin panel)
 export const getAllSchools = async (req, res) => {
   try {
-    const schools = await School.find().sort({ createdAt: -1 });
+    const schools = await School.find().sort({ createdAt: -1 })
+    .populate('members');
     res.status(200).json(schools);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch schools', error: err.message });

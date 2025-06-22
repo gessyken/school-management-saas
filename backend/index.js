@@ -4,13 +4,13 @@ import "dotenv/config";
 import cors from "cors";
 // import notFound from "./src/middlewares/notFound.middleware.js";
 import connection from "./src/database/connection.database.mjs";
-import userRoutes from './src/routes/userRoutes.js';
-import studentRoutes from './src/routes/studentRoutes.js';
-import subjectRoutes from './src/routes/subjectRoutes.js';
-import reportCardRoutes from './src/routes/reportCardRoutes.js';
-import academicYearRoutes from './src/routes/academicYearRoutes.js';
-import settingRoutes from './src/routes/settingRoutes.js';
-import classRoutes from './src/routes/classRoutes.js';
+// import userRoutes from './src/routes/userRoutes.js';
+// import studentRoutes from './src/routes/studentRoutes.js';
+// import subjectRoutes from './src/routes/subjectRoutes.js';
+// import reportCardRoutes from './src/routes/reportCardRoutes.js';
+// import academicYearRoutes from './src/routes/academicYearRoutes.js';
+// import settingRoutes from './src/routes/settingRoutes.js';
+// import classRoutes from './src/routes/classRoutes.js';
 import "express-async-errors";
 
 // Create Express app
@@ -45,17 +45,17 @@ app.use((req, res, next) => {
 });
 
 // Register API routes
-app.use('/api/users', userRoutes);
-app.use('/api/students', studentRoutes);
-app.use('/api/subjects', subjectRoutes);
-app.use('/api/report-cards', reportCardRoutes);
-app.use('/api/academic-years', academicYearRoutes);
-app.use('/api/classes', classRoutes);
-app.use('/api/settings', settingRoutes);
+// app.use('/api/users', userRoutes);
+// app.use('/api/students', studentRoutes);
+// app.use('/api/subjects', subjectRoutes);
+// app.use('/api/report-cards', reportCardRoutes);
+// app.use('/api/academic-years', academicYearRoutes);
+// app.use('/api/classes', classRoutes);
+// app.use('/api/settings', settingRoutes);
 
-import schoolRoutes from './routes/schoolRoutes.js';
+import schoolRoutes from './src/routes/schoolRoutes.js';
 app.use('/api/schools', schoolRoutes);
-import authRoutes from './routes/authRoutes.js';
+import authRoutes from './src/routes/authRoutes.js';
 app.use('/api/auth', authRoutes);
 
 // Middleware for handling not found routes

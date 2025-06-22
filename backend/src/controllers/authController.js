@@ -1,5 +1,4 @@
 import User from '../models/User.js';
-import School from '../models/School.js';
 import { generateToken } from '../utils/jwtUtils.js';
 
 // Register a user under a specific school
@@ -30,29 +29,50 @@ export const registerUser = async (req, res) => {
 };
 
 
-// Login a user
 export const loginUser = async (req, res) => {
   try {
-    const { email, password, schoolId } = req.body;
+    const { email, password } = req.body;
 
-    const user = await User.findOne({ email }).select('+password');
+    // Find user and include password for comparison
+    const user = await User.findOne({ email }).select('+password memberships.school memberships.roles ');
     if (!user) return res.status(404).json({ message: 'Invalid credentials' });
 
+    // Verify password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
-    // Ensure user is a member of the school
-    const membership = user.memberships.find(m => m.school.toString() === schoolId);
-    if (!membership) {
-      return res.status(403).json({ message: 'User not registered in this school' });
-    }
+    // Populate memberships.school with school info (name, etc)
+    await user.populate({
+      path: 'memberships.school',
+      select: 'name email subdomain accessStatus' // select fields you want to expose
+    });
 
-    const token = generateToken(user._id, schoolId);
-    res.status(200).json({ token, user });
+    // Prepare the schools list with roles and status
+    const schools = user.memberships.map(m => ({
+      schoolId: m.school._id,
+      name: m.school.name,
+      email: m.school.email,
+      subdomain: m.school.subdomain,
+      accessStatus: m.school.accessStatus,
+      roles: m.roles,
+      status: m.status
+    }));
+
+    // Return user info WITHOUT password, and schools list
+    const userData = user.toObject();
+    delete userData.password;
+    delete userData.security;
+
+    // Token without school selected yet, user just logged in
+    const token = generateToken(user._id, null);
+
+    res.status(200).json({ token, user: userData, schools });
+
   } catch (err) {
     res.status(500).json({ message: 'Login failed', error: err.message });
   }
 };
+
 
 // Get current user (from token)
 export const getMe = async (req, res) => {
