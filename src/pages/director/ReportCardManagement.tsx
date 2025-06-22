@@ -173,7 +173,8 @@ const ReportCardManagement: React.FC<StudentReportCardProps> = ({
   <Table className="min-w-full border border-gray-300">
     <TableHeader className="bg-gray-50">
       <TableRow>
-        <TableHead className="w-1/6 text-gray-700 uppercase tracking-wide text-sm font-semibold">
+        <TableHead
+        className="w-1/6 text-gray-700 uppercase tracking-wide text-sm font-semibold">
           Subject
         </TableHead>
         {terms.map((term) => (
@@ -191,6 +192,12 @@ const ReportCardManagement: React.FC<StudentReportCardProps> = ({
         ))}
       </TableRow>
       <TableRow>
+      <TableHead  className="w-1/6 text-gray-700 uppercase tracking-wide text-sm font-semibold">
+          Name
+        </TableHead>
+      {/* <TableHead  className="w-1/6 text-gray-700 uppercase tracking-wide text-sm font-semibold">
+          Coeff
+        </TableHead> */}
         <TableHead className="bg-gray-100" />
         {terms.map((term) => {
           const termSeqs = sequences.filter(
@@ -231,6 +238,9 @@ const ReportCardManagement: React.FC<StudentReportCardProps> = ({
         >
           <TableCell className="font-semibold text-gray-900">
             {subject.subjectInfo.subjectName}
+          </TableCell>
+          <TableCell className="font-semibold text-gray-900">
+            {subject.coefficient}
           </TableCell>
           {terms.map((term) => {
             const termSeqs = sequences.filter(
@@ -275,7 +285,7 @@ const ReportCardManagement: React.FC<StudentReportCardProps> = ({
 {/* Summary per term */}
 <div className="mt-10 space-y-8">
   {terms.map((term) => {
-    const summaryKey = `${student._id}-${term._id}-term-summary`;
+    const summaryKey = sequences.length===1? `${student._id}-${term._id}-${sequences[0]._id}-summary`: `${student._id}-${term._id}-summary`;
     const termSummary = studentMarks[summaryKey] ?? {};
     return (
       <Card
