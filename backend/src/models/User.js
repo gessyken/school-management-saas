@@ -1,7 +1,7 @@
 
 
-import mongoose from'mongoose';
-import bcrypt  from 'bcrypt';
+import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
 
 const userSchema = new mongoose.Schema({
   firstName: {
@@ -41,7 +41,7 @@ const userSchema = new mongoose.Schema({
   },
   roles: {
     type: [String],
-    enum: ['DIRECTOR' , 'SECRETARY' , 'TEACHER' , 'ADMIN']
+    enum: ['USER', 'ADMIN'], default:'USER'
   },
   security: {
     twoFactorEnabled: { type: Boolean, default: false },
@@ -56,7 +56,28 @@ const userSchema = new mongoose.Schema({
   },
   lastLogin: {
     type: Date
-  }
+  },
+  memberships: [{
+    school: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'School',
+      required: true
+    },
+    roles: [{
+      type: [String],
+      enum: ['DIRECTOR', 'SECRETARY', 'TEACHER', 'ADMIN']
+    }],
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'suspended'],
+      default: 'active'
+    },
+    joinedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
+
 }, {
   timestamps: true,
   toJSON: {
@@ -79,22 +100,22 @@ userSchema.virtual('fullName').get(function () {
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   try {
-      const salt = await bcrypt.genSalt(10);
-      this.password = await bcrypt.hash(this.password, salt);
-      next();
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
   } catch (error) {
-      next(error);
+    next(error);
   }
 });
 
 // Instance method to securely compare passwords.
 userSchema.methods.comparePassword = async function (candidatePassword) {
-    console.log('Comparing passwords...');
-    console.log('Stored Password:', this.password);
-    console.log('Provided Password:', candidatePassword);
-    const isMatch = await bcrypt.compare(candidatePassword, this.password);
-    console.log('Password Match:', isMatch);
-    return isMatch;
+  console.log('Comparing passwords...');
+  console.log('Stored Password:', this.password);
+  console.log('Provided Password:', candidatePassword);
+  const isMatch = await bcrypt.compare(candidatePassword, this.password);
+  console.log('Password Match:', isMatch);
+  return isMatch;
 };
 
 // Virtual to check if the account is locked.
@@ -103,23 +124,23 @@ userSchema.virtual('isLocked').get(function () {
 });
 
 userSchema.methods.incrementLoginAttempts = function () {
-  
+
   if (this.security.lockUntil && this.security.lockUntil < Date.now()) {
     return this.updateOne({
       $set: { 'security.loginAttempts': 1 },
       $unset: { 'security.lockUntil': 1 }
     });
   }
-  
+
   const updates = { $inc: { 'security.loginAttempts': 1 } };
-  
+
   if (this.security.loginAttempts + 1 >= 5 && !this.isLocked) {
     updates.$set = { 'security.lockUntil': Date.now() + (4 * 60 * 60 * 1000) }; // Lock for 4 hours.
   }
 
   return this.updateOne(updates);
 
-};  
+};
 
 const User = mongoose.model('User', userSchema);
 export default User;

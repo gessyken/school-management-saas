@@ -53,6 +53,10 @@ app.use('/api/academic-years', academicYearRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/settings', settingRoutes);
 
+import schoolRoutes from './routes/schoolRoutes.js';
+app.use('/api/schools', schoolRoutes);
+import authRoutes from './routes/authRoutes.js';
+app.use('/api/auth', authRoutes);
 
 // Middleware for handling not found routes
 // app.use(notFound);

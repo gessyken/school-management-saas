@@ -9,7 +9,7 @@ dotenv.config();
 
 const connection = async () => {
     try {
-        const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/mit_project";
+        const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/mit_project_saas";
         
         if (!uri) {
             throw new Error('MONGODB_URI is not defined in environment variables');
