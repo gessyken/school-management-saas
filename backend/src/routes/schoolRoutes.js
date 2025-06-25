@@ -30,10 +30,10 @@ router.put('/:id/access', protect, updateSchoolAccess);
 router.post('/switch', protect, switchSchool);
 router.post("/:schoolId/request-join", protect, requestJoinSchool);
 router.get("/:schoolId/join-requests", protect, getJoinRequests);
-router.post("/:schoolId/join-requests/:userId/approve", protect, approveJoinRequest);
+router.post("/:schoolId/join-requests/:userId/approve", protect,getUserRolesForSchool, approveJoinRequest);
 router.delete("/:schoolId/join-requests/:userId/reject", protect, rejectJoinRequest);
 router.get("/:schoolId", protect, getSchoolById);
-router.put("/:schoolId", protect, updateSchool);
+router.put("/:schoolId", protect,getUserRolesForSchool, updateSchool);
 router.get("/:schoolId/members", protect, getSchoolMembers);
 router.patch("/:schoolId/members/:memberId/roles", protect,getUserRolesForSchool, updateMemberRoles);
 

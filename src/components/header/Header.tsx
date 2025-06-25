@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, RefreshCcwIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,9 +12,10 @@ import {
 import { USER_KEY, TOKEN_KEY } from "@/lib/key";
 
 const Header = () => {
-  const [user, setUser] = useState<{ name?: string; email?: string } | null>(
-    null
-  );
+  const [user, setUser] = useState<{
+    firstName?: string;
+    email?: string;
+  } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,6 +35,10 @@ const Header = () => {
     navigate("/login");
   };
 
+  const handleSchoolChange = () => {
+    navigate("/schools-select");
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -43,6 +48,8 @@ const Header = () => {
       .toUpperCase();
   };
 
+  console.log("user");
+  console.log(user);
   return (
     <header className="w-full bg-white border-b shadow-sm px-6 py-3 flex justify-between items-center">
       <h1 className="text-xl font-bold text-skyblue">My School App</h1>
@@ -52,25 +59,34 @@ const Header = () => {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-gray-100"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-gray-100 focus:outline-none"
             >
               <div className="w-8 h-8 bg-skyblue text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                {getInitials(user.name || "U")}
+                {getInitials(user.firstName || user.email || "U")}
               </div>
-              <span className="hidden sm:inline text-sm font-medium text-gray-700">
-                {user.name}
+              <span className="hidden sm:inline text-sm font-medium text-gray-700 truncate max-w-[100px]">
+                {user.firstName || "Utilisateur"}
               </span>
-              <Menu className="w-4 h-4 ml-1" />
+              <Menu className="w-4 h-4 ml-1 text-gray-500" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <div className="px-3 py-2 text-sm text-gray-600">
-              {user.email}
+
+          <DropdownMenuContent align="end" className="w-56 shadow-lg border">
+            <div className="px-3 py-2 text-sm text-gray-600 break-words border-b">
+              {user.email || "no-email@example.com"}
             </div>
-            <DropdownMenuSeparator />
+
             <DropdownMenuItem
-              className="cursor-pointer text-red-600"
+              onClick={handleSchoolChange}
+              className="cursor-pointer text-sm flex items-center text-gray-700 hover:bg-gray-100"
+            >
+              <RefreshCcwIcon className="w-4 h-4 mr-2 text-blue-500" />
+              Changer d'école
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
               onClick={handleLogout}
+              className="cursor-pointer text-sm flex items-center text-red-600 hover:bg-red-50"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Déconnexion

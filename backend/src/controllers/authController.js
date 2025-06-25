@@ -34,7 +34,7 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     // Find user and include password for comparison
-    const user = await User.findOne({ email }).select('+password memberships.school memberships.roles ');
+    const user = await User.findOne({ email }).select('+password email firstName lastName memberships.school memberships.roles ');
     if (!user) return res.status(404).json({ message: 'Invalid credentials' });
 
     // Verify password

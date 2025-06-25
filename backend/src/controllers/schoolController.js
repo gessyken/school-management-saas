@@ -19,7 +19,7 @@ export const registerSchool = async (req, res) => {
       phone,
       address,
       subdomain,
-      members:[user._id],
+      members: [user._id],
       createdBy: user._id
     });
 
@@ -44,7 +44,7 @@ export const registerSchool = async (req, res) => {
 export const getAllSchools = async (req, res) => {
   try {
     const schools = await School.find().sort({ createdAt: -1 })
-    .populate('members');
+      .populate('members');
     res.status(200).json(schools);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch schools', error: err.message });
@@ -175,6 +175,14 @@ export const approveJoinRequest = async (req, res) => {
     if (!isAdmin) {
       return res.status(403).json({ message: "Accès refusé. Admin requis." });
     }
+    if (
+      school.createdBy.toString() !== userId.toString() &&
+      !req.roles.includes("ADMIN") &&
+      !req.roles.includes("DIRECTOR")
+    ) {
+      console.log("Unauthorized to edit this school.")
+      return res.status(403).json({ message: "Unauthorized to edit this school." });
+    }
 
     if (!school.joinRequests.includes(userId)) {
       return res.status(400).json({ message: "Aucune demande de ce membre." });
@@ -265,9 +273,15 @@ export const updateSchool = async (req, res) => {
     }
 
     // Only creator or admin can update
-    if (school.createdBy.toString() !== userId.toString()) {
+    if (
+      school.createdBy.toString() !== userId.toString() &&
+      !req.roles.includes("ADMIN") &&
+      !req.roles.includes("DIRECTOR")
+    ) {
+      console.log("Unauthorized to edit this school.")
       return res.status(403).json({ message: "Unauthorized to edit this school." });
     }
+
 
     // Apply allowed updates
     const allowedFields = ["name", "email", "phone", "address", "subdomain", "logoUrl"];
@@ -291,8 +305,8 @@ export const getSchoolMembers = async (req, res) => {
 
   try {
     const school = await School.findById(schoolId)
-    .populate("members", "name email roles memberships")
-    .populate("members.memberships", "name email roles");
+      .populate("members", "name email roles memberships")
+      .populate("members.memberships", "name email roles");
 
     if (!school) {
       return res.status(404).json({ message: "School not found" });

@@ -29,6 +29,7 @@ const LoginPage = () => {
       const res = await api.post("/auth/login", { email, password });
       const { token } = res.data;
       const { user } = res.data;
+      console.log(user)
       localStorage.setItem(TOKEN_KEY, token);
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       navigate("/schools-select");

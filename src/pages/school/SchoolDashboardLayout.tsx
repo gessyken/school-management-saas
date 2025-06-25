@@ -12,7 +12,7 @@ const SchoolDashboardLayout = () => {
         </div>
         <nav className="flex-1 p-4 space-y-3 text-sm">
           <NavLink
-            to="/school-dashboard/overview"
+            to="/school-dashboard"
             className={({ isActive }) =>
               `block px-4 py-2 rounded-md transition ${
                 isActive ? "bg-white text-[#1e293b]" : "hover:bg-[#334155]"
