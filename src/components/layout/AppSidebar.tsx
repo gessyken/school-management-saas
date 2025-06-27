@@ -76,7 +76,7 @@ export const AppSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
       )}>
         {!collapsed && (
           <div className="flex items-center">
-            <span className="font-semibold text-lg text-skyblue">MI-TECH</span>
+            <span className="font-semibold text-lg text-skyblue">EDUTRACK</span>
             <span className="ml-1 text-xs bg-mustard text-white px-2 py-0.5 rounded">École</span>
           </div>
         )}

@@ -63,7 +63,7 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Custom colors for MI-TECH
+				// Custom colors for EDUTRACK
 				skyblue: '#33C3F0',
 				mustard: '#E3B505',
 			},

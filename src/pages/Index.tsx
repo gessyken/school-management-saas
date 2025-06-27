@@ -10,7 +10,7 @@ const Index = () => {
       <div className="container mx-auto px-4 py-16">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold text-skyblue mb-4">MI-TECH École</h1>
+          <h1 className="text-4xl font-bold text-skyblue mb-4">EDUTRACK École</h1>
           <p className="text-xl text-muted-foreground">
             Plateforme de gestion scolaire
           </p>
@@ -69,7 +69,7 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="text-center mt-16 text-muted-foreground">
-          <p>© 2024 MI-TECH École. Tous droits réservés.</p>
+          <p>© 2024 EDUTRACK École. Tous droits réservés.</p>
         </footer>
       </div>
     </div>
