@@ -1,19 +1,21 @@
 import express from 'express';
 import AcademicYearController from '../controllers/AcademicYearController.js';
-import { authenticate, authorizeRoles } from '../middleware/auth.middleware.js';
+import { protect, getUserRolesForSchool } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
+router.use(protect);
+router.use(getUserRolesForSchool);
 
 // Academic year routes
 router.post('/assign', AcademicYearController.assignStudentsToClass);
 router.get('/', AcademicYearController.StudentsAcademic);
-router.get('/:id', authenticate, AcademicYearController.getAcademicYearById);
+router.get('/:id', AcademicYearController.getAcademicYearById);
 // router.put('/:id', authenticate, authorizeRoles(['admin']), AcademicYearController.updateAcademicYear);
-router.delete('/:id', authenticate, authorizeRoles(['admin']), AcademicYearController.deleteAcademicYear);
+// router.delete('/:id', authenticate, authorizeRoles(['admin']), AcademicYearController.deleteAcademicYear);
 
 // Mark management routes
 router.put('/:id/marks', AcademicYearController.updateStudentMarks);
-router.put('/:id/calculate-averages', authenticate, AcademicYearController.calculateAverages);
+router.put('/:id/calculate-averages', AcademicYearController.calculateAverages);
 
 // average and rank management
 router.put('/subject-rank', AcademicYearController.calculateSubjectRank);

@@ -10,21 +10,19 @@ import mongoose from 'mongoose';
 class AcademicYearController {
 
   async assignStudentsToClassWithSession(req, res) {
-    const session = await mongoose.startSession(); // Start a new session
+    const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      const { studentList, classId, academicYear } = req.body;
-      console.log(req.body);
+      const { studentList, classId, academicYear, schoolId } = req.body;
 
-      if (!Array.isArray(studentList) || !classId || !academicYear) {
+      if (!Array.isArray(studentList) || !classId || !academicYear || !schoolId) {
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).json({ message: 'Invalid input: studentList, classId, academicYear are required.' });
+        return res.status(400).json({ message: 'Invalid input: studentList, classId, academicYear, and schoolId are required.' });
       }
 
-      const classDoc = await Class.findById(classId);
-      console.log(await Class.find())
+      const classDoc = await Class.findById(classId).session(session);
       if (!classDoc) {
         await session.abortTransaction();
         session.endSession();
@@ -35,16 +33,19 @@ class AcademicYearController {
 
       for (const studentId of studentList) {
         try {
-          const studentDoc = await Student.findById(studentId);
+          const studentDoc = await Student.findById(studentId).session(session);
           if (!studentDoc) {
-            console.log(`Student with id: ${studentId} does not exist`);
             failed.push({ studentId, error: 'Student not found' });
             continue;
           }
 
+          // Find academic year doc filtering by school as well
           let academicDoc = await AcademicYear.findOne({
-            student: studentId, year: academicYear
-          });
+            student: studentId,
+            year: academicYear,
+            school: schoolId
+          }).session(session);
+
           studentDoc.classInfo = classId;
 
           if (!academicDoc) {
@@ -53,22 +54,23 @@ class AcademicYearController {
               year: academicYear,
               classes: classId,
               terms: [],
-              fees: []
+              fees: [],
+              school: schoolId,
             });
-
             await academicDoc.save({ session });
-            classDoc.student.push(academicDoc._id);
+            classDoc.studentList.push(academicDoc._id);
             created++;
           } else {
             academicDoc.classes = classId;
             await academicDoc.save({ session });
-            classDoc.student.push(academicDoc._id);
+            if (!classDoc.studentList.includes(academicDoc._id)) {
+              classDoc.studentList.push(academicDoc._id);
+            }
             updated++;
           }
 
           await studentDoc.save({ session });
         } catch (err) {
-          console.log(err)
           failed.push({ studentId, error: err.message });
         }
       }
@@ -80,18 +82,13 @@ class AcademicYearController {
 
       return res.status(200).json({
         message: 'Academic year processing completed.',
-        summary: {
-          created,
-          updated,
-          failedCount: failed.length,
-          failed
-        }
+        summary: { created, updated, failedCount: failed.length, failed }
       });
 
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
-      console.error('Error in assignStudentsToClass:', error);
+      console.error('Error in assignStudentsToClassWithSession:', error);
       return res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
@@ -99,43 +96,45 @@ class AcademicYearController {
   async assignStudentsToClass(req, res) {
     try {
       const { studentList, classId, academicYear } = req.body;
-      console.log(req.body);
-
-      if (!Array.isArray(studentList) || !classId || !academicYear) {
+      const schoolId = req.schoolId
+      if (!Array.isArray(studentList) || !classId || !academicYear || !schoolId) {
         return res.status(400).json({
-          message: 'Invalid input: studentList, classId, academicYear are required.'
+          message: 'Invalid input: studentList, classId, academicYear, and schoolId are required.'
         });
       }
 
-      const academicDetailDoc = await AcademicYearDetail.findOne({ name: academicYear });
+      const academicDetailDoc = await AcademicYearDetail.findOne({ name: academicYear, school: schoolId });
       if (!academicDetailDoc) {
         return res.status(404).json({ message: 'Academic Year not found.' });
       }
-      if (!academicDetailDoc.isCurrent)
-        return res.status(404).json({ message: 'Academic Year is not active.' });
+      if (!academicDetailDoc.isCurrent) {
+        return res.status(400).json({ message: 'Academic Year is not active.' });
+      }
 
-      const classDoc = await Class.findById(classId);
+      const classDoc = await Class.findOne({ _id: classId, school: schoolId });
       if (!classDoc) {
         return res.status(404).json({ message: 'Class not found.' });
       }
 
       let created = 0, updated = 0, failed = [];
+
       for (const studentId of studentList) {
         try {
-          const studentDoc = await Student.findById(studentId);
+          const studentDoc = await Student.findOne({ _id: studentId, school: schoolId });
           if (!studentDoc) {
-            console.log(`Student with id: ${studentId} does not exist`);
             failed.push({ studentId, error: 'Student not found' });
             continue;
           }
+
           if (studentDoc.level !== classDoc.level) {
-            console.log(`Student ${studentDoc.email} is no in the level for class ${classDoc.className}`);
-            failed.push({ studentId, error: 'Student not found' });
+            failed.push({ studentId, error: `Student level mismatch for class ${classDoc.className}` });
             continue;
           }
+
           let academicDoc = await AcademicYear.findOne({
             student: studentId,
-            year: academicYear
+            year: academicYear,
+            school: schoolId
           });
 
           studentDoc.classInfo = classId;
@@ -146,62 +145,58 @@ class AcademicYearController {
               year: academicYear,
               classes: classId,
               terms: [],
-              fees: []
+              fees: [],
+              school: schoolId,
             });
-
             await academicDoc.save();
             classDoc.studentList.push(academicDoc._id);
             created++;
           } else {
             academicDoc.classes = classId;
             await academicDoc.save();
-            classDoc.studentList.push(academicDoc._id);
+            if (!classDoc.studentList.includes(academicDoc._id)) {
+              classDoc.studentList.push(academicDoc._id);
+            }
             updated++;
           }
 
           await studentDoc.save();
         } catch (err) {
-          console.log(err);
           failed.push({ studentId, error: err.message });
         }
       }
 
       await classDoc.save();
-      console.log(
-        created,
-        updated,
-        failed.length,
-      )
+      console.log(failed)
       return res.status(200).json({
         message: 'Academic year processing completed.',
-        summary: {
-          created,
-          updated,
-          failedCount: failed.length,
-          failed
-        }
+        summary: { created, updated, failedCount: failed.length, failed }
       });
 
     } catch (error) {
       console.error('Error in assignStudentsToClass:', error);
-      return res.status(500).json({
-        message: 'Server error',
-        error: error.message
-      });
+      return res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 
   async StudentsAcademic(req, res) {
     try {
+      const { ...filters } = req.query;
+      const schoolId = req.schoolId
+      if (!schoolId) {
+        return res.status(400).json({ message: 'schoolId query param is required' });
+      }
 
-      const students = await AcademicYear.find(req.query)
+      // Add school filter
+      const query = { school: schoolId, ...filters };
+
+      const students = await AcademicYear.find(query)
         .populate('classes')
-        .populate('student')
-
+        .populate('student');
 
       res.json({ students });
     } catch (error) {
-      console.log(error)
+      console.error('Error in StudentsAcademic:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
@@ -210,27 +205,24 @@ class AcademicYearController {
   async updateStudentMarks(req, res) {
     try {
       const { termInfo, sequenceInfo, subjectInfo, newMark } = req.body;
+      const { id } = req.params;
+      const schoolId = req.schoolId;
 
-      // Find academic year
-      console.log(req.body)
-      const academicYear = await AcademicYear.findById(req.params.id);
+      console.log(req.body);
+
+      // Find academic year filtered by school
+      const academicYear = await AcademicYear.findOne({ _id: id, school: schoolId });
       if (!academicYear) {
-        return res.status(404).json({ message: 'Academic year not found' });
+        return res.status(404).json({ message: 'Academic year not found or not accessible.' });
       }
 
-      // Create modified by object
-      // const modifiedBy = {
-      //   name: `${req.user.firstName} ${req.user.lastName}`,
-      //   userId: req.user.id
-      // };
       const modifiedBy = {
         name: `Jessica Doe`,
         userId: "683cc2c64d5579397f53f727"
       };
-      // Update mark
+
       await academicYear.updateMark(termInfo, sequenceInfo, subjectInfo, newMark, modifiedBy);
 
-      // Recalculate averages
       await academicYear.calculateAverages();
 
       res.json({
@@ -238,7 +230,7 @@ class AcademicYearController {
         academicYear
       });
     } catch (error) {
-      console.log(error)
+      console.log(error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
@@ -246,9 +238,11 @@ class AcademicYearController {
   async getFees(req, res) {
     try {
       const { academicYearId } = req.params;
-      const academicYear = await AcademicYear.findById(academicYearId);
+      const schoolId = req.schoolId;
+
+      const academicYear = await AcademicYear.findOne({ _id: academicYearId, school: schoolId });
       if (!academicYear) {
-        return res.status(404).json({ message: 'Academic year not found' });
+        return res.status(404).json({ message: 'Academic year not found or not accessible.' });
       }
       res.status(200).json(academicYear.fees);
     } catch (error) {
@@ -260,11 +254,12 @@ class AcademicYearController {
   async addFee(req, res) {
     try {
       const { academicYearId } = req.params;
+      const schoolId = req.schoolId;
       const { billID, type, amount, paymentMethod, paymentDate } = req.body;
 
-      const academicYear = await AcademicYear.findById(academicYearId);
+      const academicYear = await AcademicYear.findOne({ _id: academicYearId, school: schoolId });
       if (!academicYear) {
-        return res.status(404).json({ message: 'Academic year not found' });
+        return res.status(404).json({ message: 'Academic year not found or not accessible.' });
       }
 
       const feeExists = academicYear.fees.some(f => f.billID === billID);
@@ -272,18 +267,12 @@ class AcademicYearController {
         return res.status(400).json({ message: 'Fee with this billID already exists' });
       }
 
-      const feeData = {
-        billID,
-        type,
-        amount,
-        paymentMethod,
-        paymentDate
-      };
+      const feeData = { billID, type, amount, paymentMethod, paymentDate };
       await academicYear.addFee(feeData);
 
       res.status(201).json({ message: 'Fee added successfully', fees: academicYear.fees });
     } catch (error) {
-      console.log(error)
+      console.log(error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
@@ -292,11 +281,12 @@ class AcademicYearController {
   async updateFee(req, res) {
     try {
       const { academicYearId, billID } = req.params;
+      const schoolId = req.schoolId;
       const { type, amount, paymentDate, paymentMethod } = req.body;
 
-      const academicYear = await AcademicYear.findById(academicYearId);
+      const academicYear = await AcademicYear.findOne({ _id: academicYearId, school: schoolId });
       if (!academicYear) {
-        return res.status(404).json({ message: 'Academic year not found' });
+        return res.status(404).json({ message: 'Academic year not found or not accessible.' });
       }
 
       const fee = academicYear.fees.find(f => f.billID === billID);
@@ -321,10 +311,11 @@ class AcademicYearController {
   async deleteFee(req, res) {
     try {
       const { academicYearId, billID } = req.params;
+      const schoolId = req.schoolId;
 
-      const academicYear = await AcademicYear.findById(academicYearId);
+      const academicYear = await AcademicYear.findOne({ _id: academicYearId, school: schoolId });
       if (!academicYear) {
-        return res.status(404).json({ message: 'Academic year not found' });
+        return res.status(404).json({ message: 'Academic year not found or not accessible.' });
       }
 
       const initialLength = academicYear.fees.length;
@@ -343,24 +334,23 @@ class AcademicYearController {
 
   async calculateSubjectRank(req, res) {
     try {
-      // Extract parameters from request (query or body)
       const { classId, year, termId, sequenceId, subjectId } = req.body;
+      const schoolId = req.schoolId;
 
-      // Basic validation
       if (!classId || !year || !termId || !sequenceId || !subjectId) {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Call the static method on the model
+      // Pass schoolId to the model static method (you'll need to update model to accept it)
       const result = await AcademicYear.calculateAllRanks(
         classId,
         year,
         termId,
         sequenceId,
-        subjectId
+        subjectId,
+        schoolId
       );
 
-      // Return the ranking result
       return res.status(200).json({
         message: 'Ranks calculated successfully',
         ranks: result
@@ -373,25 +363,24 @@ class AcademicYearController {
       });
     }
   }
+
   async calculateSequenceRank(req, res) {
     try {
-      // Extract parameters from request (query or body)
       const { classId, year, termId, sequenceId } = req.body;
+      const schoolId = req.schoolId;
 
-      // Basic validation
       if (!classId || !year || !termId || !sequenceId) {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Call the static method on the model
       const result = await AcademicYear.calculateSequenceRank(
         classId,
         year,
         termId,
         sequenceId,
+        schoolId
       );
 
-      // Return the ranking result
       return res.status(200).json({
         message: 'Ranks calculated successfully',
         ranks: result
@@ -404,24 +393,23 @@ class AcademicYearController {
       });
     }
   }
+
   async calculateTermRank(req, res) {
     try {
-      // Extract parameters from request (query or body)
       const { classId, year, termId } = req.body;
+      const schoolId = req.schoolId;
 
-      // Basic validation
       if (!classId || !year || !termId) {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Call the static method on the model
       const result = await AcademicYear.calculateTermRank(
         classId,
         year,
         termId,
+        schoolId
       );
 
-      // Return the ranking result
       return res.status(200).json({
         message: 'Ranks calculated successfully',
         ranks: result
@@ -434,23 +422,22 @@ class AcademicYearController {
       });
     }
   }
+
   async calculateRanksForClassYear(req, res) {
     try {
-      // Extract parameters from request (query or body)
       const { classId, year } = req.body;
+      const schoolId = req.schoolId;
 
-      // Basic validation
       if (!classId || !year) {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Call the static method on the model
       const result = await AcademicYear.calculateRanksForClassYear(
         classId,
         year,
+        schoolId
       );
 
-      // Return the ranking result
       return res.status(200).json({
         message: 'Ranks calculated successfully',
         ranks: result
@@ -463,17 +450,16 @@ class AcademicYearController {
       });
     }
   }
+
   async promoteStudents(req, res) {
     try {
-      // Extract parameters from request (query or body)
-      const { classId, year } = req.body;
+      const { classId, year, currentLevel, passedLevel, newYear, passedClassId, failClassId } = req.body;
+      const schoolId = req.schoolId;
 
-      // Basic validation
-      if (!classId || !year) {
+      if (!classId || !year || !currentLevel || !passedLevel || !newYear || !passedClassId || !failClassId) {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Call the static method on the model
       await AcademicYear.promoteStudents(
         classId,
         year,
@@ -481,17 +467,17 @@ class AcademicYearController {
         passedLevel,
         newYear,
         passedClassId,
-        failClassId
+        failClassId,
+        schoolId
       );
 
-      // Return the ranking result
       return res.status(200).json({
         message: 'Students promoted successfully',
       });
     } catch (error) {
-      console.error('Error calculating ranks:', error);
+      console.error('Error promoting students:', error);
       return res.status(500).json({
-        error: 'An error occurred while calculating ranks',
+        error: 'An error occurred while promoting students',
         details: error.message
       });
     }

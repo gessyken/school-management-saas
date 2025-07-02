@@ -72,7 +72,7 @@ const feeSchema = new mongoose.Schema({
     billID: {
         type: String,
         trim: true,
-        unique: true,
+        // unique: true,
     },
     type: {
         type: String,
@@ -93,6 +93,11 @@ const academicYearSchema = new mongoose.Schema({
     student: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Student',
+        required: true
+    },
+    school: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School',
         required: true
     },
     year: {
@@ -123,11 +128,18 @@ const academicYearSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
+academicYearSchema.path('fees').validate(function (fees) {
+  const billIDs = fees.map(f => f.billID);
+  const uniqueBillIDs = new Set(billIDs);
+  return billIDs.length === uniqueBillIDs.size;
+}, 'Duplicate billID found in fees');
+
 // Create indexes for academic year schema
-academicYearSchema.index({ student: 1, year: 1 }, { unique: true });
+academicYearSchema.index({ student: 1, year: 1, school: 1 }, { unique: true });
 academicYearSchema.index({ year: 1 });
 academicYearSchema.index({ hasCompleted: 1 });
 academicYearSchema.index({ "terms.average": 1 });
+academicYearSchema.index({ school: 1 });
 
 // Virtual field for calculating overall average across all terms
 academicYearSchema.virtual('overallAverage').get(function () {
