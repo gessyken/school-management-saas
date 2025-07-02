@@ -11,6 +11,7 @@ import subjectRoutes from './src/routes/subjectRoutes.js';
 import academicYearRoutes from './src/routes/academicYearRoutes.js';
 import settingRoutes from './src/routes/settingRoutes.js';
 import classRoutes from './src/routes/classRoutes.js';
+import logRoutes from './src/routes/logRoutes.js';
 import "express-async-errors";
 
 // Create Express app
@@ -44,6 +45,9 @@ app.use((req, res, next) => {
     next();
 });
 
+// 🔥 Add global request logger
+app.use(requestLogger);
+
 // Register API routes
 app.use('/api/users', userRoutes);
 app.use('/api/students', studentRoutes);
@@ -52,10 +56,12 @@ app.use('/api/subjects', subjectRoutes);
 app.use('/api/academic-years', academicYearRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/settings', settingRoutes);
+app.use('/api/logs', logRoutes);
 
 import schoolRoutes from './src/routes/schoolRoutes.js';
 app.use('/api/schools', schoolRoutes);
 import authRoutes from './src/routes/authRoutes.js';
+import { requestLogger } from "./src/middleware/requestLogger.js";
 app.use('/api/auth', authRoutes);
 
 // Middleware for handling not found routes

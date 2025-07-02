@@ -76,12 +76,12 @@ const SchoolSelectPage = () => {
     fetchSchools();
   }, []);
 
-  const handleSwitchSchool = async (schoolId: string) => {
+  const handleSwitchSchool = async (school: School) => {
     setSwitchLoading(true);
     try {
-      const res = await api.post("/schools/switch", { schoolId });
+      const res = await api.post("/schools/switch", { schoolId: school._id });
       localStorage.setItem(TOKEN_KEY, res.data.token);
-      localStorage.setItem(SCHOOL_KEY, schoolId);
+      localStorage.setItem(SCHOOL_KEY, JSON.stringify(school));
       navigate("/school-dashboard");
     } catch {
       toast({
@@ -135,7 +135,9 @@ const SchoolSelectPage = () => {
       <div className="w-full max-w-6xl mx-auto space-y-10 mt-6">
         {loading && (
           <div>
-            <p className="text-skyblue font-medium mb-2">Chargement des écoles...</p>
+            <p className="text-skyblue font-medium mb-2">
+              Chargement des écoles...
+            </p>
             <Progress value={progress} className="h-2 bg-gray-200" />
           </div>
         )}
@@ -192,7 +194,7 @@ const SchoolSelectPage = () => {
                       </CardHeader>
                       <CardContent>
                         <Button
-                          onClick={() => handleSwitchSchool(school._id)}
+                          onClick={() => handleSwitchSchool(school)}
                           className="w-full"
                           disabled={switchLoading}
                         >

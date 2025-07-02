@@ -20,12 +20,13 @@ interface JoinRequestsPageProps {
 const JoinRequestsPage = () => {
   const navigate = useNavigate();
   const schoolId: String | null = (() => {
-    const stored = localStorage.getItem(SCHOOL_KEY);
-    if (!stored) {
-      navigate("/schools-select");
-    }
-    return stored ? stored : null;
-  })();
+      const stored = localStorage.getItem(SCHOOL_KEY);
+      if (!stored) {
+        navigate("/schools-select");
+      }
+      let schoolObj = JSON.parse(stored)
+      return schoolObj ? schoolObj._id : null;
+    })();
   const [requests, setRequests] = useState<UserRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);

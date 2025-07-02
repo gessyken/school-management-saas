@@ -30,7 +30,8 @@ const EditSchoolPage = () => {
     if (!stored) {
       navigate("/schools-select");
     }
-    return stored ? stored : null;
+    let schoolObj = JSON.parse(stored)
+    return schoolObj ? schoolObj._id : null;
   })();
 
   const { toast } = useToast();

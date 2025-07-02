@@ -9,12 +9,16 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { USER_KEY, TOKEN_KEY } from "@/lib/key";
+import { USER_KEY, TOKEN_KEY, SCHOOL_KEY } from "@/lib/key";
 
 const Header = () => {
   const [user, setUser] = useState<{
     firstName?: string;
     email?: string;
+  } | null>(null);
+  const [school, setSchool] = useState<{
+    name?: string;
+    _id?: string;
   } | null>(null);
   const navigate = useNavigate();
 
@@ -25,6 +29,14 @@ const Header = () => {
         setUser(JSON.parse(storedUser));
       } catch {
         setUser(null);
+      }
+    }
+     const storedSchool = localStorage.getItem(SCHOOL_KEY);
+    if (storedSchool) {
+      try {
+        setSchool(JSON.parse(storedSchool));
+      } catch {
+        setSchool(null);
       }
     }
   }, []);
@@ -52,7 +64,7 @@ const Header = () => {
   console.log(user);
   return (
     <header className="w-full bg-white border-b shadow-sm px-6 py-3 flex justify-between items-center">
-      <h1 className="text-xl font-bold text-skyblue">My School App</h1>
+      <h1 className="text-xl font-bold text-skyblue">{school?.name}</h1>
 
       {user && (
         <DropdownMenu>

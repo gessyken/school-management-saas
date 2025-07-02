@@ -1,9 +1,40 @@
 import Classes from '../models/Classes.js';
 import Subject from '../models/Subject.js';
 import Student from '../models/Student.js';
-import AcademicYear  from '../models/AcademicYear.js';
+import AcademicYear from '../models/AcademicYear.js';
 
 class ClassController {
+  // Get all classes for school
+  async getAllClasses(req, res) {
+    try {
+      const { year, status } = req.query;
+      const schoolId = req.schoolId;
+
+      const query = { school: schoolId };
+      if (year) query.year = year;
+      if (status) query.status = status;
+
+      const classes = await Classes.find(query)
+        .populate('subjects.subjectInfo')
+        .populate('subjects.teacherInfo')
+        .populate('mainTeacherInfo');
+      // Enhanced logging
+      req.log = {
+        action: 'VIEW',
+        module: 'Classes',
+        description: `Fetched classes for school ${schoolId}`,
+        metadata: {
+          filterYear: year || 'all',
+          filterStatus: status || 'all',
+          count: classes.length
+        }
+      }
+      res.json({ classes });
+    } catch (error) {
+      console.error("Fetch classes error:", error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
   // Create class
   async createClass(req, res) {
     try {
@@ -48,6 +79,18 @@ class ClassController {
       });
 
       await newClass.save();
+      await newClass.populate('school', 'name');
+
+      await req.log({
+        action: 'CREATE',
+        module: 'Classes',
+        description: `Created new class '${classesName}' for school ${newClass.school.name}`,
+        metadata: {
+          classId: newClass._id,
+          level,
+          year
+        }
+      });
 
       res.status(201).json({
         message: 'Class created successfully',
@@ -55,28 +98,6 @@ class ClassController {
       });
     } catch (error) {
       console.error("Create class error:", error);
-      res.status(500).json({ message: 'Server error', error: error.message });
-    }
-  }
-
-  // Get all classes for school
-  async getAllClasses(req, res) {
-    try {
-      const { year, status } = req.query;
-      const schoolId = req.schoolId;
-
-      const query = { school: schoolId };
-      if (year) query.year = year;
-      if (status) query.status = status;
-
-      const classes = await Classes.find(query)
-        .populate('subjects.subjectInfo')
-        .populate('subjects.teacherInfo')
-        .populate('mainTeacherInfo');
-
-      res.json({ classes });
-    } catch (error) {
-      console.error("Fetch classes error:", error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
@@ -95,6 +116,13 @@ class ClassController {
       if (!classData) {
         return res.status(404).json({ message: 'Class not found' });
       }
+
+      await req.log({
+        action: 'VIEW',
+        module: 'Classes',
+        description: `Viewed class ${classData.classesName}`,
+        metadata: { classId: req.params.id }
+      });
 
       res.json({ class: classData });
     } catch (error) {
@@ -153,6 +181,12 @@ class ClassController {
         .populate('subjects.subjectInfo')
         .populate('subjects.teacherInfo')
         .populate('mainTeacherInfo');
+      await req.log({
+        action: 'UPDATE',
+        module: 'Classes',
+        description: `Updated class ${updated.classesName}`,
+        metadata: { updatedFields: Object.keys(req.body) }
+      });
 
       res.json({ message: 'Class updated successfully', class: updated });
     } catch (error) {
@@ -176,6 +210,12 @@ class ClassController {
       );
 
       await classData.remove();
+      await req.log({
+        action: 'DELETE',
+        module: 'Class',
+        description: `Deleted class ${classData.classesName}`,
+        metadata: { classId: req.params.id }
+      });
 
       res.json({ message: 'Class deleted successfully' });
     } catch (error) {
@@ -243,6 +283,12 @@ class ClassController {
       }
 
       await classData.save();
+      await req.log({
+        action: 'UPDATE',
+        module: 'Class',
+        description: `Updated subjects in class ${classData.classesName}`,
+        metadata: req.body
+      });
 
       res.json({
         message: 'Subjects processed successfully',
@@ -292,6 +338,12 @@ class ClassController {
       }
 
       await classData.save();
+      await req.log({
+        action: 'UPDATE',
+        module: 'Class',
+        description: `Updated subject ${subjectId} in class ${classData.classesName}`,
+        metadata: { coefficient, teacherInfo }
+      });
 
       res.json({
         message: 'Subject updated successfully',
@@ -320,6 +372,12 @@ class ClassController {
       );
 
       await classData.save();
+      await req.log({
+        action: 'DELETE',
+        module: 'Class',
+        description: `Removed subject ${subjectId} from class ${classId}`,
+        metadata: {}
+      });
 
       res.json({
         message: 'Subject removed from class successfully',
@@ -362,6 +420,12 @@ class ClassController {
       // Update student with class reference
       student.classes = classId;
       await student.save();
+      await req.log({
+        action: 'UPDATE',
+        module: 'Class',
+        description: `Added student ${studentId} to class ${classId}`,
+        metadata: { studentId }
+      });
 
       res.json({
         message: 'Student added to class successfully',
@@ -397,6 +461,12 @@ class ClassController {
         { _id: studentId, school: schoolId },
         { $unset: { classes: "" } }
       );
+      await req.log({
+        action: 'UPDATE',
+        module: 'Class',
+        description: `Removed student ${studentId} from class ${classId}`,
+        metadata: { studentId }
+      });
 
       res.json({
         message: 'Student removed from class successfully',
@@ -555,6 +625,16 @@ class ClassController {
           };
         }
       }
+      await req.log({
+        action: 'VIEW',
+        module: 'Class',
+        description: `Fetched performance analytics for class ${classId} - year ${year}`,
+        metadata: {
+          studentCount: academicYears.length,
+          classId,
+          year
+        }
+      });
 
       res.json({ classPerformance: classStats });
     } catch (error) {

@@ -38,6 +38,7 @@ import SchoolDashboardLayout from "./pages/school/SchoolDashboardLayout";
 import EditSchoolPage from "./pages/school/EditSchoolPage";
 import JoinRequestsPage from "./pages/school/JoinRequestsPage";
 import ManageMembersPage from "./pages/school/ManageMembersPage";
+import SchoolLogsPage from "./pages/school/LogPage";
 
 const queryClient = new QueryClient();
 
@@ -69,7 +70,8 @@ const App = () => (
               <Route path="edit" element={<EditSchoolPage />} />
               <Route path="join-requests" element={<JoinRequestsPage />} />
               <Route path="members" element={<ManageMembersPage />} />
-              {/* <Route path="billing" element={<BillingPage />} /> */}
+              <Route path="billing" element={<h1>Billing Logic</h1>} />
+              <Route path="logs" element={<SchoolLogsPage />} />
             </Route>
 
             {/* Redirect from root to login */}

@@ -54,6 +54,7 @@ class SubjectController {
   async getAllSubjects(req, res) {
     try {
       const subjects = await Subject.find({ school: req.schoolId });
+      req.result = "anderson"
       res.json({ subjects });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
