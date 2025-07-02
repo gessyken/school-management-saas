@@ -1,7 +1,10 @@
 import express from 'express';
 import settingController from '../controllers/SettingController.js';
+import { protect, getUserRolesForSchool } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
+router.use(protect);
+router.use(getUserRolesForSchool);
 
 // Academic Year
 router.post('/academic-year', settingController.createAcademicYear);

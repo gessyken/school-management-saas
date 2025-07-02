@@ -467,97 +467,149 @@ export default function StudentManagement() {
 
         {loading ? (
           <div className="flex justify-center items-center p-8">
-            <Loader2 className="animate-spin h-6 w-6 text-gray-500" />
+            <Loader2 className="animate-spin h-8 w-8 text-gray-400" />
           </div>
         ) : (
           <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Matricule</TableHead>
-                  <TableHead>Nom complet</TableHead>
-                  <TableHead>classe</TableHead>
-                  <TableHead>Niveau</TableHead>
-                  <TableHead>Sexe</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentData.length > 0 ? (
-                  currentData.map((student) => (
-                    <TableRow key={student._id}>
-                      <TableCell>{student.matricule}</TableCell>
-                      <TableCell>
-                        {student.fullName ||
-                          `${student.firstName} ${student.lastName}`}
-                      </TableCell>
-                      <TableCell>
-                        {student?.classInfo?.classesName || "N/A"}
-                      </TableCell>
-                      <TableCell>{student.level}</TableCell>
-                      <TableCell>{student.gender}</TableCell>
-                      <TableCell>{student.status}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => openModal("view", student)}
+            <div className="overflow-x-auto rounded-lg shadow border border-gray-200">
+              <Table className="min-w-full divide-y divide-gray-200">
+                <TableHeader className="bg-gray-50">
+                  <TableRow>
+                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Matricule
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Nom complet
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Classe
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Niveau
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Sexe
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Statut
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="bg-white divide-y divide-gray-200">
+                  {currentData.length > 0 ? (
+                    currentData.map((student) => (
+                      <TableRow
+                        key={student._id}
+                        className="hover:bg-gray-50 transition"
+                      >
+                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {student.matricule}
+                        </TableCell>
+                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {student.fullName ||
+                            `${student.firstName} ${student.lastName}`}
+                        </TableCell>
+                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {student?.classInfo?.classesName || "N/A"}
+                        </TableCell>
+                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {student.level}
+                        </TableCell>
+                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 capitalize">
+                          {student.gender}
+                        </TableCell>
+                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span
+                            className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${
+                              student.status === "active"
+                                ? "bg-green-100 text-green-800"
+                                : student.status === "suspended"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {student.status}
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                              >
+                                <MoreHorizontal className="w-5 h-5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className="shadow-lg rounded-md border border-gray-200"
                             >
-                              <Eye className="w-4 h-4 mr-2" /> Voir
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleOpenModal(student)}
-                            >
-                              <Pencil className="w-4 h-4 mr-2" /> Modifier
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(student._id)}
-                            >
-                              <Trash className="w-4 h-4 mr-2 text-red-500" />{" "}
-                              Supprimer
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              <DropdownMenuItem
+                                onClick={() => openModal("view", student)}
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                              >
+                                <Eye className="w-4 h-4 text-blue-600" /> Voir
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleOpenModal(student)}
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-yellow-50 cursor-pointer"
+                              >
+                                <Pencil className="w-4 h-4 text-yellow-600" />{" "}
+                                Modifier
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(student._id)}
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 cursor-pointer text-red-600"
+                              >
+                                <Trash className="w-4 h-4" /> Supprimer
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="px-6 py-4 text-center text-sm text-gray-500"
+                      >
+                        Aucun étudiant trouvé.
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="text-center text-muted-foreground"
-                    >
-                      Aucun étudiant trouvé.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-            <div className="flex justify-between items-center mt-4">
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            <nav
+              className="flex items-center justify-between mt-6 px-4 py-3 bg-white border border-gray-200 rounded-md shadow-sm"
+              aria-label="Pagination"
+            >
               <button
-                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
                 onClick={goToPreviousPage}
                 disabled={currentPage === 1}
+                className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Précédent
               </button>
 
-              <div className="space-x-2">
+              <div className="hidden sm:flex space-x-2">
                 {Array.from({ length: totalPages }, (_, index) => (
                   <button
                     key={index + 1}
-                    className={`px-3 py-1 rounded ${
+                    onClick={() => goToPage(index + 1)}
+                    className={`relative inline-flex items-center px-3 py-1 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${
                       currentPage === index + 1
                         ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-800"
+                        : "bg-white text-gray-700 hover:bg-gray-100"
                     }`}
-                    onClick={() => goToPage(index + 1)}
                   >
                     {index + 1}
                   </button>
@@ -565,15 +617,16 @@ export default function StudentManagement() {
               </div>
 
               <button
-                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
                 onClick={goToNextPage}
                 disabled={currentPage === totalPages}
+                className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Suivant
               </button>
-            </div>
+            </nav>
           </>
         )}
+
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 overflow-y-auto">
             <div className="bg-white rounded-lg w-full max-w-3xl mx-4 my-8 shadow-lg max-h-screen overflow-hidden">

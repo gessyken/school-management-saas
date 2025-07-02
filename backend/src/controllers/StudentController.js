@@ -5,7 +5,9 @@ import Classes from '../models/Classes.js';
 
 // List of required fields for a student creation
 const validateRequiredFields = (data) => {
-  const requiredFields = ['matricule', 'firstName', 'lastName', 'email', 'level', 'dateOfBirth', 'school'];
+  const requiredFields = ['matricule', 'firstName',
+     'lastName', 'email', 'level', 'dateOfBirth',
+      'school'];
   const missingFields = requiredFields.filter(field => !data[field]);
   return missingFields;
 };
@@ -51,6 +53,7 @@ class StudentController {
   async createManyStudents(req, res) {
     try {
       const studentsArray = req.body?.students;
+      // console.log(req.body)
 
       if (!Array.isArray(studentsArray) || studentsArray.length === 0) {
         return res.status(400).json({ message: 'Request body must be a non-empty array of students' });
@@ -80,6 +83,11 @@ class StudentController {
           errors.push({ index: i, error: error.message });
         }
       }
+      console.log( // 207 Multi-Status to show partial success/fail
+        // message: `${savedStudents.length} students created, ${errors.length} errors`,
+        // savedStudents,
+        errors[0]
+      )
       res.status(207).json({ // 207 Multi-Status to show partial success/fail
         message: `${savedStudents.length} students created, ${errors.length} errors`,
         savedStudents,
