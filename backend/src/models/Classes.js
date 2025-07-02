@@ -1,66 +1,92 @@
 import mongoose from 'mongoose';
 
-const classesSchema = new mongoose.Schema({
-    classesName: {
-        type: String,
-        trim: true
-    },
-    description: {
-        type: String,
-        trim: true
-    },
-    status: {
-        type: String,
-        enum: ['Open', 'Closed'],
-    },
-    capacity: {
-        type: Number,
-    },
-    amountFee: {
-        type: Number,
-    },
-    subjects: [{
-        subjectInfo: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Subject'
-        },
-        coefficient: { type: Number, default: 0, min: 0, max: 100 },
-        isActive: {
-            type: Boolean,
-            default: true 
-        },
-        teacherInfo: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-    }, { _id: false }],
-    studentList: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Student'
+const classSchema = new mongoose.Schema({
+  school: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    required: true,
+    index: true
+  },
 
-    }],
-    mainTeacherInfo: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+  className: {
+    type: String,
+    required: true,
+    trim: true
+  },
+
+  description: {
+    type: String,
+    trim: true
+  },
+
+  status: {
+    type: String,
+    enum: ['Open', 'Closed'],
+    default: 'Open'
+  },
+
+  capacity: {
+    type: Number,
+    min: 1
+  },
+
+  amountFee: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
+
+  subjects: [{
+    subjectInfo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Subject',
+      required: true
     },
-    year: {
-        type: String,
-        required: false,
-        unique: false,
-        match: [/^\d{4}-\d{4}$/, 'Academic year must be in format YYYY-YYYY'],
-        trim: true
+    coefficient: {
+      type: Number,
+      default: 1,
+      min: 0,
+      max: 100
     },
-    level: {
-        type: String,
-        enum: ['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth', 'Upper Sixth'],
-        required: true
+    isActive: {
+      type: Boolean,
+      default: true
     },
+    teacherInfo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  }],
+
+  studentList: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Student'
+  }],
+
+  mainTeacherInfo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+
+  year: {
+    type: String,
+    match: [/^\d{4}-\d{4}$/, 'Academic year must be in format YYYY-YYYY'],
+    required: true,
+    trim: true
+  },
+
+  level: {
+    type: String,
+    required: true,
+    enum: ['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth', 'Upper Sixth']
+  }
+
 }, {
-    timestamps: true
+  timestamps: true
 });
 
+// Composite index to ensure uniqueness of class within the school and academic year
+classSchema.index({ school: 1, className: 1, year: 1 }, { unique: true });
 
-
-const Classes = mongoose.model('Classes', classesSchema);
-
+const Classes = mongoose.model('Classes', classSchema);
 export default Classes;

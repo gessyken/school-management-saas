@@ -2,7 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -48,6 +54,17 @@ const App = () => (
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/schools-select" element={<SchoolSelectPage />} />
             <Route path="/school-dashboard" element={<SchoolDashboardLayout />}>
+              <Route path="academic" element={<Outlet />}>
+                <Route path="classes" element={<ClassesManagement />} />
+                <Route path="subjects" element={<SubjectManagement />} />
+                <Route path="results" element={<ResultManagement />} />
+                <Route path="students" element={<DirectorStudents />} />
+                <Route path="classes-list" element={<ClassesList />} />
+                <Route path="settings" element={<SettingManagement />} />
+                <Route path="payments" element={<FeesManagement />} />
+                <Route path="grades" element={<GradesManagement />} />
+                <Route path="statistics" element={<DirectorStatistics />} />
+              </Route>
               {/* <Route path="overview" element={<OverviewPage />} /> */}
               <Route path="edit" element={<EditSchoolPage />} />
               <Route path="join-requests" element={<JoinRequestsPage />} />

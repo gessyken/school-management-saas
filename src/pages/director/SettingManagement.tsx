@@ -57,34 +57,30 @@ const SettingManagement = () => {
   };
 
   return (
-    <AppLayout>
-      <Card className="m-4 shadow-lg border">
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-xl font-bold">
-            Settings Management
-          </CardTitle>
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="flex gap-2">
-              {tabs.map((tab) => (
-                <Button
-                  key={tab.key}
-                  variant={tab.key === activeTab ? "default" : "outline"}
-                  onClick={() => handleTabChange(tab.key)}
-                >
-                  {tab.label}
-                </Button>
-              ))}
-            </div>
+    <Card className="m-4 shadow-lg border">
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <CardTitle className="text-xl font-bold">Settings Management</CardTitle>
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="flex gap-2">
+            {tabs.map((tab) => (
+              <Button
+                key={tab.key}
+                variant={tab.key === activeTab ? "default" : "outline"}
+                onClick={() => handleTabChange(tab.key)}
+              >
+                {tab.label}
+              </Button>
+            ))}
           </div>
-        </CardHeader>
+        </div>
+      </CardHeader>
 
-        <CardContent className="grid gap-4">
-          {activeTab === "academic" && <AcademicYearManagement />}
-          {activeTab === "term" && <TermManagement />}
-          {activeTab === "sequence" && <SequenceManagement />}
-        </CardContent>
-      </Card>
-    </AppLayout>
+      <CardContent className="grid gap-4">
+        {activeTab === "academic" && <AcademicYearManagement />}
+        {activeTab === "term" && <TermManagement />}
+        {activeTab === "sequence" && <SequenceManagement />}
+      </CardContent>
+    </Card>
   );
 };
 

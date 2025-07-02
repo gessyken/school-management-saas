@@ -4,7 +4,7 @@ import Student from '../models/Student.js';
 import AcademicYear  from '../models/AcademicYear.js';
 
 class ClassController {
-  // Class management
+  // Create class
   async createClass(req, res) {
     try {
       const {
@@ -19,18 +19,22 @@ class ClassController {
         year
       } = req.body;
 
-      // Validate subjects if provided
+      const schoolId = req.schoolId;
+
+      if (!schoolId) return res.status(403).json({ message: "School context missing" });
+
+      // Validate subjects
       if (subjects && subjects.length > 0) {
         for (const subject of subjects) {
-          const subjectExists = await Subject.findById(subject.subjectInfo);
-          if (!subjectExists) {
-            return res.status(404).json({ message: `Subject with ID ${subject.subjectInfo} not found` });
+          const exists = await Subject.findOne({ _id: subject.subjectInfo, school: schoolId });
+          if (!exists) {
+            return res.status(404).json({ message: `Subject ID ${subject.subjectInfo} not found for this school` });
           }
         }
       }
 
-      // Create new class
       const newClass = new Classes({
+        school: schoolId,
         classesName,
         description,
         status: status || 'Open',
@@ -50,16 +54,18 @@ class ClassController {
         class: newClass
       });
     } catch (error) {
+      console.error("Create class error:", error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 
+  // Get all classes for school
   async getAllClasses(req, res) {
     try {
       const { year, status } = req.query;
+      const schoolId = req.schoolId;
 
-      // Build query
-      const query = {};
+      const query = { school: schoolId };
       if (year) query.year = year;
       if (status) query.status = status;
 
@@ -70,99 +76,159 @@ class ClassController {
 
       res.json({ classes });
     } catch (error) {
+      console.error("Fetch classes error:", error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 
+  // Get single class by ID
   async getClassById(req, res) {
     try {
-      const classData = await Classes.findById(req.params.id)
+      const classData = await Classes.findOne({ _id: req.params.id, school: req.schoolId })
         .populate('subjects.subjectInfo')
         .populate('mainTeacherInfo')
         .populate({
-          path: 'studentList', populate: { path: 'user', model: 'User', select: 'firstName lastName email' }
+          path: 'studentList',
+          populate: { path: 'user', model: 'User', select: 'firstName lastName email' }
         });
 
       if (!classData) {
         return res.status(404).json({ message: 'Class not found' });
       }
+
       res.json({ class: classData });
     } catch (error) {
+      console.error("Get class error:", error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 
+  // Update class
   async updateClass(req, res) {
     try {
-      const { classesName, description, status, capacity,level, amountFee, mainTeacherInfo,subjects, year } = req.body;
+      const {
+        classesName,
+        description,
+        status,
+        capacity,
+        level,
+        amountFee,
+        mainTeacherInfo,
+        subjects,
+        year
+      } = req.body;
 
-      const updatedClass = await Classes.findByIdAndUpdate(req.params.id,
-        { classesName, description, status, capacity,level, amountFee, mainTeacherInfo,subjects, year },
-        { new: true })
+      const schoolId = req.schoolId;
+
+      const existingClass = await Classes.findOne({ _id: req.params.id, school: schoolId });
+      if (!existingClass) {
+        return res.status(404).json({ message: 'Class not found' });
+      }
+
+      // Validate subject references
+      if (subjects && subjects.length > 0) {
+        for (const subject of subjects) {
+          const validSubject = await Subject.findOne({ _id: subject.subjectInfo, school: schoolId });
+          if (!validSubject) {
+            return res.status(404).json({ message: `Invalid subject ID ${subject.subjectInfo} for this school` });
+          }
+        }
+      }
+
+      const updated = await Classes.findByIdAndUpdate(
+        req.params.id,
+        {
+          classesName,
+          description,
+          status,
+          capacity,
+          level,
+          amountFee,
+          mainTeacherInfo,
+          subjects,
+          year
+        },
+        { new: true }
+      )
         .populate('subjects.subjectInfo')
         .populate('subjects.teacherInfo')
         .populate('mainTeacherInfo');
 
-      if (!updatedClass) {
+      res.json({ message: 'Class updated successfully', class: updated });
+    } catch (error) {
+      console.error("Update class error:", error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
+  // Delete class
+  async deleteClass(req, res) {
+    try {
+      const classData = await Classes.findOne({ _id: req.params.id, school: req.schoolId });
+      if (!classData) {
         return res.status(404).json({ message: 'Class not found' });
       }
 
-      res.json({
-        message: 'Class updated successfully',
-        class: updatedClass
-      });
-    } catch (error) {
-      res.status(500).json({ message: 'Server error', error: error.message });
-    }
-  }
+      // Remove class reference from students
+      await Student.updateMany(
+        { classes: req.params.id },
+        { $pull: { classes: req.params.id } }
+      );
 
-  async deleteClass(req, res) {
-    try {
-      const classData = await Classes.findById(req.params.id); if (!classData) { return res.status(404).json({ message: 'Class not found' }); }
-
-      // Update students to remove class reference 
-      await Student.updateMany({ classes: req.params.id }, { $unset: { classes: "" } });
-      // Delete class
-      await Classes.findByIdAndDelete(req.params.id);
+      await classData.remove();
 
       res.json({ message: 'Class deleted successfully' });
     } catch (error) {
+      console.error("Delete class error:", error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
-
   }
 
-  // Subject management within class 
+  // Add or update multiple subjects in class
   async addSubjectsToClass(req, res) {
     try {
-      const { subjects } = req.body; // subjects: [{ subjectInfo, coefficient, teacherInfo }, ...]
+      const { subjects } = req.body; // array of { subjectInfo, coefficient, teacherInfo }
+      const schoolId = req.schoolId;
+      const classId = req.params.id;
 
       if (!Array.isArray(subjects) || subjects.length === 0) {
         return res.status(400).json({ message: 'Subjects array is required and cannot be empty.' });
       }
 
-      const classData = await Classes.findById(req.params.id);
+      const classData = await Classes.findOne({ _id: classId, school: schoolId });
       if (!classData) {
-        return res.status(404).json({ message: 'Class not found' });
+        return res.status(404).json({ message: 'Class not found for this school.' });
       }
 
       for (const item of subjects) {
         const { subjectInfo, coefficient, teacherInfo } = item;
 
-        const subject = await Subject.findById(subjectInfo);
+        // Validate subject belongs to school
+        const subject = await Subject.findOne({ _id: subjectInfo, school: schoolId });
         if (!subject) {
-          continue; // Skip if subject doesn't exist
+          console.warn(`Subject ${subjectInfo} not found or does not belong to school ${schoolId}`);
+          continue; // Skip invalid subject
         }
 
+        // Validate teacher belongs to school if provided
+        if (teacherInfo) {
+          const teacher = await User.findOne({ _id: teacherInfo, school: schoolId });
+          if (!teacher) {
+            console.warn(`Teacher ${teacherInfo} not found or does not belong to school ${schoolId}`);
+            continue; // Skip invalid teacher
+          }
+        }
+
+        // Find existing subject index in class
         const subjectIndex = classData.subjects.findIndex(
-          s => s.subjectInfo.toString() === subjectInfo
+          (s) => s.subjectInfo.toString() === subjectInfo.toString()
         );
 
         if (subjectIndex === -1) {
           // Add new subject
           classData.subjects.push({
             subjectInfo,
-            coefficient: coefficient || 1,
+            coefficient: coefficient ?? 1,
             teacherInfo
           });
         } else {
@@ -183,33 +249,44 @@ class ClassController {
         class: classData
       });
     } catch (error) {
+      console.error("addSubjectsToClass error:", error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 
+  // Update one subject details in a class
   async updateSubjectInClass(req, res) {
     try {
       const { subjectId } = req.params;
       const { coefficient, teacherInfo } = req.body;
+      const schoolId = req.schoolId;
+      const classId = req.params.id;
 
-      const classData = await Classes.findById(req.params.id);
+      const classData = await Classes.findOne({ _id: classId, school: schoolId });
       if (!classData) {
-        return res.status(404).json({ message: 'Class not found' });
+        return res.status(404).json({ message: 'Class not found for this school.' });
       }
-      // Find subject in class
+
+      // Find subject index
       const subjectIndex = classData.subjects.findIndex(
-        s => s._id.toString() === subjectId
+        (s) => s._id.toString() === subjectId.toString()
       );
 
       if (subjectIndex === -1) {
         return res.status(404).json({ message: 'Subject not found in this class' });
       }
 
-      // Update subject
+      // Validate teacher if updating teacherInfo
+      if (teacherInfo) {
+        const teacher = await User.findOne({ _id: teacherInfo, school: schoolId });
+        if (!teacher) {
+          return res.status(404).json({ message: 'Teacher not found or does not belong to this school.' });
+        }
+      }
+
       if (coefficient !== undefined) {
         classData.subjects[subjectIndex].coefficient = coefficient;
       }
-
       if (teacherInfo !== undefined) {
         classData.subjects[subjectIndex].teacherInfo = teacherInfo;
       }
@@ -221,21 +298,25 @@ class ClassController {
         class: classData
       });
     } catch (error) {
+      console.error("updateSubjectInClass error:", error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
+
+  // Remove subject from class
   async removeSubjectFromClass(req, res) {
     try {
       const { subjectId } = req.params;
+      const schoolId = req.schoolId;
+      const classId = req.params.id;
 
-      const classData = await Classes.findById(req.params.id);
+      const classData = await Classes.findOne({ _id: classId, school: schoolId });
       if (!classData) {
-        return res.status(404).json({ message: 'Class not found' });
+        return res.status(404).json({ message: 'Class not found for this school.' });
       }
-      console.log(subjectId)
-      // Remove subject from class
+
       classData.subjects = classData.subjects.filter(
-        s => s.subjectInfo.toString() !== subjectId
+        (s) => s.subjectInfo.toString() !== subjectId.toString()
       );
 
       await classData.save();
@@ -245,26 +326,32 @@ class ClassController {
         class: classData
       });
     } catch (error) {
+      console.error("removeSubjectFromClass error:", error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 
-  // Student management within class 
+  // Add student to class
   async addStudentToClass(req, res) {
     try {
       const { studentId } = req.body;
+      const schoolId = req.schoolId;
+      const classId = req.params.id;
 
-      // Validate student 
-      const student = await Student.findById(studentId); if (!student) { return res.status(404).json({ message: 'Student not found' }); }
-      // Validate class
-      const classData = await Classes.findById(req.params.id);
+      // Validate student within the same school
+      const student = await Student.findOne({ _id: studentId, school: schoolId });
+      if (!student) {
+        return res.status(404).json({ message: 'Student not found or does not belong to your school.' });
+      }
+
+      // Validate class within the same school
+      const classData = await Classes.findOne({ _id: classId, school: schoolId });
       if (!classData) {
-        return res.status(404).json({ message: 'Class not found' });
+        return res.status(404).json({ message: 'Class not found or does not belong to your school.' });
       }
 
       // Check if student already in class
-      const studentExists = classData.studentList.includes(studentId);
-      if (studentExists) {
+      if (classData.studentList.some((id) => id.toString() === studentId.toString())) {
         return res.status(400).json({ message: 'Student already in this class' });
       }
 
@@ -273,7 +360,7 @@ class ClassController {
       await classData.save();
 
       // Update student with class reference
-      student.classes = req.params.id;
+      student.classes = classId;
       await student.save();
 
       res.json({
@@ -281,25 +368,33 @@ class ClassController {
         class: classData
       });
     } catch (error) {
+      console.error("addStudentToClass error:", error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
+
+  // Remove student from class
   async removeStudentFromClass(req, res) {
     try {
       const { studentId } = req.params;
+      const schoolId = req.schoolId;
+      const classId = req.params.id;
 
-      // Validate class 
-      const classData = await Classes.findById(req.params.id); if (!classData) { return res.status(404).json({ message: 'Class not found' }); }
-      // Remove student from class
+      // Validate class within school
+      const classData = await Classes.findOne({ _id: classId, school: schoolId });
+      if (!classData) {
+        return res.status(404).json({ message: 'Class not found or does not belong to your school.' });
+      }
+
+      // Remove student from class list
       classData.studentList = classData.studentList.filter(
-        s => s.toString() !== studentId
+        (id) => id.toString() !== studentId.toString()
       );
-
       await classData.save();
 
       // Update student to remove class reference
-      await Student.findByIdAndUpdate(
-        studentId,
+      await Student.findOneAndUpdate(
+        { _id: studentId, school: schoolId },
         { $unset: { classes: "" } }
       );
 
@@ -308,26 +403,33 @@ class ClassController {
         class: classData
       });
     } catch (error) {
+      console.error("removeStudentFromClass error:", error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 
-  // Class performance analytics 
+  // Get class performance analytics for a given academic year
   async getClassPerformanceAnalytics(req, res) {
     try {
-      const { id } = req.params; const { year } = req.query;
+      const classId = req.params.id;
+      const { year } = req.query;
+      const schoolId = req.schoolId;
 
-      if (!year) { return res.status(400).json({ message: 'Year parameter is required' }); }
-      // Validate class
-      const classData = await Classes.findById(id);
-      if (!classData) {
-        return res.status(404).json({ message: 'Class not found' });
+      if (!year) {
+        return res.status(400).json({ message: 'Year parameter is required' });
       }
 
-      // Get all academic years for students in this class
+      // Validate class belongs to school
+      const classData = await Classes.findOne({ _id: classId, school: schoolId });
+      if (!classData) {
+        return res.status(404).json({ message: 'Class not found or does not belong to your school.' });
+      }
+
+      // Fetch academic records for the class and year, including student user info
       const academicYears = await AcademicYear.find({
-        classes: id,
-        year
+        classes: classId,
+        year,
+        school: schoolId
       }).populate({
         path: 'student',
         populate: {
@@ -338,10 +440,10 @@ class ClassController {
       });
 
       if (!academicYears.length) {
-        return res.status(404).json({ message: 'No academic records found for this class' });
+        return res.status(404).json({ message: 'No academic records found for this class and year' });
       }
 
-      // Calculate class statistics
+      // Initialize class stats
       const classStats = {
         totalStudents: academicYears.length,
         averagePerformance: 0,
@@ -355,18 +457,17 @@ class ClassController {
         subjectPerformance: {}
       };
 
-      // Calculate overall statistics
       let totalAverage = 0;
       let passingCount = 0;
 
+      // Calculate overall statistics
       for (const ay of academicYears) {
-        totalAverage += ay.overallAverage;
+        totalAverage += ay.overallAverage || 0;
 
         if (ay.hasCompleted) {
           passingCount++;
         }
 
-        // Count by performance level
         if (ay.overallAverage >= 16) {
           classStats.excellentStudents++;
         } else if (ay.overallAverage >= 14) {
@@ -382,14 +483,14 @@ class ClassController {
       classStats.passingRate = parseFloat(((passingCount / academicYears.length) * 100).toFixed(2));
       classStats.failingRate = parseFloat((100 - classStats.passingRate).toFixed(2));
 
-      // Calculate term performance
+      // Calculate term performance averages
       if (academicYears[0].terms && academicYears[0].terms.length > 0) {
         for (let i = 0; i < academicYears[0].terms.length; i++) {
           let termTotal = 0;
           let termCount = 0;
 
           for (const ay of academicYears) {
-            if (ay.terms[i] && ay.terms[i].average) {
+            if (ay.terms[i] && typeof ay.terms[i].average === 'number') {
               termTotal += ay.terms[i].average;
               termCount++;
             }
@@ -404,59 +505,60 @@ class ClassController {
         }
       }
 
-      // Calculate subject performance
-      // This requires deeper analysis of sequences and subjects
-      // We'll focus on the first term's first sequence for simplicity
-      if (academicYears[0].terms &&
+      // Calculate subject performance based on first term & first sequence for simplicity
+      if (
+        academicYears[0].terms &&
         academicYears[0].terms[0] &&
         academicYears[0].terms[0].sequences &&
-        academicYears[0].terms[0].sequences[0]) {
+        academicYears[0].terms[0].sequences[0] &&
+        academicYears[0].terms[0].sequences[0].subjects
+      ) {
+        const firstSequenceSubjects = academicYears[0].terms[0].sequences[0].subjects;
 
-        const firstSequence = academicYears[0].terms[0].sequences[0];
+        for (let i = 0; i < firstSequenceSubjects.length; i++) {
+          const subjectInfo = firstSequenceSubjects[i].subjectInfo;
 
-        if (firstSequence.subjects && firstSequence.subjects.length > 0) {
-          for (let i = 0; i < firstSequence.subjects.length; i++) {
-            const subjectInfo = firstSequence.subjects[i].subjectInfo;
+          if (!subjectInfo) continue;
 
-            if (!subjectInfo) continue;
+          let subjectName = 'Unknown Subject';
+          if (typeof subjectInfo === 'object' && subjectInfo.subjectName) {
+            subjectName = subjectInfo.subjectName;
+          }
 
-            let subjectName = 'Unknown Subject';
-            if (typeof subjectInfo === 'object' && subjectInfo.subjectName) {
-              subjectName = subjectInfo.subjectName;
-            }
+          let subjectTotal = 0;
+          let subjectCount = 0;
+          let passingSubjectCount = 0;
 
-            let subjectTotal = 0;
-            let subjectCount = 0;
-            let passingSubjectCount = 0;
+          for (const ay of academicYears) {
+            if (
+              ay.terms[0] &&
+              ay.terms[0].sequences[0] &&
+              ay.terms[0].sequences[0].subjects[i] &&
+              typeof ay.terms[0].sequences[0].subjects[i].marks?.currentMark === 'number'
+            ) {
+              const mark = ay.terms[0].sequences[0].subjects[i].marks.currentMark;
+              subjectTotal += mark;
+              subjectCount++;
 
-            for (const ay of academicYears) {
-              if (ay.terms[0] &&
-                ay.terms[0].sequences[0] &&
-                ay.terms[0].sequences[0].subjects[i]) {
-
-                const mark = ay.terms[0].sequences[0].subjects[i].marks.currentMark;
-                subjectTotal += mark;
-                subjectCount++;
-
-                if (mark >= 10) {
-                  passingSubjectCount++;
-                }
+              if (mark >= 10) {
+                passingSubjectCount++;
               }
             }
-
-            const subjectAvg = subjectCount > 0 ? parseFloat((subjectTotal / subjectCount).toFixed(2)) : 0;
-            const subjectPassRate = subjectCount > 0 ? parseFloat(((passingSubjectCount / subjectCount) * 100).toFixed(2)) : 0;
-
-            classStats.subjectPerformance[subjectName] = {
-              average: subjectAvg,
-              passingRate: subjectPassRate
-            };
           }
+
+          const subjectAvg = subjectCount > 0 ? parseFloat((subjectTotal / subjectCount).toFixed(2)) : 0;
+          const subjectPassRate = subjectCount > 0 ? parseFloat(((passingSubjectCount / subjectCount) * 100).toFixed(2)) : 0;
+
+          classStats.subjectPerformance[subjectName] = {
+            average: subjectAvg,
+            passingRate: subjectPassRate
+          };
         }
       }
 
       res.json({ classPerformance: classStats });
     } catch (error) {
+      console.error("getClassPerformanceAnalytics error:", error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }

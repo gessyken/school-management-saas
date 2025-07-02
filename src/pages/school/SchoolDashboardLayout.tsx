@@ -1,6 +1,105 @@
-// SchoolDashboardLayout.tsx
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import Header from "@/components/header/Header";
+import {
+  ChevronDown,
+  ChevronRight,
+  Users,
+  BookOpen,
+  CreditCard,
+  GraduationCap,
+  BarChart3,
+  Settings,
+  LogOut,
+  Newspaper,
+} from "lucide-react";
+
+interface SidebarItem {
+  label: string;
+  icon?: React.ElementType;
+  path?: string;
+  children?: SidebarItem[];
+}
+
+const sidebarTabs: SidebarItem[] = [
+  {
+    label: "Overview",
+    path: "/school-dashboard",
+  },
+  {
+    label: "Academic",
+    children: [
+      { label: "Classes", path: "/school-dashboard/academic/classes", icon: BookOpen },
+      { label: "Subject", path: "/school-dashboard/academic/subjects", icon: BookOpen },
+      { label: "Result", path: "/school-dashboard/academic/results", icon: Newspaper },
+      { label: "Élèves", path: "/school-dashboard/academic/students", icon: Users },
+      { label: "Classes List", path: "/school-dashboard/academic/classes-list", icon: Users },
+      { label: "Settings", path: "/school-dashboard/academic/settings", icon: Settings },
+      { label: "Paiements", path: "/school-dashboard/academic/payments", icon: CreditCard },
+      { label: "Notes", path: "/school-dashboard/academic/grades", icon: GraduationCap },
+      { label: "Statistiques", path: "/school-dashboard/academic/statistics", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Settings",
+    children: [
+      { label: "Edit School", path: "/school-dashboard/edit", icon: Settings },
+      { label: "Join Requests", path: "/school-dashboard/join-requests", icon: Users },
+      { label: "Members", path: "/school-dashboard/members", icon: Users },
+      { label: "Billing", path: "/school-dashboard/billing", icon: CreditCard },
+    ],
+  },
+];
+
+const SidebarMenuItem = ({ item }: { item: SidebarItem }) => {
+  const [open, setOpen] = useState(false);
+  const isExpandable = item.children && item.children.length > 0;
+
+  return (
+    <div className="space-y-1">
+      {isExpandable ? (
+        <button
+          onClick={() => setOpen((prev) => !prev)}
+          className="w-full text-left px-4 py-2 flex items-center justify-between rounded-md hover:bg-[#334155] transition"
+        >
+          <span className="font-medium">{item.label}</span>
+          {open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </button>
+      ) : (
+        <NavLink
+          to={item.path!}
+          className={({ isActive }) =>
+            `flex items-center gap-2 px-4 py-2 rounded-md transition ${
+              isActive ? "bg-white text-[#1e293b]" : "hover:bg-[#334155]"
+            }`
+          }
+        >
+          {item.icon && <item.icon className="w-4 h-4" />}
+          {item.label}
+        </NavLink>
+      )}
+
+      {isExpandable && open && (
+        <div className="ml-4 mt-1 space-y-1">
+          {item.children?.map((child) => (
+            <NavLink
+              key={child.path}
+              to={child.path!}
+              className={({ isActive }) =>
+                `flex items-center gap-2 px-4 py-1.5 text-sm rounded-md transition ${
+                  isActive ? "bg-white text-[#1e293b]" : "hover:bg-[#334155]"
+                }`
+              }
+            >
+              {child.icon && <child.icon className="w-4 h-4" />}
+              {child.label}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SchoolDashboardLayout = () => {
   return (
@@ -10,65 +109,15 @@ const SchoolDashboardLayout = () => {
         <div className="p-6 text-xl font-bold border-b border-gray-700">
           🎓 School Admin
         </div>
+
         <nav className="flex-1 p-4 space-y-3 text-sm">
-          <NavLink
-            to="/school-dashboard"
-            className={({ isActive }) =>
-              `block px-4 py-2 rounded-md transition ${
-                isActive ? "bg-white text-[#1e293b]" : "hover:bg-[#334155]"
-              }`
-            }
-          >
-            Overview
-          </NavLink>
-
-          <NavLink
-            to="/school-dashboard/edit"
-            className={({ isActive }) =>
-              `block px-4 py-2 rounded-md transition ${
-                isActive ? "bg-white text-[#1e293b]" : "hover:bg-[#334155]"
-              }`
-            }
-          >
-            ✏️ Edit School
-          </NavLink>
-
-          <NavLink
-            to="/school-dashboard/join-requests"
-            className={({ isActive }) =>
-              `block px-4 py-2 rounded-md transition ${
-                isActive ? "bg-white text-[#1e293b]" : "hover:bg-[#334155]"
-              }`
-            }
-          >
-            📬 Join Requests
-          </NavLink>
-
-          <NavLink
-            to="/school-dashboard/members"
-            className={({ isActive }) =>
-              `block px-4 py-2 rounded-md transition ${
-                isActive ? "bg-white text-[#1e293b]" : "hover:bg-[#334155]"
-              }`
-            }
-          >
-            👥 Members
-          </NavLink>
-
-          <NavLink
-            to="/school-dashboard/billing"
-            className={({ isActive }) =>
-              `block px-4 py-2 rounded-md transition ${
-                isActive ? "bg-white text-[#1e293b]" : "hover:bg-[#334155]"
-              }`
-            }
-          >
-            💳 Billing
-          </NavLink>
+          {sidebarTabs.map((tab) => (
+            <SidebarMenuItem key={tab.label} item={tab} />
+          ))}
         </nav>
 
         <div className="p-4 text-xs text-center border-t border-gray-700">
-          &copy; 2025  School Management
+          &copy; 2025 School Management
         </div>
       </aside>
 

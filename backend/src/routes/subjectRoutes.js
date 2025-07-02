@@ -1,8 +1,13 @@
 import express from 'express';
 import SubjectController from '../controllers/SubjectController.js';
+import { protect, getUserRolesForSchool } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
+// Apply middleware to all subject routes
+router.use(protect, getUserRolesForSchool);
+
+// Routes
 router.post('/', SubjectController.createSubject);
 router.post('/bulk', SubjectController.createManySubjects);
 router.get('/', SubjectController.getAllSubjects);

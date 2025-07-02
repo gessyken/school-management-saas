@@ -339,281 +339,277 @@ export default function ClassesList() {
     }
   };
   return (
-    <AppLayout>
-      <div className="p-4 space-y-4">
-        <h1 className="text-2xl font-bold">Class List Management</h1>
-        <Card className="p-4">
-          <div className="space-y-6">
-            {/* Top Bar: Search + Actions */}
-            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-              <Input
-                placeholder="Rechercher une matière..."
-                className="md:w-1/3 w-full"
-                onChange={handleSearch}
-                value={searchTerm}
-              />
+    <div className="p-4 space-y-4">
+      <h1 className="text-2xl font-bold">Class List Management</h1>
+      <Card className="p-4">
+        <div className="space-y-6">
+          {/* Top Bar: Search + Actions */}
+          <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+            <Input
+              placeholder="Rechercher une matière..."
+              className="md:w-1/3 w-full"
+              onChange={handleSearch}
+              value={searchTerm}
+            />
 
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  onClick={exportExcel}
-                  className="flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Excel
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={exportPDF}
-                  className="flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  PDF
-                </Button>
-              </div>
+            <div className="flex flex-wrap gap-2">
               <Button
-                variant={activeTab ? "default" : "outline"}
-                onClick={() =>
-                  handleTabChange(activeTab === "" ? "assign-student" : "")
-                }
+                variant="outline"
+                onClick={exportExcel}
+                className="flex items-center gap-2"
               >
-                {activeTab === "" ? "Assign Student" : "view list"}
+                <Download className="h-4 w-4" />
+                Excel
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={exportPDF}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                PDF
+              </Button>
+            </div>
+            <Button
+              variant={activeTab ? "default" : "outline"}
+              onClick={() =>
+                handleTabChange(activeTab === "" ? "assign-student" : "")
+              }
+            >
+              {activeTab === "" ? "Assign Student" : "view list"}
+            </Button>
+          </div>
+
+          {/* Filter Section */}
+          <div className="bg-white p-6 rounded-xl shadow border">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">Filtres</h2>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  goToPage(1);
+                  setSearchTerm("");
+                  setFilter({
+                    level: "",
+                    academicYear: filter.academicYear,
+                    status: "",
+                    classes: "",
+                  });
+                  setSelectedStudents([]);
+                }}
+                className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                Réinitialiser
               </Button>
             </div>
 
-            {/* Filter Section */}
-            <div className="bg-white p-6 rounded-xl shadow border">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">Filtres</h2>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Niveau
+                </label>
+                <select
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={filter.level}
+                  onChange={(e) => {
                     goToPage(1);
-                    setSearchTerm("");
-                    setFilter({
-                      level: "",
-                      academicYear: filter.academicYear,
-                      status: "",
-                      classes: "",
-                    });
+                    setFilter({ ...filter, level: e.target.value });
+                    console.log("filteredStudents", filteredStudents);
                     setSelectedStudents([]);
                   }}
-                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                  Réinitialiser
-                </Button>
+                  <option value="">Tous</option>
+                  <option value="Form 1">Form 1</option>
+                  <option value="Form 2">Form 2</option>
+                  <option value="Form 3">Form 3</option>
+                  <option value="Form 4">Form 4</option>
+                  <option value="Form 5">Form 5</option>
+                  <option value="Lower Sixth">Lower Sixth</option>
+                  <option value="Upper Sixth">Upper Sixth</option>
+                </select>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-700">
-                    Niveau
-                  </label>
-                  <select
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={filter.level}
-                    onChange={(e) => {
-                      goToPage(1);
-                      setFilter({ ...filter, level: e.target.value });
-                      console.log("filteredStudents", filteredStudents);
-                      setSelectedStudents([]);
-                    }}
-                  >
-                    <option value="">Tous</option>
-                    <option value="Form 1">Form 1</option>
-                    <option value="Form 2">Form 2</option>
-                    <option value="Form 3">Form 3</option>
-                    <option value="Form 4">Form 4</option>
-                    <option value="Form 5">Form 5</option>
-                    <option value="Lower Sixth">Lower Sixth</option>
-                    <option value="Upper Sixth">Upper Sixth</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-700">
-                    Classes
-                  </label>
-                  <select
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                    value={filter.classes}
-                    onChange={(e) => {
-                      const classId = e.target.value;
-                      setFilter({ ...filter, classes: classId });
-                    }}
-                  >
-                    <option value="">Tous</option>
-                    {filteredClasses.map((item) => (
-                      <option key={item._id} value={item._id}>
-                        {item.classesName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-700">
-                    Academic Year
-                  </label>
-                  <select
-                    required
-                    value={filter.academicYear}
-                    onChange={(e) => {
-                      const yearId = e.target.value;
-                      setFilter({ ...filter, academicYear: yearId });
-                    }}
-                    className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="" disabled>
-                      Select Academic Year
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Classes
+                </label>
+                <select
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  value={filter.classes}
+                  onChange={(e) => {
+                    const classId = e.target.value;
+                    setFilter({ ...filter, classes: classId });
+                  }}
+                >
+                  <option value="">Tous</option>
+                  {filteredClasses.map((item) => (
+                    <option key={item._id} value={item._id}>
+                      {item.classesName}
                     </option>
-                    {academicYears.map((year) => (
-                      <option key={year._id} value={year.name}>
-                        {year.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Academic Year
+                </label>
+                <select
+                  required
+                  value={filter.academicYear}
+                  onChange={(e) => {
+                    const yearId = e.target.value;
+                    setFilter({ ...filter, academicYear: yearId });
+                  }}
+                  className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="" disabled>
+                    Select Academic Year
+                  </option>
+                  {academicYears.map((year) => (
+                    <option key={year._id} value={year.name}>
+                      {year.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
-          {activeTab === "" ? (
-            <>
-              {loading ? (
-                <div className="flex justify-center items-center p-8">
-                  <Loader2 className="animate-spin h-6 w-6 text-gray-500" />
-                </div>
-              ) : (
-                <>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Matricule</TableHead>
-                        <TableHead>Nom complet</TableHead>
-                        <TableHead>classe</TableHead>
-                        <TableHead>Niveau</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {currentData.length > 0 ? (
-                        currentData.map((academic) => (
-                          <TableRow key={academic._id}>
-                            <TableCell>
-                              {academic?.student?.matricule}
-                            </TableCell>
-                            <TableCell>
-                              {academic?.student?.fullName ||
-                                `${academic?.student?.firstName} ${academic?.student?.lastName}`}
-                            </TableCell>
-                            <TableCell>
-                              {academic?.classes?.classesName || "N/A"}
-                            </TableCell>
-                            <TableCell>{academic?.student?.level}</TableCell>
-                            <TableCell>{academic?.student?.status}</TableCell>
-                            <TableCell>
-                              <button
-                                onClick={() => handleOpenPaymentForm(academic)} // Replace row._id with the academic year or student ID
-                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded"
-                              >
-                                Add Payment
-                              </button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell
-                            colSpan={7}
-                            className="text-center text-muted-foreground"
-                          >
-                            Aucun étudiant trouvé.
+        </div>
+        {activeTab === "" ? (
+          <>
+            {loading ? (
+              <div className="flex justify-center items-center p-8">
+                <Loader2 className="animate-spin h-6 w-6 text-gray-500" />
+              </div>
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Matricule</TableHead>
+                      <TableHead>Nom complet</TableHead>
+                      <TableHead>classe</TableHead>
+                      <TableHead>Niveau</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {currentData.length > 0 ? (
+                      currentData.map((academic) => (
+                        <TableRow key={academic._id}>
+                          <TableCell>{academic?.student?.matricule}</TableCell>
+                          <TableCell>
+                            {academic?.student?.fullName ||
+                              `${academic?.student?.firstName} ${academic?.student?.lastName}`}
+                          </TableCell>
+                          <TableCell>
+                            {academic?.classes?.classesName || "N/A"}
+                          </TableCell>
+                          <TableCell>{academic?.student?.level}</TableCell>
+                          <TableCell>{academic?.student?.status}</TableCell>
+                          <TableCell>
+                            <button
+                              onClick={() => handleOpenPaymentForm(academic)} // Replace row._id with the academic year or student ID
+                              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded"
+                            >
+                              Add Payment
+                            </button>
                           </TableCell>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                  <div className="flex justify-between items-center mt-4">
-                    <button
-                      className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-                      onClick={goToPreviousPage}
-                      disabled={currentPage === 1}
-                    >
-                      Précédent
-                    </button>
-
-                    <div className="space-x-2">
-                      {Array.from({ length: totalPages }, (_, index) => (
-                        <button
-                          key={index + 1}
-                          className={`px-3 py-1 rounded ${
-                            currentPage === index + 1
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                          onClick={() => goToPage(index + 1)}
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="text-center text-muted-foreground"
                         >
-                          {index + 1}
-                        </button>
-                      ))}
-                    </div>
+                          Aucun étudiant trouvé.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+                <div className="flex justify-between items-center mt-4">
+                  <button
+                    className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                  >
+                    Précédent
+                  </button>
 
-                    <button
-                      className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-                      onClick={goToNextPage}
-                      disabled={currentPage === totalPages}
-                    >
-                      Suivant
-                    </button>
+                  <div className="space-x-2">
+                    {Array.from({ length: totalPages }, (_, index) => (
+                      <button
+                        key={index + 1}
+                        className={`px-3 py-1 rounded ${
+                          currentPage === index + 1
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                        onClick={() => goToPage(index + 1)}
+                      >
+                        {index + 1}
+                      </button>
+                    ))}
                   </div>
-                </>
-              )}
-            </>
-          ) : (
-            <AssignStudentsToClass
-              students={filteredStudents}
-              selectedClass={filter.classes}
-              selectedYear={filter.academicYear}
-              selectedStudents={selectedStudents}
-              setSelectedStudents={setSelectedStudents}
-              fetchStudents={fetchStudents}
-            />
-          )}
-          {openPaymentForm && selectedStudent && (
+
+                  <button
+                    className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                    onClick={goToNextPage}
+                    disabled={currentPage === totalPages}
+                  >
+                    Suivant
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        ) : (
+          <AssignStudentsToClass
+            students={filteredStudents}
+            selectedClass={filter.classes}
+            selectedYear={filter.academicYear}
+            selectedStudents={selectedStudents}
+            setSelectedStudents={setSelectedStudents}
+            fetchStudents={fetchStudents}
+          />
+        )}
+        {openPaymentForm && selectedStudent && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setOpenPaymentForm(false);
+            }}
+          >
             <div
-              className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4"
-              onClick={(e) => {
-                if (e.target === e.currentTarget) setOpenPaymentForm(false);
-              }}
+              className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg"
+              // max height = 90% of viewport height
             >
-              <div
-                className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg"
-                // max height = 90% of viewport height
-              >
-                <PaymentForm
-                  student={selectedStudent}
-                  onCancel={() => setOpenPaymentForm(false)}
-                  onSubmit={handlePaymentSubmit}
-                />
-              </div>
+              <PaymentForm
+                student={selectedStudent}
+                onCancel={() => setOpenPaymentForm(false)}
+                onSubmit={handlePaymentSubmit}
+              />
             </div>
-          )}
-        </Card>
-      </div>
-    </AppLayout>
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }

@@ -209,306 +209,301 @@ const Subjects = () => {
   };
 
   return (
-    <AppLayout>
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Gestion des Matières</h1>
-        </div>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Gestion des Matières</h1>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <Card className="bg-skyblue/10">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Nombre total de matières
-              </CardTitle>
-              <div className="text-2xl font-bold">{subjects.length}</div>
-            </CardHeader>
-          </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <Card className="bg-skyblue/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Nombre total de matières
+            </CardTitle>
+            <div className="text-2xl font-bold">{subjects.length}</div>
+          </CardHeader>
+        </Card>
 
-          <Card className="bg-skyblue/10">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Matières actives
-              </CardTitle>
-              <div className="text-2xl font-bold">
-                {subjects.filter((s) => s.isActive).length}
-              </div>
-            </CardHeader>
-          </Card>
-
-          <Card className="bg-skyblue/10">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Matières inactives
-              </CardTitle>
-              <div className="text-2xl font-bold">
-                {subjects.filter((s) => !s.isActive).length}
-              </div>
-            </CardHeader>
-          </Card>
-        </div>
-
-        <Card className="p-4">
-          <div className="flex justify-between items-center mb-4">
-            <Input
-              placeholder="Rechercher une matière..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-64"
-            />
-            <div className="flex gap-2">
-              <Button
-                onClick={() => {
-                  setForm({
-                    subjectCode: "",
-                    subjectName: "",
-                    description: "",
-                    isActive: true,
-                  });
-                  setShowModal(true);
-                }}
-              >
-                <FilePlus className="mr-2 h-4 w-4" />
-                Ajouter
-              </Button>
-              <Button variant="outline" onClick={exportExcel}>
-                <Download className="mr-2 h-4 w-4" />
-                Excel
-              </Button>
-              <Button variant="outline" onClick={exportPDF}>
-                <Download className="mr-2 h-4 w-4" />
-                PDF
-              </Button>
-              <label className="cursor-pointer bg-muted px-3 py-1 rounded">
-                <Upload className="inline h-4 w-4 mr-2" />
-                Importer
-                <input
-                  type="file"
-                  hidden
-                  onChange={(e) =>
-                    e.target.files && handleImport(e.target.files[0])
-                  }
-                />
-              </label>
+        <Card className="bg-skyblue/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Matières actives
+            </CardTitle>
+            <div className="text-2xl font-bold">
+              {subjects.filter((s) => s.isActive).length}
             </div>
-          </div>
+          </CardHeader>
+        </Card>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentData.map((subject: any) => (
-                <TableRow key={subject._id}>
-                  <TableCell>{subject.subjectName}</TableCell>
-                  <TableCell>{subject.subjectCode}</TableCell>
-                  <TableCell>
-                    <CheckCircle
-                      className={`h-4 w-4 ${
-                        subject.isActive ? "text-green-500" : "text-red-500"
-                      }`}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => openModal("view", subject)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Voir
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEdit(subject)}>
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Modifier
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toggleActive(subject)}>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Toggle actif
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(subject._id)}
-                        >
-                          <Trash className="h-4 w-4 mr-2 text-red-500" />
-                          Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <div className="flex justify-between items-center mt-4">
-            <button
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-              onClick={goToPreviousPage}
-              disabled={currentPage === 1}
-            >
-              Précédent
-            </button>
-
-            <div className="space-x-2">
-              {Array.from({ length: totalPages }, (_, index) => (
-                <button
-                  key={index + 1}
-                  className={`px-3 py-1 rounded ${
-                    currentPage === index + 1
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                  onClick={() => goToPage(index + 1)}
-                >
-                  {index + 1}
-                </button>
-              ))}
+        <Card className="bg-skyblue/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Matières inactives
+            </CardTitle>
+            <div className="text-2xl font-bold">
+              {subjects.filter((s) => !s.isActive).length}
             </div>
-
-            <button
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-              onClick={goToNextPage}
-              disabled={currentPage === totalPages}
-            >
-              Suivant
-            </button>
-          </div>
-
-          {showModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-              <div className="bg-white p-6 rounded-lg w-full max-w-md">
-                <h3 className="text-lg font-semibold mb-4">
-                  {editingId ? "Modifier la matière" : "Ajouter une matière"}
-                </h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Code"
-                    className="w-full border p-2 rounded"
-                    value={form.subjectCode}
-                    onChange={(e) =>
-                      setForm({ ...form, subjectCode: e.target.value })
-                    }
-                    required
-                  />
-                  <input
-                    type="text"
-                    placeholder="Nom"
-                    className="w-full border p-2 rounded"
-                    value={form.subjectName}
-                    onChange={(e) =>
-                      setForm({ ...form, subjectName: e.target.value })
-                    }
-                    required
-                  />
-                  <textarea
-                    placeholder="Description"
-                    className="w-full border p-2 rounded"
-                    value={form.description}
-                    onChange={(e) =>
-                      setForm({ ...form, description: e.target.value })
-                    }
-                  />
-                  <div className="flex justify-end space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowModal(false)}
-                      className="px-4 py-2 bg-gray-200 rounded"
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded"
-                    >
-                      {editingId ? "Mettre à jour" : "Ajouter"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-          {isModalOpen && modalMode === "view" && selectedSubject && (
-            <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 px-4">
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 relative">
-                <div className="flex items-center mb-4 border-b pb-3">
-                  <Info className="text-blue-600 mr-2" />
-                  <h3 className="text-xl font-bold text-gray-800">
-                    Détails de la matière
-                  </h3>
-                </div>
-
-                <div className="space-y-4 text-sm text-gray-700">
-                  <div className="flex items-start">
-                    <BookOpen className="w-5 h-5 mr-2 text-indigo-500" />
-                    <div>
-                      <span className="font-medium">Nom:</span>{" "}
-                      {selectedSubject.subjectName}
-                    </div>
-                  </div>
-
-                  <div className="flex items-start">
-                    <Code2 className="w-5 h-5 mr-2 text-emerald-500" />
-                    <div>
-                      <span className="font-medium">Code:</span>{" "}
-                      {selectedSubject.subjectCode}
-                    </div>
-                  </div>
-
-                  {selectedSubject.description && (
-                    <div className="flex items-start">
-                      <Info className="w-5 h-5 mr-2 text-yellow-500" />
-                      <div>
-                        <span className="font-medium">Description:</span>{" "}
-                        {selectedSubject.description}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-start">
-                    {selectedSubject.isActive ? (
-                      <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
-                    ) : (
-                      <XCircle className="w-5 h-5 mr-2 text-red-600" />
-                    )}
-                    <div>
-                      <span className="font-medium">Status:</span>{" "}
-                      <span
-                        className={`font-semibold ${
-                          selectedSubject.isActive
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {selectedSubject.isActive ? "Actif" : "Inactif"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end mt-6">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsModalOpen(false)}
-                  >
-                    Fermer
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+          </CardHeader>
         </Card>
       </div>
-    </AppLayout>
+
+      <Card className="p-4">
+        <div className="flex justify-between items-center mb-4">
+          <Input
+            placeholder="Rechercher une matière..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-64"
+          />
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                setForm({
+                  subjectCode: "",
+                  subjectName: "",
+                  description: "",
+                  isActive: true,
+                });
+                setShowModal(true);
+              }}
+            >
+              <FilePlus className="mr-2 h-4 w-4" />
+              Ajouter
+            </Button>
+            <Button variant="outline" onClick={exportExcel}>
+              <Download className="mr-2 h-4 w-4" />
+              Excel
+            </Button>
+            <Button variant="outline" onClick={exportPDF}>
+              <Download className="mr-2 h-4 w-4" />
+              PDF
+            </Button>
+            <label className="cursor-pointer bg-muted px-3 py-1 rounded">
+              <Upload className="inline h-4 w-4 mr-2" />
+              Importer
+              <input
+                type="file"
+                hidden
+                onChange={(e) =>
+                  e.target.files && handleImport(e.target.files[0])
+                }
+              />
+            </label>
+          </div>
+        </div>
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nom</TableHead>
+              <TableHead>Code</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {currentData.map((subject: any) => (
+              <TableRow key={subject._id}>
+                <TableCell>{subject.subjectName}</TableCell>
+                <TableCell>{subject.subjectCode}</TableCell>
+                <TableCell>
+                  <CheckCircle
+                    className={`h-4 w-4 ${
+                      subject.isActive ? "text-green-500" : "text-red-500"
+                    }`}
+                  />
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => openModal("view", subject)}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Voir
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEdit(subject)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Modifier
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => toggleActive(subject)}>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Toggle actif
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(subject._id)}
+                      >
+                        <Trash className="h-4 w-4 mr-2 text-red-500" />
+                        Supprimer
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <div className="flex justify-between items-center mt-4">
+          <button
+            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+            onClick={goToPreviousPage}
+            disabled={currentPage === 1}
+          >
+            Précédent
+          </button>
+
+          <div className="space-x-2">
+            {Array.from({ length: totalPages }, (_, index) => (
+              <button
+                key={index + 1}
+                className={`px-3 py-1 rounded ${
+                  currentPage === index + 1
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-800"
+                }`}
+                onClick={() => goToPage(index + 1)}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+
+          <button
+            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+            onClick={goToNextPage}
+            disabled={currentPage === totalPages}
+          >
+            Suivant
+          </button>
+        </div>
+
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">
+                {editingId ? "Modifier la matière" : "Ajouter une matière"}
+              </h3>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Code"
+                  className="w-full border p-2 rounded"
+                  value={form.subjectCode}
+                  onChange={(e) =>
+                    setForm({ ...form, subjectCode: e.target.value })
+                  }
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Nom"
+                  className="w-full border p-2 rounded"
+                  value={form.subjectName}
+                  onChange={(e) =>
+                    setForm({ ...form, subjectName: e.target.value })
+                  }
+                  required
+                />
+                <textarea
+                  placeholder="Description"
+                  className="w-full border p-2 rounded"
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm({ ...form, description: e.target.value })
+                  }
+                />
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 bg-gray-200 rounded"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded"
+                  >
+                    {editingId ? "Mettre à jour" : "Ajouter"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        {isModalOpen && modalMode === "view" && selectedSubject && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 px-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 relative">
+              <div className="flex items-center mb-4 border-b pb-3">
+                <Info className="text-blue-600 mr-2" />
+                <h3 className="text-xl font-bold text-gray-800">
+                  Détails de la matière
+                </h3>
+              </div>
+
+              <div className="space-y-4 text-sm text-gray-700">
+                <div className="flex items-start">
+                  <BookOpen className="w-5 h-5 mr-2 text-indigo-500" />
+                  <div>
+                    <span className="font-medium">Nom:</span>{" "}
+                    {selectedSubject.subjectName}
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <Code2 className="w-5 h-5 mr-2 text-emerald-500" />
+                  <div>
+                    <span className="font-medium">Code:</span>{" "}
+                    {selectedSubject.subjectCode}
+                  </div>
+                </div>
+
+                {selectedSubject.description && (
+                  <div className="flex items-start">
+                    <Info className="w-5 h-5 mr-2 text-yellow-500" />
+                    <div>
+                      <span className="font-medium">Description:</span>{" "}
+                      {selectedSubject.description}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-start">
+                  {selectedSubject.isActive ? (
+                    <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                  ) : (
+                    <XCircle className="w-5 h-5 mr-2 text-red-600" />
+                  )}
+                  <div>
+                    <span className="font-medium">Status:</span>{" "}
+                    <span
+                      className={`font-semibold ${
+                        selectedSubject.isActive
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {selectedSubject.isActive ? "Actif" : "Inactif"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end mt-6">
+                <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
   );
 };
 

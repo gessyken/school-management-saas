@@ -1,8 +1,9 @@
 import express from 'express';
 import ClassController from '../controllers/ClassController.js';
-import { authenticate, authorizeRoles } from '../middleware/auth.middleware.js';
+import { protect, getUserRolesForSchool } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
+router.use(protect, getUserRolesForSchool);
 
 // Class management routes
 router.post('/', ClassController.createClass);
