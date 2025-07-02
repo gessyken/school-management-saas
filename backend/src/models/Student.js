@@ -63,6 +63,13 @@ const studentSchema = new mongoose.Schema({
     }
   },
 
+  // **Add reference to the School the student belongs to**
+  school: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    required: true
+  },
+
   // Academic Info
   academicYears: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -84,26 +91,9 @@ const studentSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// studentSchema.pre('save', async function (next) {
-//     if (this.classInfo) {
-//         try {
-//             const Classes = mongoose.model('Classes');
-//             const classInfo = await Classes.findById(this.classInfo);
-//             if (classInfo) {
-//                 if (!classInfo.studentList)
-//                     classInfo.studentList = []
-
-//                 if (!classInfo.studentList.includes(this._id)) {
-//                     classInfo.studentList.push(this._id);
-//                     await classInfo.save();
-//                 }
-//             }
-//         } catch (error) {
-//             return next(error);
-//         }
-//     }
-//     next();
-// });
+// Optional: You can add indexes for common queries like by school and matricule
+studentSchema.index({ school: 1, matricule: 1 }, { unique: true });
+studentSchema.index({ school: 1, email: 1 }, { unique: true });
 
 const Student = mongoose.model('Student', studentSchema);
 export default Student;

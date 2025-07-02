@@ -8,7 +8,7 @@ const classSchema = new mongoose.Schema({
     index: true
   },
 
-  className: {
+  classesName: {
     type: String,
     required: true,
     trim: true

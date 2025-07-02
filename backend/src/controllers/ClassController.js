@@ -18,7 +18,7 @@ class ClassController {
         mainTeacherInfo,
         year
       } = req.body;
-
+      console.log(req.body)
       const schoolId = req.schoolId;
 
       if (!schoolId) return res.status(403).json({ message: "School context missing" });

@@ -1,6 +1,6 @@
 import express from 'express';
 import SubjectController from '../controllers/SubjectController.js';
-import { protect, getUserRolesForSchool } from '../middleware/authMiddleware.js';
+import { protect, getUserRolesForSchool } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 

@@ -1,28 +1,26 @@
 import Student from '../models/Student.js';
 import User from '../models/User.js';
-import AcademicYear  from '../models/AcademicYear.js';
+import AcademicYear from '../models/AcademicYear.js';
 import Classes from '../models/Classes.js';
 
 // List of required fields for a student creation
-const requiredFields = ['matricule', 'firstName', 'lastName', 'email', 'dateOfBirth'];
-
 const validateRequiredFields = (data) => {
-  const missingFields = [];
-  for (const field of requiredFields) {
-    if (data[field] === undefined || data[field] === null || data[field] === '') {
-      missingFields.push(field);
-    }
-  }
+  const requiredFields = ['matricule', 'firstName', 'lastName', 'email', 'level', 'dateOfBirth', 'school'];
+  const missingFields = requiredFields.filter(field => !data[field]);
   return missingFields;
 };
 
 class StudentController {
-  // Student registration and management
-  
-  // Create single student with validation
   async createStudent(req, res) {
     try {
       const studentData = req.body;
+
+      // Ensure school is provided in body or from auth middleware
+      if (!studentData.school && !req.schoolId) {
+        return res.status(400).json({ message: 'School is required' });
+      }
+      // Set school from middleware if not provided explicitly
+      studentData.school = studentData.school || req.schoolId;
 
       // Validate required fields
       const missingFields = validateRequiredFields(studentData);
@@ -49,12 +47,11 @@ class StudentController {
     }
   }
 
-  // Create many students sequentially with validation
+  // Create many students sequentially with validation and school association
   async createManyStudents(req, res) {
     try {
       const studentsArray = req.body?.students;
-      console.log(!Array.isArray(studentsArray))
-      console.log(studentsArray.length)
+
       if (!Array.isArray(studentsArray) || studentsArray.length === 0) {
         return res.status(400).json({ message: 'Request body must be a non-empty array of students' });
       }
@@ -64,7 +61,10 @@ class StudentController {
 
       for (let i = 0; i < studentsArray.length; i++) {
         const studentData = studentsArray[i];
-        console.log("here ",i)
+
+        // Ensure school is set from middleware if not provided
+        studentData.school = studentData.school || req.schoolId;
+
         // Validate required fields for each student
         const missingFields = validateRequiredFields(studentData);
         if (missingFields.length > 0) {
@@ -80,7 +80,6 @@ class StudentController {
           errors.push({ index: i, error: error.message });
         }
       }
-      console.log(`${savedStudents.length} students created, ${errors.length} errors`)
       res.status(207).json({ // 207 Multi-Status to show partial success/fail
         message: `${savedStudents.length} students created, ${errors.length} errors`,
         savedStudents,
@@ -93,9 +92,16 @@ class StudentController {
     }
   }
 
+  // Register a student for a school with user and class validation
   async registerStudent(req, res) {
     try {
       const { userId, classesId } = req.body;
+
+      // School from middleware
+      const schoolId = req.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
+      }
 
       // Check if user exists
       const user = await User.findById(userId);
@@ -103,24 +109,25 @@ class StudentController {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      // Check if student already exists
-      const existingStudent = await Student.findOne({ user: userId });
+      // Check if student already exists in this school
+      const existingStudent = await Student.findOne({ user: userId, school: schoolId });
       if (existingStudent) {
-        return res.status(400).json({ message: 'Student already registered' });
+        return res.status(400).json({ message: 'Student already registered in this school' });
       }
 
-      // Check if class exists
+      // Check if class exists and belongs to the school
       if (classesId) {
-        const classes = await Classes.findById(classesId);
+        const classes = await Classes.findOne({ _id: classesId, school: schoolId });
         if (!classes) {
-          return res.status(404).json({ message: 'Class not found' });
+          return res.status(404).json({ message: 'Class not found in this school' });
         }
       }
 
-      // Create new student
+      // Create new student with school association
       const student = new Student({
         user: userId,
-        classes: classesId
+        classInfo: classesId,
+        school: schoolId
       });
 
       await student.save();
@@ -142,12 +149,18 @@ class StudentController {
     }
   }
 
+  // Get all students filtered by school
   async getAllStudents(req, res) {
     try {
-      const students = await Student.find({})
+      const schoolId = req.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
+      }
+
+      const students = await Student.find({ school: schoolId })
         .populate({
           path: 'classInfo'
-        })
+        });
 
       res.json({ students });
     } catch (error) {
@@ -156,15 +169,21 @@ class StudentController {
     }
   }
 
+  // Get single student by id and ensure it belongs to the school
   async getStudentById(req, res) {
     try {
-      const student = await Student.findById(req.params.id)
+      const schoolId = req.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
+      }
+
+      const student = await Student.findOne({ _id: req.params.id, school: schoolId })
         .populate('user', 'firstName lastName email phoneNumber')
-        .populate('classes', 'classesName')
+        .populate('classInfo', 'classesName')
         .populate('academicYears');
 
       if (!student) {
-        return res.status(404).json({ message: 'Student not found' });
+        return res.status(404).json({ message: 'Student not found in this school' });
       }
 
       res.json({ student });
@@ -175,13 +194,18 @@ class StudentController {
 
   async getStudentByUserId(req, res) {
     try {
-      const student = await Student.findOne({ user: req.params.userId })
+      const schoolId = req.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
+      }
+
+      const student = await Student.findOne({ user: req.params.userId, school: schoolId })
         .populate('user', 'firstName lastName email phoneNumber')
-        .populate('classes', 'classesName')
+        .populate('classInfo', 'classesName')
         .populate('academicYears');
 
       if (!student) {
-        return res.status(404).json({ message: 'Student not found' });
+        return res.status(404).json({ message: 'Student not found in this school' });
       }
 
       res.json({ student });
@@ -192,32 +216,38 @@ class StudentController {
 
   async updateStudent(req, res) {
     try {
+      const schoolId = req.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
+      }
+
       const { classesId } = req.body;
 
-      // Check if class exists if provided
+      // Check if class exists and belongs to school if provided
       if (classesId) {
-        const classes = await Classes.findById(classesId);
+        const classes = await Classes.findOne({ _id: classesId, school: schoolId });
         if (!classes) {
-          return res.status(404).json({ message: 'Class not found' });
+          return res.status(404).json({ message: 'Class not found in this school' });
         }
       }
 
-      const student = await Student.findByIdAndUpdate(
-        req.params.id,
-        { classes: classesId },
+      // Ensure the student belongs to the school before updating
+      const student = await Student.findOneAndUpdate(
+        { _id: req.params.id, school: schoolId },
+        { classInfo: classesId },
         { new: true }
-      ).populate('user', 'firstName lastName email phoneNumber')
-        .populate('classes', 'classesName');
+      )
+        .populate('user', 'firstName lastName email phoneNumber')
+        .populate('classInfo', 'classesName');
 
       if (!student) {
-        return res.status(404).json({ message: 'Student not found' });
+        return res.status(404).json({ message: 'Student not found in this school' });
       }
 
-      // Update class with new student if class provided
       if (classesId) {
-        // Remove student from previous class if exists
+        // Remove student from all classes in this school
         await Classes.updateMany(
-          { studentList: student._id },
+          { school: schoolId, studentList: student._id },
           { $pull: { studentList: student._id } }
         );
 
@@ -239,14 +269,20 @@ class StudentController {
 
   async deleteStudent(req, res) {
     try {
-      const student = await Student.findById(req.params.id);
-      if (!student) {
-        return res.status(404).json({ message: 'Student not found' });
+      const schoolId = req.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
       }
 
-      // Remove student from classes
+      // Find student within school
+      const student = await Student.findOne({ _id: req.params.id, school: schoolId });
+      if (!student) {
+        return res.status(404).json({ message: 'Student not found in this school' });
+      }
+
+      // Remove student from classes within this school
       await Classes.updateMany(
-        { studentList: student._id },
+        { school: schoolId, studentList: student._id },
         { $pull: { studentList: student._id } }
       );
 
@@ -259,25 +295,28 @@ class StudentController {
     }
   }
 
-  // Get student academic performance
   async getStudentAcademicPerformance(req, res) {
     try {
+      const schoolId = req.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
+      }
+
       const studentId = req.params.id;
       const { year } = req.query;
 
-      // Validate student
-      const student = await Student.findById(studentId);
+      // Validate student belongs to school
+      const student = await Student.findOne({ _id: studentId, school: schoolId });
       if (!student) {
-        return res.status(404).json({ message: 'Student not found' });
+        return res.status(404).json({ message: 'Student not found in this school' });
       }
 
-      // Query parameters for academic year
+      // Query academic years for student
       const query = { student: studentId };
       if (year) {
         query.year = year;
       }
 
-      // Get academic years for student with detailed population
       const academicYears = await AcademicYear.find(query)
         .populate({
           path: 'terms.termInfo',
@@ -303,21 +342,25 @@ class StudentController {
     }
   }
 
-  // Get students by class
   async getStudentsByClass(req, res) {
     try {
-      const classId = req.params.classId;
-
-      // Validate class
-      const classExists = await Classes.findById(classId);
-      if (!classExists) {
-        return res.status(404).json({ message: 'Class not found' });
+      const schoolId = req.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
       }
 
-      // Get students in class
-      const students = await Student.find({ classes: classId })
+      const classId = req.params.classId;
+
+      // Validate class belongs to school
+      const classExists = await Classes.findOne({ _id: classId, school: schoolId });
+      if (!classExists) {
+        return res.status(404).json({ message: 'Class not found in this school' });
+      }
+
+      // Get students in class belonging to school
+      const students = await Student.find({ classInfo: classId, school: schoolId })
         .populate('user', 'firstName lastName email phoneNumber')
-        .populate('classes', 'classesName');
+        .populate('classInfo', 'classesName');
 
       res.json({ students });
     } catch (error) {
@@ -325,64 +368,72 @@ class StudentController {
     }
   }
 
-  // Get students with academic performance below threshold
+
+  // Get students with academic performance below threshold (school-scoped)
   async getStudentsAtRisk(req, res) {
     try {
-      const { year, threshold = 10 } = req.query;
+      const schoolId = req.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
+      }
 
+      const { year, threshold = 10 } = req.query;
       if (!year) {
         return res.status(400).json({ message: 'Academic year is required' });
       }
 
+      // Custom static method should be adapted to also filter by school if needed
       const atRiskStudents = await AcademicYear.findStudentsAtRisk(year, threshold);
 
-      // Get detailed student information
-      const detailedStudents = await Promise.all(
-        atRiskStudents.map(async (record) => {
-          const studentInfo = await Student.findById(record.student)
-            .populate('user', 'firstName lastName email');
+      // Filter students that belong to this school
+      const filteredAtRiskStudents = [];
+      for (const record of atRiskStudents) {
+        const studentInfo = await Student.findOne({ _id: record.student, school: schoolId })
+          .populate('user', 'firstName lastName email');
+        if (!studentInfo) continue; // skip if student not in this school
 
-          return {
-            studentId: record.student,
-            name: studentInfo?.user ? `${studentInfo.user.firstName} ${studentInfo.user.lastName}` : 'Unknown',
-            email: studentInfo?.user?.email || 'N/A',
-            average: record.overallAverage,
-            failingSubjects: record.terms.flatMap(term =>
-              term.sequences.flatMap(seq =>
-                seq.subjects.filter(subj => subj.marks.currentMark < 10)
-                  .map(subj => ({
-                    name: subj.subjectInfo?.subjectName || 'Unknown Subject',
-                    mark: subj.marks.currentMark
-                  }))
-              )
+        filteredAtRiskStudents.push({
+          studentId: record.student,
+          name: studentInfo.user ? `${studentInfo.user.firstName} ${studentInfo.user.lastName}` : 'Unknown',
+          email: studentInfo.user?.email || 'N/A',
+          average: record.overallAverage,
+          failingSubjects: record.terms.flatMap(term =>
+            term.sequences.flatMap(seq =>
+              seq.subjects.filter(subj => subj.marks.currentMark < 10)
+                .map(subj => ({
+                  name: subj.subjectInfo?.subjectName || 'Unknown Subject',
+                  mark: subj.marks.currentMark
+                }))
             )
-          };
-        })
-      );
+          )
+        });
+      }
 
-      res.json({ atRiskStudents: detailedStudents });
+      res.json({ atRiskStudents: filteredAtRiskStudents });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 
-  // Get student attendance summary
+  // Get student attendance summary (school-scoped)
   async getStudentAttendance(req, res) {
     try {
+      const schoolId = req.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
+      }
+
       const { id } = req.params;
       const { year } = req.query;
 
-      // Validate student
-      const student = await Student.findById(id);
+      // Validate student belongs to this school
+      const student = await Student.findOne({ _id: id, school: schoolId });
       if (!student) {
-        return res.status(404).json({ message: 'Student not found' });
+        return res.status(404).json({ message: 'Student not found in this school' });
       }
 
-      // Query parameters for academic year
       const query = { student: id };
-      if (year) {
-        query.year = year;
-      }
+      if (year) query.year = year;
 
       const academicYears = await AcademicYear.find(query)
         .populate('terms.termInfo')
@@ -392,7 +443,6 @@ class StudentController {
         return res.status(404).json({ message: 'No academic records found for this student' });
       }
 
-      // Calculate attendance statistics
       const attendanceData = academicYears.map(ay => ({
         year: ay.year,
         terms: ay.terms.map(term => ({
@@ -412,19 +462,27 @@ class StudentController {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
-  
+
+  // Update student by ID (school-scoped)
   async updateStudentById(req, res) {
     try {
+      const schoolId = req.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
+      }
+
       const { id } = req.params;
       const updates = req.body;
 
-      const student = await Student.findByIdAndUpdate(id, updates, {
-        new: true,
-        runValidators: true
-      });
+      // Ensure student belongs to this school before updating
+      const student = await Student.findOneAndUpdate(
+        { _id: id, school: schoolId },
+        updates,
+        { new: true, runValidators: true }
+      );
 
       if (!student) {
-        return res.status(404).json({ message: 'Student not found' });
+        return res.status(404).json({ message: 'Student not found in this school' });
       }
 
       res.json({ message: 'Student updated successfully', student });
@@ -433,14 +491,20 @@ class StudentController {
     }
   }
 
-  // ✅ Delete student by ID
+  // Delete student by ID (school-scoped)
   async deleteStudentById(req, res) {
     try {
-      const { id } = req.params;
-      const student = await Student.findByIdAndDelete(id);
+      const schoolId = req.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
+      }
 
+      const { id } = req.params;
+
+      // Ensure student belongs to this school before deletion
+      const student = await Student.findOneAndDelete({ _id: id, school: schoolId });
       if (!student) {
-        return res.status(404).json({ message: 'Student not found' });
+        return res.status(404).json({ message: 'Student not found in this school' });
       }
 
       res.json({ message: 'Student deleted successfully', student });
@@ -448,8 +512,15 @@ class StudentController {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
+
+  // Change student status (school-scoped)
   async changeStatus(req, res) {
     try {
+      const schoolId = req.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
+      }
+
       const { id } = req.params;
       const { status } = req.body;
 
@@ -457,10 +528,15 @@ class StudentController {
         return res.status(400).json({ message: 'Invalid status value' });
       }
 
-      const student = await Student.findByIdAndUpdate(id, { status }, { new: true });
+      // Update only if student belongs to this school
+      const student = await Student.findOneAndUpdate(
+        { _id: id, school: schoolId },
+        { status },
+        { new: true }
+      );
 
       if (!student) {
-        return res.status(404).json({ message: 'Student not found' });
+        return res.status(404).json({ message: 'Student not found in this school' });
       }
 
       res.json({ message: 'Status updated successfully', student });
@@ -468,7 +544,6 @@ class StudentController {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
-
 }
 
 export default new StudentController();

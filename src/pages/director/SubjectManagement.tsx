@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   Table,
@@ -32,11 +32,11 @@ import { Info, BookOpen, Code2, XCircle } from "lucide-react";
 import { subjectService } from "@/lib/services/subjectService";
 import { useToast } from "@/components/ui/use-toast";
 import { usePagination } from "@/components/ui/usePagination";
-// import Modal from '@/components/ui/modal';
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+// Subject interface/type
 interface Subject {
   _id?: string;
   subjectCode: string;
@@ -44,33 +44,53 @@ interface Subject {
   description?: string;
   isActive: boolean;
 }
-// Example usage in your component
+
 const itemsPerPage = 5;
+
+// Simple custom confirmation modal component
+const ConfirmationModal = ({
+  isOpen,
+  message,
+  onConfirm,
+  onCancel,
+}: {
+  isOpen: boolean;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 px-4">
+      <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-lg">
+        <p className="mb-4">{message}</p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={onCancel}>
+            Annuler
+          </Button>
+          <Button variant="destructive" onClick={onConfirm}>
+            Supprimer
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Subjects = () => {
   const { toast } = useToast();
 
-  const [subjects, setSubjects] = useState([]);
-  // const [filteredsubjects, setFilteredSubjects] = useState([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [search, setSearch] = useState("");
-  const filteredSubjects = subjects.filter((subject) =>
-    `${subject.subjectName} ${subject.subjectCode} ${subject.description}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
-  const {
-    currentPage,
-    totalPages,
-    currentData,
-    goToNextPage,
-    goToPreviousPage,
-    goToPage,
-  } = usePagination(filteredSubjects, itemsPerPage); // subjects is your full data list
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [loading, setLoading] = useState(false);
 
-  const [selectedSubject, setSelectedSubject] = useState(null);
-  const [modalMode, setModalMode] = useState<"view" | "edit" | "create" | null>(
-    null
-  );
+  // Modal state
+  const [modalMode, setModalMode] = useState<"view" | "edit" | "create" | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+
+  // Form state for create/edit
   const [form, setForm] = useState<Subject>({
     subjectCode: "",
     subjectName: "",
@@ -78,39 +98,73 @@ const Subjects = () => {
     isActive: true,
   });
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchSubjects = async () => {
+  // Confirmation modal state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
+
+  // Pagination
+  const {
+    currentPage,
+    totalPages,
+    currentData,
+    goToNextPage,
+    goToPreviousPage,
+    goToPage,
+  } = usePagination(subjects, itemsPerPage);
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  // Fetch subjects, optionally filtered by debounced search
+  const fetchSubjects = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await subjectService.getAll({});
+      // Assuming backend supports search filter as query param
+      const res = await subjectService.getAll({ search: debouncedSearch });
       setSubjects(res.data.subjects);
     } catch {
       toast({
         title: "Erreur",
         description: "Impossible de charger les matières",
       });
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [debouncedSearch, toast]);
 
   useEffect(() => {
     fetchSubjects();
-  }, [search]);
+  }, [fetchSubjects]);
 
-  const handleImport = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const bstr = e.target?.result;
-      const wb = XLSX.read(bstr, { type: "binary" });
-      const wsname = wb.SheetNames[0];
-      const ws = wb.Sheets[wsname];
-      const data = XLSX.utils.sheet_to_json(ws);
-      console.log(data);
-      subjectService.bulkImport(data).then(fetchSubjects);
-    };
-    reader.readAsBinaryString(file);
+  // Handle Import from Excel
+  const handleImport = async (file: File) => {
+    setLoading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const bstr = e.target?.result;
+        if (!bstr) throw new Error("File reading failed");
+        const wb = XLSX.read(bstr, { type: "binary" });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+        await subjectService.bulkImport(data);
+        toast({ title: "Import réussi", description: "Matières importées avec succès." });
+        fetchSubjects();
+      };
+      reader.readAsBinaryString(file);
+    } catch {
+      toast({ title: "Erreur", description: "L'import a échoué." });
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Export Excel
   const exportExcel = () => {
     const ws = XLSX.utils.json_to_sheet(subjects);
     const wb = XLSX.utils.book_new();
@@ -118,94 +172,110 @@ const Subjects = () => {
     XLSX.writeFile(wb, "subjects.xlsx");
   };
 
+  // Export PDF
   const exportPDF = () => {
     const doc = new jsPDF();
-
-    // Title
     doc.setFontSize(16);
     doc.text("Liste des Matières", 14, 20);
-
-    // Date
     const date = new Date().toLocaleDateString("fr-FR");
     doc.setFontSize(10);
     doc.setTextColor(100);
     doc.text(`Date d'exportation : ${date}`, 14, 28);
-
-    // Table headers
     const tableColumn = ["Nom", "Code", "Statut"];
-
-    // Table rows
     const tableRows = subjects.map((s) => [
       s.subjectName,
       s.subjectCode,
       s.isActive ? "Actif" : "Inactif",
     ]);
-
-    // AutoTable
     autoTable(doc, {
       startY: 35,
       head: [tableColumn],
       body: tableRows,
-      styles: {
-        halign: "center",
-        valign: "middle",
-      },
-      headStyles: {
-        fillColor: [41, 128, 185], // Blue
-        textColor: 255,
-        fontStyle: "bold",
-      },
+      styles: { halign: "center", valign: "middle" },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: "bold" },
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { top: 35 },
     });
-
-    // Save
     doc.save(`matieres_${date.replace(/\//g, "-")}.pdf`);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingId) {
-      await subjectService.update(editingId, form);
-    } else {
-      await subjectService.create(form);
-    }
-    setForm({
-      subjectCode: "",
-      subjectName: "",
-      description: "",
-      isActive: true,
-    });
-    setEditingId(null);
-    setShowModal(false);
-    fetchSubjects();
-  };
-
-  const handleEdit = (subject: Subject) => {
-    setForm(subject);
-    setEditingId(subject._id!);
-    setShowModal(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this subject?")) {
-      await subjectService.remove(id);
-      fetchSubjects();
-    }
-  };
-
-  const toggleActive = async (subject: Subject) => {
-    await subjectService.update(subject._id, {
-      ...subject,
-      isActive: !subject.isActive,
-    });
-    fetchSubjects();
-  };
-
-  const openModal = (mode: "view" | "edit" | "create", subject = null) => {
+  // Open modal for create/edit/view
+  const openModal = (mode: "view" | "edit" | "create", subject: Subject | null = null) => {
     setSelectedSubject(subject);
     setModalMode(mode);
+    if (mode === "create") {
+      setForm({ subjectCode: "", subjectName: "", description: "", isActive: true });
+      setEditingId(null);
+    } else if (subject) {
+      setForm(subject);
+      setEditingId(subject._id ?? null);
+    }
     setIsModalOpen(true);
+  };
+
+  // Close modal and reset states
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedSubject(null);
+    setModalMode(null);
+    setEditingId(null);
+  };
+
+  // Submit form (create or update)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      if (editingId) {
+        await subjectService.update(editingId, form);
+        toast({ title: "Matière mise à jour" });
+      } else {
+        await subjectService.create(form);
+        toast({ title: "Matière créée" });
+      }
+      fetchSubjects();
+      closeModal();
+    } catch {
+      toast({ title: "Erreur", description: "Échec de l'enregistrement" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle toggle active status
+  const toggleActive = async (subject: Subject) => {
+    setLoading(true);
+    try {
+      await subjectService.update(subject._id!, { ...subject, isActive: !subject.isActive });
+      fetchSubjects();
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de changer le statut" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Open confirmation modal for deletion
+  const confirmDelete = (subject: Subject) => {
+    setSubjectToDelete(subject);
+    setConfirmOpen(true);
+  };
+
+  // Delete subject after confirmation
+  const handleDeleteConfirmed = async () => {
+    if (!subjectToDelete?._id) return;
+    setLoading(true);
+    try {
+      await subjectService.remove(subjectToDelete._id);
+      toast({ title: "Suppression réussie" });
+      fetchSubjects();
+    } catch {
+      toast({ title: "Erreur", description: "Échec de la suppression" });
+    } finally {
+      setLoading(false);
+      setConfirmOpen(false);
+      setSubjectToDelete(null);
+    }
   };
 
   return (
@@ -254,27 +324,18 @@ const Subjects = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-64"
+            disabled={loading}
           />
           <div className="flex gap-2">
-            <Button
-              onClick={() => {
-                setForm({
-                  subjectCode: "",
-                  subjectName: "",
-                  description: "",
-                  isActive: true,
-                });
-                setShowModal(true);
-              }}
-            >
+            <Button onClick={() => openModal("create")} disabled={loading}>
               <FilePlus className="mr-2 h-4 w-4" />
               Ajouter
             </Button>
-            <Button variant="outline" onClick={exportExcel}>
+            <Button variant="outline" onClick={exportExcel} disabled={loading}>
               <Download className="mr-2 h-4 w-4" />
               Excel
             </Button>
-            <Button variant="outline" onClick={exportPDF}>
+            <Button variant="outline" onClick={exportPDF} disabled={loading}>
               <Download className="mr-2 h-4 w-4" />
               PDF
             </Button>
@@ -284,225 +345,218 @@ const Subjects = () => {
               <input
                 type="file"
                 hidden
-                onChange={(e) =>
-                  e.target.files && handleImport(e.target.files[0])
-                }
+                onChange={(e) => e.target.files && handleImport(e.target.files[0])}
+                disabled={loading}
+                accept=".xls,.xlsx"
               />
             </label>
           </div>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nom</TableHead>
-              <TableHead>Code</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {currentData.map((subject: any) => (
-              <TableRow key={subject._id}>
-                <TableCell>{subject.subjectName}</TableCell>
-                <TableCell>{subject.subjectCode}</TableCell>
-                <TableCell>
-                  <CheckCircle
-                    className={`h-4 w-4 ${
-                      subject.isActive ? "text-green-500" : "text-red-500"
-                    }`}
-                  />
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => openModal("view", subject)}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Voir
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleEdit(subject)}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Modifier
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => toggleActive(subject)}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Toggle actif
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDelete(subject._id)}
-                      >
-                        <Trash className="h-4 w-4 mr-2 text-red-500" />
-                        Supprimer
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <div className="flex justify-between items-center mt-4">
-          <button
-            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-            onClick={goToPreviousPage}
-            disabled={currentPage === 1}
-          >
-            Précédent
-          </button>
+        {loading ? (
+          <p>Chargement...</p>
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentData.map((subject: Subject) => (
+                  <TableRow key={subject._id}>
+                    <TableCell>{subject.subjectName}</TableCell>
+                    <TableCell>{subject.subjectCode}</TableCell>
+                    <TableCell>
+                      <CheckCircle
+                        className={`h-4 w-4 ${
+                          subject.isActive ? "text-green-500" : "text-red-500"
+                        }`}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" disabled={loading}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openModal("view", subject)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Voir
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openModal("edit", subject)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleActive(subject)}>
+                            {subject.isActive ? (
+                              <>
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Désactiver
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Activer
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => confirmDelete(subject)}
+                            className="text-destructive"
+                          >
+                            <Trash className="h-4 w-4 mr-2" />
+                            Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
 
-          <div className="space-x-2">
-            {Array.from({ length: totalPages }, (_, index) => (
-              <button
-                key={index + 1}
-                className={`px-3 py-1 rounded ${
-                  currentPage === index + 1
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-800"
-                }`}
-                onClick={() => goToPage(index + 1)}
+            {/* Pagination controls */}
+            <div className="flex justify-between items-center mt-4">
+              <Button
+                variant="outline"
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1 || loading}
               >
-                {index + 1}
-              </button>
-            ))}
-          </div>
-
-          <button
-            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-            onClick={goToNextPage}
-            disabled={currentPage === totalPages}
-          >
-            Suivant
-          </button>
-        </div>
-
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-lg w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">
-                {editingId ? "Modifier la matière" : "Ajouter une matière"}
-              </h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Code"
-                  className="w-full border p-2 rounded"
-                  value={form.subjectCode}
-                  onChange={(e) =>
-                    setForm({ ...form, subjectCode: e.target.value })
-                  }
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Nom"
-                  className="w-full border p-2 rounded"
-                  value={form.subjectName}
-                  onChange={(e) =>
-                    setForm({ ...form, subjectName: e.target.value })
-                  }
-                  required
-                />
-                <textarea
-                  placeholder="Description"
-                  className="w-full border p-2 rounded"
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
-                />
-                <div className="flex justify-end space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="px-4 py-2 bg-gray-200 rounded"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded"
-                  >
-                    {editingId ? "Mettre à jour" : "Ajouter"}
-                  </button>
-                </div>
-              </form>
+                Précédent
+              </Button>
+              <div>
+                Page {currentPage} sur {totalPages}
+              </div>
+              <Button
+                variant="outline"
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages || loading}
+              >
+                Suivant
+              </Button>
             </div>
-          </div>
-        )}
-        {isModalOpen && modalMode === "view" && selectedSubject && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 px-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 relative">
-              <div className="flex items-center mb-4 border-b pb-3">
-                <Info className="text-blue-600 mr-2" />
-                <h3 className="text-xl font-bold text-gray-800">
-                  Détails de la matière
-                </h3>
-              </div>
-
-              <div className="space-y-4 text-sm text-gray-700">
-                <div className="flex items-start">
-                  <BookOpen className="w-5 h-5 mr-2 text-indigo-500" />
-                  <div>
-                    <span className="font-medium">Nom:</span>{" "}
-                    {selectedSubject.subjectName}
-                  </div>
-                </div>
-
-                <div className="flex items-start">
-                  <Code2 className="w-5 h-5 mr-2 text-emerald-500" />
-                  <div>
-                    <span className="font-medium">Code:</span>{" "}
-                    {selectedSubject.subjectCode}
-                  </div>
-                </div>
-
-                {selectedSubject.description && (
-                  <div className="flex items-start">
-                    <Info className="w-5 h-5 mr-2 text-yellow-500" />
-                    <div>
-                      <span className="font-medium">Description:</span>{" "}
-                      {selectedSubject.description}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-start">
-                  {selectedSubject.isActive ? (
-                    <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
-                  ) : (
-                    <XCircle className="w-5 h-5 mr-2 text-red-600" />
-                  )}
-                  <div>
-                    <span className="font-medium">Status:</span>{" "}
-                    <span
-                      className={`font-semibold ${
-                        selectedSubject.isActive
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {selectedSubject.isActive ? "Actif" : "Inactif"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end mt-6">
-                <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-                  Fermer
-                </Button>
-              </div>
-            </div>
-          </div>
+          </>
         )}
       </Card>
+
+      {/* Modal for create/edit/view */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 relative max-h-[90vh] overflow-auto">
+            <h2 className="text-xl font-bold mb-4 capitalize">
+              {modalMode === "create"
+                ? "Ajouter une matière"
+                : modalMode === "edit"
+                ? "Modifier la matière"
+                : "Détails de la matière"}
+            </h2>
+
+            {(modalMode === "create" || modalMode === "edit") && (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block mb-1 font-semibold">Nom</label>
+                  <Input
+                    type="text"
+                    value={form.subjectName}
+                    onChange={(e) =>
+                      setForm({ ...form, subjectName: e.target.value })
+                    }
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-semibold">Code</label>
+                  <Input
+                    type="text"
+                    value={form.subjectCode}
+                    onChange={(e) =>
+                      setForm({ ...form, subjectCode: e.target.value })
+                    }
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-semibold">Description</label>
+                  <textarea
+                    className="w-full border rounded px-3 py-2"
+                    value={form.description}
+                    onChange={(e) =>
+                      setForm({ ...form, description: e.target.value })
+                    }
+                    disabled={loading}
+                    rows={3}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="isActive"
+                    type="checkbox"
+                    checked={form.isActive}
+                    onChange={(e) =>
+                      setForm({ ...form, isActive: e.target.checked })
+                    }
+                    disabled={loading}
+                  />
+                  <label htmlFor="isActive">Actif</label>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={closeModal}
+                    disabled={loading}
+                  >
+                    Annuler
+                  </Button>
+                  <Button type="submit" disabled={loading}>
+                    Enregistrer
+                  </Button>
+                </div>
+              </form>
+            )}
+
+            {modalMode === "view" && selectedSubject && (
+              <div className="space-y-4">
+                <div>
+                  <strong>Nom:</strong> {selectedSubject.subjectName}
+                </div>
+                <div>
+                  <strong>Code:</strong> {selectedSubject.subjectCode}
+                </div>
+                <div>
+                  <strong>Description:</strong> {selectedSubject.description || "-"}
+                </div>
+                <div>
+                  <strong>Statut:</strong>{" "}
+                  {selectedSubject.isActive ? "Actif" : "Inactif"}
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={closeModal}>Fermer</Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation delete modal */}
+      <ConfirmationModal
+        isOpen={confirmOpen}
+        message={`Êtes-vous sûr de vouloir supprimer la matière "${
+          subjectToDelete?.subjectName ?? ""
+        }" ?`}
+        onConfirm={handleDeleteConfirmed}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 };
