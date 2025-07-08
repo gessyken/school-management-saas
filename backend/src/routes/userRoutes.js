@@ -8,9 +8,9 @@ router.use(protect);
 router.use(getUserRolesForSchool);
 
 router.get('/', UserController.getAllUsersPerSchool);
+router.get('/getAll', UserController.getAllUsers);
 
 // Authentication routes
-// router.post('/register', UserController.register);
 // router.post('/login', UserController.login);
 
 // User profile routes (require authentication)

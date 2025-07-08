@@ -46,19 +46,14 @@ const sidebarTabs: SidebarItem[] = [
     label: "Academic",
     children: [
       {
-        label: "Classes",
-        path: "/school-dashboard/academic/classes",
-        icon: School,
-      },
-      {
         label: "Subject",
         path: "/school-dashboard/academic/subjects",
         icon: BookMarked,
       },
       {
-        label: "Result",
-        path: "/school-dashboard/academic/results",
-        icon: ScrollText, // represents a paper or result
+        label: "Classes",
+        path: "/school-dashboard/academic/classes",
+        icon: School,
       },
       {
         label: "Élèves",
@@ -71,14 +66,19 @@ const sidebarTabs: SidebarItem[] = [
         icon: ListOrdered,
       },
       {
+        label: "Paiements",
+        path: "/school-dashboard/academic/payments",
+        icon: CreditCard,
+      },
+      {
         label: "Settings",
         path: "/school-dashboard/academic/settings",
         icon: Settings,
       },
       {
-        label: "Paiements",
-        path: "/school-dashboard/academic/payments",
-        icon: CreditCard,
+        label: "Result",
+        path: "/school-dashboard/academic/results",
+        icon: ScrollText, // represents a paper or result
       },
       {
         label: "Notes",

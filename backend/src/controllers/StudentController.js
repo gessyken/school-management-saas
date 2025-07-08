@@ -176,6 +176,24 @@ class StudentController {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
+  async getAllStudentsBySchool(req, res) {
+    try {
+      const schoolId = req.params.schoolId;
+      if (!schoolId) {
+        return res.status(400).json({ message: 'School context required' });
+      }
+
+      const students = await Student.find({ school: schoolId })
+        .populate({
+          path: 'classInfo'
+        });
+
+      res.json({ students });
+    } catch (error) {
+      console.log(error)
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
 
   // Get single student by id and ensure it belongs to the school
   async getStudentById(req, res) {

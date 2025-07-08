@@ -39,6 +39,11 @@ import EditSchoolPage from "./pages/school/EditSchoolPage";
 import JoinRequestsPage from "./pages/school/JoinRequestsPage";
 import ManageMembersPage from "./pages/school/ManageMembersPage";
 import SchoolLogsPage from "./pages/school/LogPage";
+import Dashboard from "./pages/Dashboard/DashboardPage";
+import ManageUsers from "./pages/Dashboard/ManageUsers";
+import AdminDashboardLayout from "./pages/Dashboard/DashboardLayout";
+import ManageSchools from "./pages/Dashboard/ManageSchools";
+import SchoolDetail from "./pages/Dashboard/SchoolDetail";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +77,14 @@ const App = () => (
               <Route path="members" element={<ManageMembersPage />} />
               <Route path="billing" element={<h1>Billing Logic</h1>} />
               <Route path="logs" element={<SchoolLogsPage />} />
+            </Route>
+            <Route path="/admin-dashboard" element={<AdminDashboardLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="manage-users" element={<ManageUsers />} />
+              <Route path="manage-schools" element={<Outlet />}>
+                <Route index element={<ManageSchools />} />
+                <Route path=":id" element={<SchoolDetail />} />
+              </Route>
             </Route>
 
             {/* Redirect from root to login */}
