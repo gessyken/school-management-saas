@@ -1,119 +1,129 @@
 import mongoose from 'mongoose';
 
 const schoolSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-        trim: true
-    },
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
 
-    email: {
-        type: String,
-        required: true,
-        lowercase: true,
-        trim: true,
-        match: [/^\S+@\S+\.\S+$/, 'Invalid email format']
-    },
+  email: {
+    type: String,
+    required: true,
+    lowercase: true,
+    trim: true,
+    match: [/^\S+@\S+\.\S+$/, 'Invalid email format']
+  },
 
-    phone: {
-        type: String,
-        trim: true
-    },
+  phone: {
+    type: String,
+    trim: true
+  },
 
-    address: {
-        type: String,
-        trim: true
-    },
+  address: {
+    type: String,
+    trim: true
+  },
 
-    logoUrl: {
-        type: String,
-        trim: true
-    },
+  logoUrl: {
+    type: String,
+    trim: true
+  },
 
-    subdomain: {
-        type: String,
-        lowercase: true,
-        unique: true,
-        sparse: true
-    },
-    members: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-    }],
-    plan: {
-        type: String,
-        enum: ['FREE', 'BASIC', 'PRO'],
-        default: 'FREE'
-    },
+  subdomain: {
+    type: String,
+    lowercase: true,
+    unique: true,
+    sparse: true
+  },
+  members: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
+  plan: {
+    type: String,
+    enum: ['FREE', 'BASIC', 'PRO'],
+    default: 'FREE'
+  },
 
-    billing: {
-        currentInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: "Invoice" },
-        nextInvoiceDue: { type: Date },
-        lastPaymentDate: { type: Date },
-        status: {
-            type: String,
-            enum: ["active", "trialing", "past_due", "canceled", "unpaid"],
-            default: "trialing",
-        },
-        trialEndsAt: { type: Date },
+  billing: {
+    currentInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: "Invoice" },
+    nextInvoiceDue: { type: Date },
+    lastPaymentDate: { type: Date },
+    status: {
+      type: String,
+      enum: ["active", "trialing", "past_due", "canceled", "unpaid"],
+      default: "trialing",
     },
+    trialEndsAt: { type: Date },
+  },
 
-    // Billing configuration
-    billingRules: {
-        baseMonthlyFee: { type: Number, default: 10000 },
-        perStudentFee: { type: Number, default: 5 },
-        perStaffFee: { type: Number, default: 200 },
-        perClassFee: { type: Number, default: 150 },
-        // storageLimitMB: { type: Number, default: 1000 },
-    },
-    usage: {
-        studentsCount: { type: Number, default: 1000 },
-        staffCount: { type: Number, default: 10 },
-        classCount: { type: Number, default: 14 },
-        // storageUsedMB: { type: Number, default: 0 },
-        lastUsageCalculated: { type: Date },
-    },
+  // Billing configuration
+  billingRules: {
+    baseMonthlyFee: { type: Number, default: 10000 },
+    perStudentFee: { type: Number, default: 5 },
+    perStaffFee: { type: Number, default: 200 },
+    perClassFee: { type: Number, default: 150 },
+    storageLimitMB: { type: Number, default: 1000 },          // <-- add this
+    pricePerExtraStorageMB: { type: Number, default: 2 },
+  },
+  usage: {
+    studentsCount: { type: Number, default: 1000 },
+    staffCount: { type: Number, default: 10 },
+    classCount: { type: Number, default: 14 },
+    storageUsedMB: { type: Number, default: 0 },
+    lastUsageCalculated: { type: Date },
+  },
 
-    accessStatus: {
-        type: String,
-        enum: ['active', 'suspended', 'blocked'],
-        default: 'active'
-    },
-    joinRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    memberShipAccessStatus: {
-        type: Boolean,
-        default: true
-    },
-    blockReason: {
-        type: String,
-        default: ''
-    },
+  accessStatus: {
+    type: String,
+    enum: ['active', 'suspended', 'blocked'],
+    default: 'active'
+  },
+  joinRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  memberShipAccessStatus: {
+    type: Boolean,
+    default: true
+  },
+  blockReason: {
+    type: String,
+    default: ''
+  },
 
-    createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
 }, {
-    timestamps: true
+  timestamps: true
 });
 
 // Method: Compute total bill based on usage
 schoolSchema.methods.calculateMonthlyBill = function () {
-  const rules = this.billingRules;
-  const usage = this.usage;
+  const rules = this.billingRules || {};
+  const usage = this.usage || {};
+
+  const baseMonthlyFee = rules.baseMonthlyFee || 0;
+  const perStudentFee = rules.perStudentFee || 0;
+  const perStaffFee = rules.perStaffFee || 0;
+  const perClassFee = rules.perClassFee || 0;
+  const storageLimitMB = rules.storageLimitMB || 0;
+  const pricePerExtraStorageMB = rules.pricePerExtraStorageMB || 0;
+
+  const studentsCount = usage.studentsCount || 0;
+  const staffCount = usage.staffCount || 0;
+  const classCount = usage.classCount || 0;
+  const storageUsedMB = usage.storageUsedMB || 0;
 
   let total =
-    rules.baseMonthlyFee +
-    usage.studentsCount * rules.perStudentFee +
-    usage.staffCount * rules.perStaffFee +
-    usage.classCount * rules.perClassFee;
+    baseMonthlyFee +
+    studentsCount * perStudentFee +
+    staffCount * perStaffFee +
+    classCount * perClassFee;
 
-  const extraStorage =
-    usage.storageUsedMB > rules.storageLimitMB
-      ? usage.storageUsedMB - rules.storageLimitMB
-      : 0;
+  const extraStorage = storageUsedMB > storageLimitMB ? storageUsedMB - storageLimitMB : 0;
 
-  total += extraStorage * rules.pricePerExtraStorageMB;
+  total += extraStorage * pricePerExtraStorageMB;
 
   return total;
 };

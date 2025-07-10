@@ -19,16 +19,16 @@ const navItems = [
     path: "/admin-dashboard/manage-users",
     icon: <Users className="w-5 h-5" />,
   },
-  {
-    label: "Statistics",
-    path: "/admin-dashboard/statistics",
-    icon: <BarChart3 className="w-5 h-5" />,
-  },
-  {
-    label: "Billing",
-    path: "/admin-dashboard/billing",
-    icon: <CreditCard className="w-5 h-5" />,
-  },
+  // {
+  //   label: "Statistics",
+  //   path: "/admin-dashboard/statistics",
+  //   icon: <BarChart3 className="w-5 h-5" />,
+  // },
+  // {
+  //   label: "Billing",
+  //   path: "/admin-dashboard/billing",
+  //   icon: <CreditCard className="w-5 h-5" />,
+  // },
   {
     label: "Logs",
     path: "/admin-dashboard/logs",

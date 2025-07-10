@@ -60,9 +60,14 @@ app.use('/api/logs', logRoutes);
 
 import schoolRoutes from './src/routes/schoolRoutes.js';
 app.use('/api/schools', schoolRoutes);
+import invoiceRoutes from './src/routes/invoiceRoutes.js';
+app.use('/api/invoices', invoiceRoutes);
 import authRoutes from './src/routes/authRoutes.js';
 import { requestLogger } from "./src/middleware/requestLogger.js";
 app.use('/api/auth', authRoutes);
+
+import { getAdminDashboardStats } from "./src/controllers/statsController.js";
+app.use('/api/admin/stats', getAdminDashboardStats);
 
 // Middleware for handling not found routes
 // app.use(notFound);

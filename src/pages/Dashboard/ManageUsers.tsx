@@ -194,34 +194,34 @@ const ManageUsers = () => {
                 ))}
               </td>
               <td className="p-3 border text-left text-xs space-y-2">
-  {u.memberships?.length > 0 ? (
-    u.memberships.map((m, i) => {
-      const school = schools.find((opt) => opt._id === m.school);
-      return (
-        <div
-          key={i}
-          className="p-2 border rounded bg-gray-50 shadow-sm text-gray-700"
-        >
-          <div className="font-semibold text-gray-800 text-sm">
-            {school?.name || "Unknown School"}
-          </div>
-          <div className="mt-1 flex flex-wrap gap-1">
-            {m.roles.map((role, j) => (
-              <span
-                key={j}
-                className="inline-block bg-blue-100 text-blue-800 px-2 py-0.5 text-xs rounded"
-              >
-                {role}
-              </span>
-            ))}
-          </div>
-        </div>
-      );
-    })
-  ) : (
-    <em className="text-gray-400">—</em>
-  )}
-</td>
+                {u.memberships?.length > 0 ? (
+                  u.memberships.map((m, i) => {
+                    const school = schools.find((opt) => opt._id === m.school);
+                    return (
+                      <div
+                        key={i}
+                        className="p-2 border rounded bg-gray-50 shadow-sm text-gray-700"
+                      >
+                        <div className="font-semibold text-gray-800 text-sm">
+                          {school?.name || "Unknown School"}
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {m.roles.map((role, j) => (
+                            <span
+                              key={j}
+                              className="inline-block bg-blue-100 text-blue-800 px-2 py-0.5 text-xs rounded"
+                            >
+                              {role}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <em className="text-gray-400">—</em>
+                )}
+              </td>
 
               <td className="p-3 border">
                 <div className="flex justify-center items-center space-x-2">

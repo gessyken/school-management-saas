@@ -239,7 +239,6 @@ export const rejectJoinRequest = async (req, res) => {
   }
 };
 
-
 // GET /api/schools/:schoolId
 export const getSchoolById = async (req, res) => {
   const { schoolId } = req.params;
@@ -371,5 +370,79 @@ export const updateMemberRoles = async (req, res) => {
   } catch (error) {
     console.error("Error updating roles:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+// 1. Get billing rules & usage
+export const getBillingInfo = async (req, res) => {
+  const { schoolId } = req.params;
+
+  try {
+    const school = await School.findById(schoolId).select("billingRules usage");
+    if (!school) {
+      return res.status(404).json({ error: "School not found" });
+    }
+
+    return res.status(200).json({
+      billingRules: school.billingRules,
+      usage: school.usage,
+    });
+  } catch (err) {
+    console.error("Error fetching billing info:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+// 2. Update billing rules
+export const updateBillingRules = async (req, res) => {
+  const { schoolId } = req.params;
+  const updates = req.body; // { baseMonthlyFee, perStudentFee, ... }
+
+  try {
+    const school = await School.findById(schoolId);
+    if (!school) {
+      return res.status(404).json({ error: "School not found" });
+    }
+
+    // Update fields
+    for (const key in updates) {
+      if (school.billingRules.hasOwnProperty(key)) {
+        school.billingRules[key] = updates[key];
+      }
+    }
+
+    await school.save();
+
+    return res.status(200).json({ message: "Billing rules updated", billingRules: school.billingRules });
+  } catch (err) {
+    console.error("Error updating billing rules:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+// 3. Update usage counts (students, staff, classes, etc.)
+export const updateUsage = async (req, res) => {
+  const { schoolId } = req.params;
+  const updates = req.body; // { studentsCount, staffCount, ... }
+
+  try {
+    const school = await School.findById(schoolId);
+    if (!school) {
+      return res.status(404).json({ error: "School not found" });
+    }
+
+    for (const key in updates) {
+      if (school.usage.hasOwnProperty(key)) {
+        school.usage[key] = updates[key];
+      }
+    }
+
+    school.usage.lastUsageCalculated = new Date();
+    await school.save();
+
+    return res.status(200).json({ message: "Usage updated", usage: school.usage });
+  } catch (err) {
+    console.error("Error updating usage:", err);
+    return res.status(500).json({ error: "Server error" });
   }
 };

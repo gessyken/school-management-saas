@@ -12,6 +12,9 @@ import {
   updateSchool,
   getSchoolMembers,
   updateMemberRoles,
+  getBillingInfo,
+  updateBillingRules,
+  updateUsage,
 } from '../controllers/schoolController.js';
 import { getUserRolesForSchool, protect } from '../middleware/auth.middleware.js';
 
@@ -36,5 +39,9 @@ router.get("/:schoolId", protect, getSchoolById);
 router.put("/:schoolId", protect,getUserRolesForSchool, updateSchool);
 router.get("/:schoolId/members", protect, getSchoolMembers);
 router.patch("/:schoolId/members/:memberId/roles", protect,getUserRolesForSchool, updateMemberRoles);
+
+router.get("/billing/:schoolId", getBillingInfo);
+router.put("/billing/:schoolId/billing-rules", updateBillingRules);
+router.put("/billing/:schoolId/usage", updateUsage);
 
 export default router;

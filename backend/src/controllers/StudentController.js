@@ -184,10 +184,7 @@ class StudentController {
       }
 
       const students = await Student.find({ school: schoolId })
-        .populate({
-          path: 'classInfo'
-        });
-
+      // console.log("students",students)
       res.json({ students });
     } catch (error) {
       console.log(error)
