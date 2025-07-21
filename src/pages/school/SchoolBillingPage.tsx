@@ -8,13 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import InvoiceHistory from "@/components/InvoiceHistory";
 
 const SchoolBillingPage = () => {
@@ -22,7 +15,6 @@ const SchoolBillingPage = () => {
   const [billingInfo, setBillingInfo] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -104,9 +96,9 @@ const SchoolBillingPage = () => {
     }
   };
 
-  const handlePayInvoice = async (invoiceId: string) => {
+  const handlePayInvoice = async (invoiceId: string, phoneNumber?: string) => {
     try {
-      await invoiceService.pay(invoiceId);
+      await invoiceService.pay(invoiceId, phoneNumber); // Pass to backend
       toast({ title: "Facture marquée comme payée" });
       const invoiceRes = await invoiceService.getBySchool(schoolId!);
       setInvoices(invoiceRes.data);
@@ -161,8 +153,26 @@ const SchoolBillingPage = () => {
         </CardContent>
       </Card>
 
-      {/* Invoices */}
-      <InvoiceHistory invoices={invoices} />
+      {/* Invoices Section */}
+      {/* <div className="flex justify-end">
+        <Button onClick={handleGenerateInvoice} disabled={submitting}>
+          {submitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              Génération...
+            </>
+          ) : (
+            "Générer une facture"
+          )}
+        </Button>
+      </div> */}
+
+      <InvoiceHistory
+        invoices={invoices}
+        schoolId={schoolId}
+        setInvoices={setInvoices}
+        handlePayInvoice={handlePayInvoice}
+      />
     </div>
   );
 };
