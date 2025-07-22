@@ -419,13 +419,13 @@ export default function StudentManagement() {
                 >
                   <option value="">{t("studentManagement.all")}</option>
                   {[
-                    "Form 1",
-                    "Form 2",
-                    "Form 3",
-                    "Form 4",
-                    "Form 5",
-                    "Lower Sixth",
-                    "Upper Sixth",
+                    "Form 1/Sixième",
+                    "Form 2/Cinquième",
+                    "Form 3/Quatrième",
+                    "Form 4/Troisième",
+                    "Form 5/Seconde",
+                    "Lower Sixth/Première",
+                    "Upper Sixth/Terminale",
                   ].map((level) => (
                     <option key={level} value={level}>
                       {level}
@@ -753,13 +753,13 @@ export default function StudentManagement() {
                         {t("studentManagement.selectLevel")}
                       </option>
                       {[
-                        "Form 1",
-                        "Form 2",
-                        "Form 3",
-                        "Form 4",
-                        "Form 5",
-                        "Lower Sixth",
-                        "Upper Sixth",
+                        "Form 1/Sixième",
+                        "Form 2/Cinquième",
+                        "Form 3/Quatrième",
+                        "Form 4/Troisième",
+                        "Form 5/Seconde",
+                        "Lower Sixth/Première",
+                        "Upper Sixth/Terminale",
                       ].map((level) => (
                         <option key={level} value={level}>
                           {level}
