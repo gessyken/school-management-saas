@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
 import api from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import { SCHOOL_KEY } from "@/lib/key";
+import { useTranslation } from "react-i18next";
 
 interface SchoolData {
   name: string;
@@ -25,12 +26,13 @@ interface SchoolData {
 const EditSchoolPage = () => {
   //   const { schoolId } = useParams<{ schoolId: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const schoolId: String | null = (() => {
     const stored = localStorage.getItem(SCHOOL_KEY);
     if (!stored) {
       navigate("/schools-select");
     }
-    let schoolObj = JSON.parse(stored)
+    let schoolObj = JSON.parse(stored);
     return schoolObj ? schoolObj._id : null;
   })();
 
@@ -135,16 +137,18 @@ const EditSchoolPage = () => {
       </div>
     );
   }
-
   return (
-    <Card className="max-w-3xl mx-auto">
+    <Card className="max-w-3xl mx-auto shadow-md border border-gray-200">
       <form onSubmit={handleSubmit}>
-        <CardHeader>
-          <h2 className="text-2xl font-bold text-skyblue">Modifier l'école</h2>
+        <CardHeader className="bg-skyblue/10 p-6 rounded-t-xl">
+          <h2 className="text-2xl font-bold text-skyblue">
+            {t("editSchool.title")}
+          </h2>
         </CardHeader>
-        <CardContent className="space-y-4">
+
+        <CardContent className="space-y-5 p-6">
           <div>
-            <Label htmlFor="name">Nom</Label>
+            <Label htmlFor="name">{t("editSchool.name")}</Label>
             <Input
               id="name"
               type="text"
@@ -153,8 +157,9 @@ const EditSchoolPage = () => {
               required
             />
           </div>
+
           <div>
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("editSchool.email")}</Label>
             <Input
               id="email"
               type="email"
@@ -163,8 +168,9 @@ const EditSchoolPage = () => {
               required
             />
           </div>
+
           <div>
-            <Label htmlFor="phone">Téléphone</Label>
+            <Label htmlFor="phone">{t("editSchool.phone")}</Label>
             <Input
               id="phone"
               type="tel"
@@ -172,8 +178,9 @@ const EditSchoolPage = () => {
               onChange={handleChange("phone")}
             />
           </div>
+
           <div>
-            <Label htmlFor="address">Adresse</Label>
+            <Label htmlFor="address">{t("editSchool.address")}</Label>
             <Input
               id="address"
               type="text"
@@ -181,8 +188,9 @@ const EditSchoolPage = () => {
               onChange={handleChange("address")}
             />
           </div>
+
           <div>
-            <Label htmlFor="logoUrl">URL du logo</Label>
+            <Label htmlFor="logoUrl">{t("editSchool.logoUrl")}</Label>
             <Input
               id="logoUrl"
               type="url"
@@ -191,7 +199,8 @@ const EditSchoolPage = () => {
             />
           </div>
         </CardContent>
-        <CardFooter>
+
+        <CardFooter className="p-6">
           <Button
             type="submit"
             disabled={saving}
@@ -200,10 +209,10 @@ const EditSchoolPage = () => {
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enregistrement...
+                {t("editSchool.saving")}
               </>
             ) : (
-              "Sauvegarder"
+              t("editSchool.save")
             )}
           </Button>
         </CardFooter>

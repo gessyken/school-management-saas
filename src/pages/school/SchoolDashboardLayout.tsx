@@ -33,97 +33,9 @@ import {
   Building2,
   UserCog,
   FileClock,
-  BookMarked
+  BookMarked,
 } from "lucide-react"; // assuming you're using lucide-react
-
-const sidebarTabs: SidebarItem[] = [
-  {
-    label: "Overview",
-    path: "/school-dashboard",
-    icon: LayoutDashboard, // More intuitive for dashboard
-  },
-  {
-    label: "Academic",
-    children: [
-      {
-        label: "Subject",
-        path: "/school-dashboard/academic/subjects",
-        icon: BookMarked,
-      },
-      {
-        label: "Classes",
-        path: "/school-dashboard/academic/classes",
-        icon: School,
-      },
-      {
-        label: "Élèves",
-        path: "/school-dashboard/academic/students",
-        icon: Users,
-      },
-      {
-        label: "Classes List",
-        path: "/school-dashboard/academic/classes-list",
-        icon: ListOrdered,
-      },
-      {
-        label: "Paiements",
-        path: "/school-dashboard/academic/payments",
-        icon: CreditCard,
-      },
-      {
-        label: "Settings",
-        path: "/school-dashboard/academic/settings",
-        icon: Settings,
-      },
-      {
-        label: "Result",
-        path: "/school-dashboard/academic/results",
-        icon: ScrollText, // represents a paper or result
-      },
-      {
-        label: "Notes",
-        path: "/school-dashboard/academic/grades",
-        icon: GraduationCap,
-      },
-      {
-        label: "Statistiques",
-        path: "/school-dashboard/academic/statistics",
-        icon: BarChart3,
-      },
-    ],
-  },
-  {
-    label: "Settings",
-    children: [
-      {
-        label: "Edit School",
-        path: "/school-dashboard/edit",
-        icon: Building2,
-      },
-      {
-        label: "Join Requests",
-        path: "/school-dashboard/join-requests",
-        icon: UserCheck,
-      },
-      {
-        label: "Members",
-        path: "/school-dashboard/members",
-        icon: UserCog,
-      },
-      {
-        label: "Billing",
-        path: "/school-dashboard/billing",
-        icon: CreditCard,
-      },
-    ],
-  },
-  {
-    label: "Logs",
-    path: "/school-dashboard/logs",
-    icon: FileClock, // log with a time symbol
-  },
-];
-
+import { useTranslation } from "react-i18next";
 
 const SidebarMenuItem = ({ item }: { item: SidebarItem }) => {
   const [open, setOpen] = useState(false);
@@ -180,22 +92,110 @@ const SidebarMenuItem = ({ item }: { item: SidebarItem }) => {
 };
 
 const SchoolDashboardLayout = () => {
+  const { t } = useTranslation();
+  const sidebarTabs = [
+    {
+      label: t("sidebar.overview"),
+      path: "/school-dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      label: t("sidebar.academic"),
+      children: [
+        {
+          label: t("sidebar.subject"),
+          path: "/school-dashboard/academic/subjects",
+          icon: BookMarked,
+        },
+        {
+          label: t("sidebar.classes"),
+          path: "/school-dashboard/academic/classes",
+          icon: School,
+        },
+        {
+          label: t("sidebar.students"),
+          path: "/school-dashboard/academic/students",
+          icon: Users,
+        },
+        {
+          label: t("sidebar.classesList"),
+          path: "/school-dashboard/academic/classes-list",
+          icon: ListOrdered,
+        },
+        {
+          label: t("sidebar.payments"),
+          path: "/school-dashboard/academic/payments",
+          icon: CreditCard,
+        },
+        {
+          label: t("sidebar.academicSettings"),
+          path: "/school-dashboard/academic/settings",
+          icon: Settings,
+        },
+        {
+          label: t("sidebar.results"),
+          path: "/school-dashboard/academic/results",
+          icon: ScrollText,
+        },
+        {
+          label: t("sidebar.grades"),
+          path: "/school-dashboard/academic/grades",
+          icon: GraduationCap,
+        },
+        {
+          label: t("sidebar.statistics"),
+          path: "/school-dashboard/academic/statistics",
+          icon: BarChart3,
+        },
+      ],
+    },
+    {
+      label: t("sidebar.settings"),
+      children: [
+        {
+          label: t("sidebar.editSchool"),
+          path: "/school-dashboard/edit",
+          icon: Building2,
+        },
+        {
+          label: t("sidebar.joinRequests"),
+          path: "/school-dashboard/join-requests",
+          icon: UserCheck,
+        },
+        {
+          label: t("sidebar.members"),
+          path: "/school-dashboard/members",
+          icon: UserCog,
+        },
+        {
+          label: t("sidebar.billing"),
+          path: "/school-dashboard/billing",
+          icon: CreditCard,
+        },
+      ],
+    },
+    {
+      label: t("sidebar.logs"),
+      path: "/school-dashboard/logs",
+      icon: FileClock,
+    },
+  ];
   return (
-    <div className="flex h-screen bg-gray-100 text-gray-800">
+    <div className="flex h-screen bg-gray-100 text-gray-800 dark:bg-gray-950 dark:text-gray-100">
       {/* Sidebar */}
-      <aside className="w-[250px] bg-[#1e293b] text-white flex flex-col">
-        <div className="p-6 text-xl font-bold border-b border-gray-700">
-          🎓 School Admin
+      <aside className="w-[260px] bg-slate-900 text-white flex flex-col shadow-lg">
+        <div className="p-6 text-xl font-bold border-b border-slate-800">
+          🎓 {t("layout.schoolAdmin")}
         </div>
 
-        <nav className="flex-1 p-4 space-y-3 text-sm">
+        <nav className="flex-1 p-4 space-y-2 text-sm">
           {sidebarTabs.map((tab) => (
             <SidebarMenuItem key={tab.label} item={tab} />
           ))}
         </nav>
 
-        <div className="p-4 text-xs text-center border-t border-gray-700">
-          &copy; 2025 School Management
+        <div className="p-4 text-xs text-center border-t border-slate-800 text-gray-400">
+          &copy; 2025 {t("layout.copyright")}
         </div>
       </aside>
 
@@ -205,7 +205,7 @@ const SchoolDashboardLayout = () => {
         <Header />
 
         {/* Main Page Content */}
-        <main className="flex-1 p-6 overflow-y-auto bg-gray-50">
+        <main className="flex-1 p-6 overflow-y-auto bg-white dark:bg-gray-900 transition-colors duration-300">
           <Outlet />
         </main>
       </div>

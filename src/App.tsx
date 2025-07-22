@@ -23,13 +23,6 @@ import DirectorStudents from "@/pages/director/StudentManagement";
 import FeesManagement from "@/pages/director/FeesManagement";
 import GradesManagement from "@/pages/director/GradesManagement";
 import DirectorStatistics from "@/pages/director/DirectorStatistics";
-import SecretaryDashboard from "@/pages/secretary/SecretaryDashboard";
-import SecretaryClasses from "@/pages/secretary/SecretaryClasses";
-import SecretaryStudents from "@/pages/secretary/StudentsPage";
-import SecretaryPayments from "@/pages/secretary/SecretaryPayments";
-import TeacherDashboard from "@/pages/teacher/TeacherDashboard";
-import TeacherClasses from "@/pages/teacher/TeacherClasses";
-import TeacherGrades from "@/pages/teacher/TeacherGrades";
 import NotFoundPage from "@/pages/NotFoundPage";
 import ClassesList from "@/pages/director/ClassList";
 import ResultManagement from "./pages/director/ResultManagement";
@@ -169,66 +162,6 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["DIRECTOR"]}>
                   <DirectorStatistics />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Secretary Routes */}
-            <Route
-              path="/secretary/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={["SECRETARY"]}>
-                  <SecretaryDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/secretary/classes"
-              element={
-                <ProtectedRoute allowedRoles={["SECRETARY"]}>
-                  <SecretaryClasses />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/secretary/students"
-              element={
-                <ProtectedRoute allowedRoles={["SECRETARY"]}>
-                  <SecretaryStudents />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/secretary/payments"
-              element={
-                <ProtectedRoute allowedRoles={["SECRETARY"]}>
-                  <SecretaryPayments />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Teacher Routes */}
-            <Route
-              path="/teacher/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={["TEACHER"]}>
-                  <TeacherDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/teacher/classes"
-              element={
-                <ProtectedRoute allowedRoles={["TEACHER"]}>
-                  <TeacherClasses />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/teacher/grades"
-              element={
-                <ProtectedRoute allowedRoles={["TEACHER"]}>
-                  <TeacherGrades />
                 </ProtectedRoute>
               }
             />

@@ -35,6 +35,7 @@ import { usePagination } from "@/components/ui/usePagination";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useTranslation } from "react-i18next";
 
 // Subject interface/type
 interface Subject {
@@ -79,6 +80,7 @@ const ConfirmationModal = ({
 
 const Subjects = () => {
   const { toast } = useToast();
+  const { t } = useTranslation()
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [search, setSearch] = useState("");
@@ -279,286 +281,272 @@ const Subjects = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gestion des Matières</h1>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <Card className="bg-skyblue/10">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Nombre total de matières
-            </CardTitle>
-            <div className="text-2xl font-bold">{subjects.length}</div>
-          </CardHeader>
-        </Card>
-
-        <Card className="bg-skyblue/10">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Matières actives
-            </CardTitle>
-            <div className="text-2xl font-bold">
-              {subjects.filter((s) => s.isActive).length}
-            </div>
-          </CardHeader>
-        </Card>
-
-        <Card className="bg-skyblue/10">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Matières inactives
-            </CardTitle>
-            <div className="text-2xl font-bold">
-              {subjects.filter((s) => !s.isActive).length}
-            </div>
-          </CardHeader>
-        </Card>
-      </div>
-
-      <Card className="p-4">
-        <div className="flex justify-between items-center mb-4">
-          <Input
-            placeholder="Rechercher une matière..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-64"
-            disabled={loading}
-          />
-          <div className="flex gap-2">
-            <Button onClick={() => openModal("create")} disabled={loading}>
-              <FilePlus className="mr-2 h-4 w-4" />
-              Ajouter
-            </Button>
-            <Button variant="outline" onClick={exportExcel} disabled={loading}>
-              <Download className="mr-2 h-4 w-4" />
-              Excel
-            </Button>
-            <Button variant="outline" onClick={exportPDF} disabled={loading}>
-              <Download className="mr-2 h-4 w-4" />
-              PDF
-            </Button>
-            <label className="cursor-pointer bg-muted px-3 py-1 rounded">
-              <Upload className="inline h-4 w-4 mr-2" />
-              Importer
-              <input
-                type="file"
-                hidden
-                onChange={(e) => e.target.files && handleImport(e.target.files[0])}
-                disabled={loading}
-                accept=".xls,.xlsx"
-              />
-            </label>
-          </div>
-        </div>
-
-        {loading ? (
-          <p>Chargement...</p>
-        ) : (
-          <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentData.map((subject: Subject) => (
-                  <TableRow key={subject._id}>
-                    <TableCell>{subject.subjectName}</TableCell>
-                    <TableCell>{subject.subjectCode}</TableCell>
-                    <TableCell>
-                      <CheckCircle
-                        className={`h-4 w-4 ${
-                          subject.isActive ? "text-green-500" : "text-red-500"
-                        }`}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" disabled={loading}>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openModal("view", subject)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Voir
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openModal("edit", subject)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Modifier
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toggleActive(subject)}>
-                            {subject.isActive ? (
-                              <>
-                                <XCircle className="h-4 w-4 mr-2" />
-                                Désactiver
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Activer
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => confirmDelete(subject)}
-                            className="text-destructive"
-                          >
-                            <Trash className="h-4 w-4 mr-2" />
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            {/* Pagination controls */}
-            <div className="flex justify-between items-center mt-4">
-              <Button
-                variant="outline"
-                onClick={goToPreviousPage}
-                disabled={currentPage === 1 || loading}
-              >
-                Précédent
-              </Button>
-              <div>
-                Page {currentPage} sur {totalPages}
-              </div>
-              <Button
-                variant="outline"
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages || loading}
-              >
-                Suivant
-              </Button>
-            </div>
-          </>
-        )}
-      </Card>
-
-      {/* Modal for create/edit/view */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 relative max-h-[90vh] overflow-auto">
-            <h2 className="text-xl font-bold mb-4 capitalize">
-              {modalMode === "create"
-                ? "Ajouter une matière"
-                : modalMode === "edit"
-                ? "Modifier la matière"
-                : "Détails de la matière"}
-            </h2>
-
-            {(modalMode === "create" || modalMode === "edit") && (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block mb-1 font-semibold">Nom</label>
-                  <Input
-                    type="text"
-                    value={form.subjectName}
-                    onChange={(e) =>
-                      setForm({ ...form, subjectName: e.target.value })
-                    }
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 font-semibold">Code</label>
-                  <Input
-                    type="text"
-                    value={form.subjectCode}
-                    onChange={(e) =>
-                      setForm({ ...form, subjectCode: e.target.value })
-                    }
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 font-semibold">Description</label>
-                  <textarea
-                    className="w-full border rounded px-3 py-2"
-                    value={form.description}
-                    onChange={(e) =>
-                      setForm({ ...form, description: e.target.value })
-                    }
-                    disabled={loading}
-                    rows={3}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    id="isActive"
-                    type="checkbox"
-                    checked={form.isActive}
-                    onChange={(e) =>
-                      setForm({ ...form, isActive: e.target.checked })
-                    }
-                    disabled={loading}
-                  />
-                  <label htmlFor="isActive">Actif</label>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={closeModal}
-                    disabled={loading}
-                  >
-                    Annuler
-                  </Button>
-                  <Button type="submit" disabled={loading}>
-                    Enregistrer
-                  </Button>
-                </div>
-              </form>
-            )}
-
-            {modalMode === "view" && selectedSubject && (
-              <div className="space-y-4">
-                <div>
-                  <strong>Nom:</strong> {selectedSubject.subjectName}
-                </div>
-                <div>
-                  <strong>Code:</strong> {selectedSubject.subjectCode}
-                </div>
-                <div>
-                  <strong>Description:</strong> {selectedSubject.description || "-"}
-                </div>
-                <div>
-                  <strong>Statut:</strong>{" "}
-                  {selectedSubject.isActive ? "Actif" : "Inactif"}
-                </div>
-                <div className="flex justify-end">
-                  <Button onClick={closeModal}>Fermer</Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Confirmation delete modal */}
-      <ConfirmationModal
-        isOpen={confirmOpen}
-        message={`Êtes-vous sûr de vouloir supprimer la matière "${
-          subjectToDelete?.subjectName ?? ""
-        }" ?`}
-        onConfirm={handleDeleteConfirmed}
-        onCancel={() => setConfirmOpen(false)}
-      />
+  <div className="p-6 bg-white rounded-md shadow-md max-w-7xl mx-auto">
+    <div className="flex justify-between items-center mb-6">
+      <h1 className="text-3xl font-extrabold text-skyblue">
+        {t("subjectsManagement.title")}
+      </h1>
     </div>
-  );
+
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {[
+        { label: t("subjectsManagement.totalSubjects"), value: subjects.length },
+        {
+          label: t("subjectsManagement.activeSubjects"),
+          value: subjects.filter((s) => s.isActive).length,
+        },
+        {
+          label: t("subjectsManagement.inactiveSubjects"),
+          value: subjects.filter((s) => !s.isActive).length,
+        },
+      ].map(({ label, value }) => (
+        <Card key={label} className="bg-skyblue/10 p-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-muted-foreground">
+              {label}
+            </CardTitle>
+            <div className="text-3xl font-bold text-gray-900">{value}</div>
+          </CardHeader>
+        </Card>
+      ))}
+    </div>
+
+    <Card className="p-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-5 gap-4">
+        <Input
+          placeholder={t("subjectsManagement.searchPlaceholder")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full max-w-sm"
+          disabled={loading}
+        />
+        <div className="flex flex-wrap gap-3">
+          <Button onClick={() => openModal("create")} disabled={loading}>
+            <FilePlus className="mr-2 h-5 w-5" />
+            {t("subjectsManagement.add")}
+          </Button>
+          <Button variant="outline" onClick={exportExcel} disabled={loading}>
+            <Download className="mr-2 h-5 w-5" />
+            Excel
+          </Button>
+          <Button variant="outline" onClick={exportPDF} disabled={loading}>
+            <Download className="mr-2 h-5 w-5" />
+            PDF
+          </Button>
+          <label className="cursor-pointer bg-muted px-3 py-1 rounded flex items-center gap-2 select-none">
+            <Upload className="h-5 w-5" />
+            {t("subjectsManagement.import")}
+            <input
+              type="file"
+              hidden
+              onChange={(e) => e.target.files && handleImport(e.target.files[0])}
+              disabled={loading}
+              accept=".xls,.xlsx"
+            />
+          </label>
+        </div>
+      </div>
+
+      {loading ? (
+        <p className="text-center text-gray-500">{t("subjectsManagement.loading")}</p>
+      ) : (
+        <>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("subjectsManagement.tableHeaders.name")}</TableHead>
+                <TableHead>{t("subjectsManagement.tableHeaders.code")}</TableHead>
+                <TableHead>{t("subjectsManagement.tableHeaders.status")}</TableHead>
+                <TableHead>{t("subjectsManagement.tableHeaders.actions")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentData.map((subject: Subject) => (
+                <TableRow key={subject._id}>
+                  <TableCell>{subject.subjectName}</TableCell>
+                  <TableCell>{subject.subjectCode}</TableCell>
+                  <TableCell>
+                    <CheckCircle
+                      className={`h-5 w-5 ${
+                        subject.isActive ? "text-green-600" : "text-red-600"
+                      }`}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" disabled={loading}>
+                          <MoreHorizontal className="h-5 w-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openModal("view", subject)}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          {t("subjectsManagement.actions.view")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openModal("edit", subject)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          {t("subjectsManagement.actions.edit")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => toggleActive(subject)}>
+                          {subject.isActive ? (
+                            <>
+                              <XCircle className="h-4 w-4 mr-2" />
+                              {t("subjectsManagement.actions.deactivate")}
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              {t("subjectsManagement.actions.activate")}
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => confirmDelete(subject)}
+                          className="text-destructive"
+                        >
+                          <Trash className="h-4 w-4 mr-2" />
+                          {t("subjectsManagement.actions.delete")}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {/* Pagination controls */}
+          <div className="flex justify-between items-center mt-6">
+            <Button
+              variant="outline"
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1 || loading}
+            >
+              {t("subjectsManagement.pagination.previous")}
+            </Button>
+            <div className="text-sm text-gray-700">
+              {t("subjectsManagement.pagination.pageInfo", { currentPage, totalPages })}
+            </div>
+            <Button
+              variant="outline"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages || loading}
+            >
+              {t("subjectsManagement.pagination.next")}
+            </Button>
+          </div>
+        </>
+      )}
+    </Card>
+
+    {/* Modal for create/edit/view */}
+    {isModalOpen && (
+      <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">
+        <div className="bg-white rounded-lg max-w-md w-full p-6 relative max-h-[90vh] overflow-auto shadow-lg">
+          <h2 className="text-xl font-bold mb-6 capitalize">
+            {modalMode === "create"
+              ? t("subjectsManagement.modal.createTitle")
+              : modalMode === "edit"
+              ? t("subjectsManagement.modal.editTitle")
+              : t("subjectsManagement.modal.viewTitle")}
+          </h2>
+
+          {(modalMode === "create" || modalMode === "edit") && (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block mb-1 font-semibold">{t("subjectsManagement.form.name")}</label>
+                <Input
+                  type="text"
+                  value={form.subjectName}
+                  onChange={(e) => setForm({ ...form, subjectName: e.target.value })}
+                  required
+                  disabled={loading}
+                  placeholder={t("subjectsManagement.form.name")}
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-semibold">{t("subjectsManagement.form.code")}</label>
+                <Input
+                  type="text"
+                  value={form.subjectCode}
+                  onChange={(e) => setForm({ ...form, subjectCode: e.target.value })}
+                  required
+                  disabled={loading}
+                  placeholder={t("subjectsManagement.form.code")}
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-semibold">{t("subjectsManagement.form.description")}</label>
+                <textarea
+                  className="w-full border rounded px-3 py-2 resize-none"
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  disabled={loading}
+                  rows={3}
+                  placeholder={t("subjectsManagement.form.description")}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="isActive"
+                  type="checkbox"
+                  checked={form.isActive}
+                  onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                  disabled={loading}
+                />
+                <label htmlFor="isActive">{t("subjectsManagement.form.isActive")}</label>
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeModal}
+                  disabled={loading}
+                >
+                  {t("subjectsManagement.form.cancel")}
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {t("subjectsManagement.form.save")}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {modalMode === "view" && selectedSubject && (
+            <div className="space-y-4">
+              <div>
+                <strong>{t("subjectsManagement.form.name")}:</strong> {selectedSubject.subjectName}
+              </div>
+              <div>
+                <strong>{t("subjectsManagement.form.code")}:</strong> {selectedSubject.subjectCode}
+              </div>
+              <div>
+                <strong>{t("subjectsManagement.form.description")}:</strong> {selectedSubject.description || "-"}
+              </div>
+              <div>
+                <strong>{t("subjectsManagement.form.status")}:</strong>{" "}
+                {selectedSubject.isActive ? t("subjectsManagement.status.active") : t("subjectsManagement.status.inactive")}
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={closeModal}>{t("subjectsManagement.form.close")}</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Confirmation delete modal */}
+    <ConfirmationModal
+      isOpen={confirmOpen}
+      message={t("subjectsManagement.confirmDeleteMessage", { subjectName: subjectToDelete?.subjectName || "" })}
+      onConfirm={handleDeleteConfirmed}
+      onCancel={() => setConfirmOpen(false)}
+    />
+  </div>
+);
+
 };
 
 export default Subjects;

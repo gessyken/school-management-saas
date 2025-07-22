@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import InvoiceHistory from "@/components/InvoiceHistory";
+import { useTranslation } from "react-i18next";
 
 const SchoolBillingPage = () => {
   const [loading, setLoading] = useState(true);
@@ -17,6 +18,7 @@ const SchoolBillingPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const schoolId: string | null = (() => {
     const stored = localStorage.getItem(SCHOOL_KEY);
@@ -77,25 +79,6 @@ const SchoolBillingPage = () => {
     }
   };
 
-  const handleGenerateInvoice = async () => {
-    if (!schoolId) return;
-    setSubmitting(true);
-    try {
-      await invoiceService.generate(schoolId);
-      toast({ title: "Nouvelle facture générée" });
-      const invoiceRes = await invoiceService.getBySchool(schoolId);
-      setInvoices(invoiceRes.data);
-    } catch {
-      toast({
-        title: "Erreur",
-        description: "Échec de génération de la facture",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handlePayInvoice = async (invoiceId: string, phoneNumber?: string) => {
     try {
       await invoiceService.pay(invoiceId, phoneNumber); // Pass to backend
@@ -122,20 +105,20 @@ const SchoolBillingPage = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-6">
-      <h2 className="text-2xl font-bold text-skyblue">
-        Facturation de l’école
-      </h2>
+      <h2 className="text-2xl font-bold text-skyblue">{t("billing.title")}</h2>
 
       {/* Usage Section */}
       <Card>
         <CardHeader>
-          <h3 className="font-semibold">Utilisation</h3>
+          <CardHeader>
+            <h3 className="font-semibold">{t("billing.usageTitle")}</h3>
+          </CardHeader>
         </CardHeader>
         <CardContent className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
           {["studentsCount", "staffCount", "classCount"].map((key) => (
             <div key={key}>
               <label className="block text-sm capitalize mb-1">
-                {key.replace("Count", "")}
+                 {t(`usage.${key}`)}
               </label>
               <Input
                 type="number"
@@ -148,25 +131,12 @@ const SchoolBillingPage = () => {
           ))}
           <Button onClick={updateUsage} disabled={submitting} className="mt-3">
             {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            Enregistrer l'utilisation
+            {t("billing.saveUsage")}
           </Button>
         </CardContent>
       </Card>
 
       {/* Invoices Section */}
-      {/* <div className="flex justify-end">
-        <Button onClick={handleGenerateInvoice} disabled={submitting}>
-          {submitting ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              Génération...
-            </>
-          ) : (
-            "Générer une facture"
-          )}
-        </Button>
-      </div> */}
-
       <InvoiceHistory
         invoices={invoices}
         schoolId={schoolId}

@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import { subjectService } from "@/lib/services/subjectService";
 import { userService } from "@/lib/services/userService";
+import { useTranslation } from "react-i18next";
 
 interface SubjectItem {
   _id: string;
@@ -61,6 +62,7 @@ const itemsPerPage = 5;
 
 const ClassesManagement = () => {
   const { toast } = useToast();
+  const { t } = useTranslation()
 
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [search, setSearch] = useState("");
@@ -326,298 +328,305 @@ const ClassesManagement = () => {
       (subj) => !selectedIds.includes(subj._id) || subj._id === form.subjects[index]?.subjectInfo
     );
   };
-
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gestion des Classes</h1>
-      </div>
+  <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="flex justify-between items-center mb-6">
+      <h1 className="text-3xl font-extrabold text-skyblue">{t("classesManagement.title")}</h1>
+    </div>
 
-      <div className="flex justify-between mb-4">
-        <Input
-          placeholder="Rechercher une classe..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-64"
-          disabled={loading}
-        />
-        <div className="flex gap-2">
-          <Button
-            onClick={() => {
-              setForm({
-                classesName: "",
-                description: "",
-                status: "Open",
-                capacity: "",
-                amountFee: "",
-                level: "",
-                subjects: [],
-                studentList: [],
-                mainTeacherInfo: "",
-                year: "",
-              });
-              setEditingId(null);
-              setShowModal(true);
-            }}
+    <div className="flex flex-wrap justify-between mb-6 gap-4">
+      <Input
+        placeholder={t("classesManagement.searchPlaceholder")}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-64"
+        disabled={loading}
+      />
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          onClick={() => {
+            setForm({
+              classesName: "",
+              description: "",
+              status: "Open",
+              capacity: "",
+              amountFee: "",
+              level: "",
+              subjects: [],
+              studentList: [],
+              mainTeacherInfo: "",
+              year: "",
+            });
+            setEditingId(null);
+            setShowModal(true);
+          }}
+          disabled={loading || submitting}
+          className="flex items-center gap-2"
+        >
+          <FilePlus className="h-5 w-5" />
+          {t("classesManagement.add")}
+        </Button>
+        <Button variant="outline" onClick={exportExcel} disabled={loading || submitting} className="flex items-center gap-2">
+          <Download className="h-5 w-5" />
+          Excel
+        </Button>
+        <Button variant="outline" onClick={exportPDF} disabled={loading || submitting} className="flex items-center gap-2">
+          <Download className="h-5 w-5" />
+          PDF
+        </Button>
+        <label className="cursor-pointer bg-muted px-3 py-1 rounded inline-flex items-center">
+          <Upload className="h-5 w-5 mr-2" />
+          {t("classesManagement.import")}
+          <input
+            type="file"
+            hidden
+            onChange={(e) => e.target.files && handleImport(e.target.files[0])}
             disabled={loading || submitting}
-          >
-            <FilePlus className="mr-2 h-4 w-4" /> Ajouter
-          </Button>
-          <Button variant="outline" onClick={exportExcel} disabled={loading || submitting}>
-            <Download className="mr-2 h-4 w-4" /> Excel
-          </Button>
-          <Button variant="outline" onClick={exportPDF} disabled={loading || submitting}>
-            <Download className="mr-2 h-4 w-4" /> PDF
-          </Button>
-          <label className="cursor-pointer bg-muted px-3 py-1 rounded">
-            <Upload className="inline h-4 w-4 mr-2" /> Importer
-            <input
-              type="file"
-              hidden
-              onChange={(e) => e.target.files && handleImport(e.target.files[0])}
-              disabled={loading || submitting}
-            />
-          </label>
-        </div>
+          />
+        </label>
       </div>
+    </div>
 
-      {loading ? (
-        <p>Chargement...</p>
-      ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Étudiants</TableHead>
-                <TableHead>Capacité</TableHead>
-                <TableHead>Niveau</TableHead>
-                <TableHead>Année</TableHead>
-                <TableHead>Actions</TableHead>
+    {loading ? (
+      <p className="text-center text-gray-500">{t("classesManagement.loading")}</p>
+    ) : (
+      <>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("classesManagement.tableHeaders.name")}</TableHead>
+              <TableHead>{t("classesManagement.tableHeaders.status")}</TableHead>
+              <TableHead>{t("classesManagement.tableHeaders.students")}</TableHead>
+              <TableHead>{t("classesManagement.tableHeaders.capacity")}</TableHead>
+              <TableHead>{t("classesManagement.tableHeaders.level")}</TableHead>
+              <TableHead>{t("classesManagement.tableHeaders.year")}</TableHead>
+              <TableHead>{t("classesManagement.tableHeaders.actions")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {currentData.map((cls) => (
+              <TableRow key={cls._id}>
+                <TableCell>{cls.classesName}</TableCell>
+                <TableCell>{t(`classesManagement.status.${cls.status.toLowerCase()}`)}</TableCell>
+                <TableCell>{cls.studentList?.length ?? 0}</TableCell>
+                <TableCell>{cls.capacity ?? ""}</TableCell>
+                <TableCell>{cls.level}</TableCell>
+                <TableCell>{cls.year}</TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" disabled={loading || submitting}>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(cls)} className="flex items-center gap-2">
+                        <Pencil className="h-4 w-4" /> {t("classesManagement.actions.edit")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => toggleStatus(cls)} className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        {cls.status === "Open" ? t("classesManagement.actions.close") : t("classesManagement.actions.open")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDelete(cls._id!)} className="flex items-center gap-2 text-red-600">
+                        <Trash className="h-4 w-4" /> {t("classesManagement.actions.delete")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentData.map((cls) => (
-                <TableRow key={cls._id}>
-                  <TableCell>{cls.classesName}</TableCell>
-                  <TableCell>{cls.status}</TableCell>
-                  <TableCell>{cls.studentList?.length ?? 0}</TableCell>
-                  <TableCell>{cls.capacity ?? ""}</TableCell>
-                  <TableCell>{cls.level}</TableCell>
-                  <TableCell>{cls.year}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" disabled={loading || submitting}>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(cls)}>
-                          <Pencil className="h-4 w-4 mr-2" /> Modifier
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toggleStatus(cls)}>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          {cls.status === "Open" ? "Fermer" : "Ouvrir"}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDelete(cls._id!)}>
-                          <Trash className="h-4 w-4 mr-2" /> Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            ))}
+          </TableBody>
+        </Table>
 
-          {/* Pagination */}
-          <div className="flex justify-between items-center mt-4">
-            <button
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-              onClick={goToPreviousPage}
-              disabled={currentPage === 1 || loading}
-            >
-              Précédent
-            </button>
+        {/* Pagination */}
+        <div className="flex justify-between items-center mt-6">
+          <button
+            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50 hover:bg-gray-300 transition"
+            onClick={goToPreviousPage}
+            disabled={currentPage === 1 || loading}
+          >
+            {t("classesManagement.pagination.previous")}
+          </button>
 
-            <div className="space-x-2">
-              {Array.from({ length: totalPages }, (_, index) => (
-                <button
-                  key={index + 1}
-                  className={`px-3 py-1 rounded ${
-                    currentPage === index + 1
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                  onClick={() => goToPage(index + 1)}
-                  disabled={loading}
-                >
-                  {index + 1}
-                </button>
-              ))}
+          <div className="space-x-2">
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button
+                key={i + 1}
+                className={`px-3 py-1 rounded transition ${
+                  currentPage === i + 1
+                    ? "bg-skyblue text-white"
+                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                }`}
+                onClick={() => goToPage(i + 1)}
+                disabled={loading}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+
+          <button
+            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50 hover:bg-gray-300 transition"
+            onClick={goToNextPage}
+            disabled={currentPage === totalPages || loading}
+          >
+            {t("classesManagement.pagination.next")}
+          </button>
+        </div>
+      </>
+    )}
+
+    {/* Modal */}
+    {showModal && (
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-lg">
+          <h2 className="text-xl font-semibold mb-6">
+            {editingId ? t("classesManagement.modal.editTitle") : t("classesManagement.modal.createTitle")}
+          </h2>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <Label>{t("classesManagement.form.name")}</Label>
+              <Input
+                value={form.classesName}
+                onChange={(e) => setForm({ ...form, classesName: e.target.value })}
+                required
+                disabled={submitting}
+              />
             </div>
 
-            <button
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-              onClick={goToNextPage}
-              disabled={currentPage === totalPages || loading}
-            >
-              Suivant
-            </button>
-          </div>
-        </>
-      )}
+            <div>
+              <Label>{t("classesManagement.form.description")}</Label>
+              <Input
+                value={form.description ?? ""}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                disabled={submitting}
+              />
+            </div>
 
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingId ? "Modifier" : "Créer"} une Classe
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label>{t("classesManagement.form.status")}</Label>
+              <Select
+                value={form.status}
+                onValueChange={(value) => setForm({ ...form, status: value })}
+                disabled={submitting}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("classesManagement.form.selectStatus")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Open">{t("classesManagement.status.open")}</SelectItem>
+                  <SelectItem value="Closed">{t("classesManagement.status.closed")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-5">
               <div>
-                <Label>Nom</Label>
+                <Label>{t("classesManagement.form.capacity")}</Label>
                 <Input
-                  value={form.classesName}
-                  onChange={(e) => setForm({ ...form, classesName: e.target.value })}
-                  required
+                  type="number"
+                  min={0}
+                  value={form.capacity ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, capacity: e.target.value === "" ? "" : Number(e.target.value) })
+                  }
                   disabled={submitting}
                 />
               </div>
 
               <div>
-                <Label>Description</Label>
+                <Label>{t("classesManagement.form.amountFee")}</Label>
                 <Input
-                  value={form.description ?? ""}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  type="number"
+                  min={0}
+                  value={form.amountFee ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, amountFee: e.target.value === "" ? "" : Number(e.target.value) })
+                  }
                   disabled={submitting}
                 />
               </div>
+            </div>
 
+            <div className="grid grid-cols-2 gap-5">
               <div>
-                <Label>Statut</Label>
-                <Select
-                  value={form.status}
-                  onValueChange={(value) => setForm({ ...form, status: value })}
+                <Label>{t("classesManagement.form.level")}</Label>
+                <select
+                  className="w-full border p-2 rounded"
+                  value={form.level}
+                  onChange={(e) => setForm({ ...form, level: e.target.value })}
                   disabled={submitting}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choisir un statut" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Open">Ouvert</SelectItem>
-                    <SelectItem value="Closed">Fermé</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Capacité</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={form.capacity ?? ""}
-                    onChange={(e) =>
-                      setForm({ ...form, capacity: e.target.value === "" ? "" : Number(e.target.value) })
-                    }
-                    disabled={submitting}
-                  />
-                </div>
-
-                <div>
-                  <Label>Frais (Amount Fee)</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={form.amountFee ?? ""}
-                    onChange={(e) =>
-                      setForm({ ...form, amountFee: e.target.value === "" ? "" : Number(e.target.value) })
-                    }
-                    disabled={submitting}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Niveau</Label>
-                  <select
-                    className="w-full border p-2 rounded"
-                    value={form.level}
-                    onChange={(e) => setForm({ ...form, level: e.target.value })}
-                    disabled={submitting}
-                  >
-                    <option value="">Sélectionnez un niveau</option>
-                    <option value="Form 1">Form 1</option>
-                    <option value="Form 2">Form 2</option>
-                    <option value="Form 3">Form 3</option>
-                    <option value="Form 4">Form 4</option>
-                    <option value="Form 5">Form 5</option>
-                    <option value="Lower Sixth">Lower Sixth</option>
-                    <option value="Upper Sixth">Upper Sixth</option>
-                  </select>
-                </div>
-
-                <div>
-                  <Label>Année Académique (YYYY-YYYY)</Label>
-                  <Input
-                    type="text"
-                    value={form.year ?? ""}
-                    pattern="\d{4}-\d{4}"
-                    onChange={(e) => setForm({ ...form, year: e.target.value })}
-                    placeholder="ex: 2024-2025"
-                    disabled={submitting}
-                  />
-                </div>
+                  <option value="">{t("classesManagement.form.selectLevel")}</option>
+                  <option value="Form 1">Form 1</option>
+                  <option value="Form 2">Form 2</option>
+                  <option value="Form 3">Form 3</option>
+                  <option value="Form 4">Form 4</option>
+                  <option value="Form 5">Form 5</option>
+                  <option value="Lower Sixth">Lower Sixth</option>
+                  <option value="Upper Sixth">Upper Sixth</option>
+                </select>
               </div>
 
               <div>
-                <Label>Enseignant Principal</Label>
-                <Select
-                  value={form.mainTeacherInfo ?? ""}
-                  onValueChange={(value) => setForm({ ...form, mainTeacherInfo: value })}
+                <Label>{t("classesManagement.form.year")}</Label>
+                <Input
+                  type="text"
+                  value={form.year ?? ""}
+                  pattern="\d{4}-\d{4}"
+                  onChange={(e) => setForm({ ...form, year: e.target.value })}
+                  placeholder={t("classesManagement.form.yearPlaceholder")}
                   disabled={submitting}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner l'enseignant" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teachers.map((teacher) => (
-                      <SelectItem key={teacher._id} value={teacher._id}>
-                        {teacher.fullName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               </div>
+            </div>
 
-              {/* Subjects Section */}
-              <div className="border p-3 rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <Label className="text-lg font-semibold">Matières</Label>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={addSubject}
-                    disabled={submitting || form.subjects.length >= subjects.length}
-                  >
-                    + Ajouter une matière
-                  </Button>
-                </div>
-                {form.subjects.length === 0 && <p>Aucune matière ajoutée</p>}
-                {form.subjects.map((subject, index) => (
-                  <div key={index} className="grid grid-cols-3 gap-2 mb-2 items-center">
+            <div>
+              <Label>{t("classesManagement.form.mainTeacher")}</Label>
+              <Select
+                value={form.mainTeacherInfo ?? ""}
+                onValueChange={(value) => setForm({ ...form, mainTeacherInfo: value })}
+                disabled={submitting}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("classesManagement.form.selectTeacher")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {teachers.map((teacher) => (
+                    <SelectItem key={teacher._id} value={teacher._id}>
+                      {teacher.fullName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Subjects Section */}
+            <div className="border p-4 rounded-lg bg-gray-50">
+              <div className="flex justify-between items-center mb-3">
+                <Label className="text-lg font-semibold">{t("classesManagement.form.subjects")}</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={addSubject}
+                  disabled={submitting || form.subjects.length >= subjects.length}
+                >
+                  + {t("classesManagement.form.addSubject")}
+                </Button>
+              </div>
+              {form.subjects.length === 0 ? (
+                <p className="text-gray-500 italic">{t("classesManagement.form.noSubjects")}</p>
+              ) : (
+                form.subjects.map((subject, index) => (
+                  <div key={index} className="grid grid-cols-3 gap-3 mb-3 items-center">
                     <Select
                       value={subject.subjectInfo}
                       onValueChange={(value) => handleSubjectChange(index, "subjectInfo", value)}
                       disabled={submitting}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Matière" />
+                        <SelectValue placeholder={t("classesManagement.form.subject")} />
                       </SelectTrigger>
                       <SelectContent>
                         {availableSubjectsForIndex(index).map((subj) => (
@@ -630,7 +639,7 @@ const ClassesManagement = () => {
 
                     <Input
                       type="number"
-                      placeholder="Coefficient"
+                      placeholder={t("classesManagement.form.coefficient")}
                       min={0}
                       value={subject.coefficient}
                       onChange={(e) =>
@@ -649,7 +658,7 @@ const ClassesManagement = () => {
                       disabled={submitting}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Enseignant" />
+                        <SelectValue placeholder={t("classesManagement.form.teacher")} />
                       </SelectTrigger>
                       <SelectContent>
                         {teachers.map((t) => (
@@ -663,35 +672,37 @@ const ClassesManagement = () => {
                     <Button
                       type="button"
                       variant="ghost"
-                      className="self-center"
+                      className="self-center text-red-600"
                       onClick={() => removeSubject(index)}
                       disabled={submitting}
                     >
-                      Supprimer
+                      {t("classesManagement.form.remove")}
                     </Button>
                   </div>
-                ))}
-              </div>
+                ))
+              )}
+            </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setShowModal(false)}
-                  disabled={submitting}
-                >
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {editingId ? "Mettre à jour" : "Créer"}
-                </Button>
-              </div>
-            </form>
-          </div>
+            <div className="flex justify-end gap-3 pt-6">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setShowModal(false)}
+                disabled={submitting}
+              >
+                {t("classesManagement.form.cancel")}
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {editingId ? t("classesManagement.form.update") : t("classesManagement.form.create")}
+              </Button>
+            </div>
+          </form>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
+
 };
 
 export default ClassesManagement;

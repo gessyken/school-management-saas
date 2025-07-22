@@ -54,9 +54,11 @@ import { Tooltip } from "@/components/ui/tooltip";
 import "../../assets/style.css";
 import ReportCardManagement from "./ReportCardManagement";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 const itemsPerPage = 5;
 
 export default function ResultManagement() {
+  const { t } = useTranslation();
   const [students, setStudents] = useState<Student[]>([]);
   const [academicStudents, setAcademicStudents] = useState<
     AcademicYearStudent[]
@@ -387,7 +389,7 @@ export default function ResultManagement() {
     <div className="p-4 space-y-6">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <h1 className="text-3xl font-bold text-gray-800">
-          📘 Result Management
+          📘 {t("resultManagement.title")}
         </h1>
 
         <div className="flex flex-wrap gap-2">
@@ -397,7 +399,7 @@ export default function ResultManagement() {
             className="flex items-center gap-2"
           >
             <Download className="h-4 w-4" />
-            Excel
+            {t("common.excel")}
           </Button>
 
           <Button
@@ -406,14 +408,16 @@ export default function ResultManagement() {
             className="flex items-center gap-2"
           >
             <Download className="h-4 w-4" />
-            PDF
+            {t("common.pdf")}
           </Button>
         </div>
         <Button
           variant={activeTab ? "default" : "outline"}
           onClick={() => handleTabChange(activeTab === "" ? "report-card" : "")}
         >
-          {activeTab === "" ? "report-card" : "Result"}
+          {activeTab === ""
+            ? t("resultManagement.reportCard")
+            : t("resultManagement.result")}
         </Button>
       </div>
       <Card className="p-6 space-y-6 shadow-sm">
@@ -428,7 +432,7 @@ export default function ResultManagement() {
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
-              Excel
+              {t("common.excel")}
             </Button>
             <Button
               variant="outline"
@@ -436,7 +440,7 @@ export default function ResultManagement() {
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
-              PDF
+              {t("common.pdf")}
             </Button>
           </div>
         </div>
@@ -444,7 +448,9 @@ export default function ResultManagement() {
         {/* 📚 Filters */}
         <div className="bg-white p-6 rounded-xl shadow border">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Filtres</h2>
+            <h2 className="text-lg font-semibold text-gray-800">
+              {t("resultManagement.filters")}
+            </h2>
             <Button
               variant="ghost"
               onClick={() => {
@@ -455,7 +461,6 @@ export default function ResultManagement() {
                   classes: "",
                   term: "",
                   academicYear: "",
-                  // academicYear: filter.academicYear,
                   subject: "",
                   sequence: "",
                 });
@@ -475,13 +480,13 @@ export default function ResultManagement() {
                   d="M6 18L18 6M6 6l12 12"
                 />
               </svg>
-              Réinitialiser
+              {t("resultManagement.reset")}
             </Button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="block mb-1 text-sm font-medium text-gray-700">
-                Academic Year
+                {t("resultManagement.academicYear")}
               </label>
               <select
                 required
@@ -493,7 +498,7 @@ export default function ResultManagement() {
                 className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="" disabled>
-                  Select Academic Year
+                  {t("resultManagement.selectAcademicYear")}
                 </option>
                 {academicYears.map((year) => (
                   <option key={year._id} value={year.name}>
@@ -504,7 +509,7 @@ export default function ResultManagement() {
             </div>
             <div>
               <label className="block mb-1 text-sm font-medium text-gray-700">
-                Classes
+                {t("resultManagement.classes")}
               </label>
               <select
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -513,16 +518,13 @@ export default function ResultManagement() {
                 onChange={(e) => {
                   const classId = e.target.value;
                   setFilter({ ...filter, classes: classId, subject: "" });
-                  console.log(
-                    filteredClasses.find((c) => c._id === classId).subjects
-                  );
                   setClassesSubjects(
                     filteredClasses.find((c) => c._id === classId).subjects ||
                       []
                   );
                 }}
               >
-                <option value="">Select a classe</option>
+                <option value="">{t("resultManagement.selectClass")}</option>
                 {filteredClasses.map((item) => (
                   <option key={item._id} value={item._id}>
                     {item.classesName}
@@ -532,7 +534,7 @@ export default function ResultManagement() {
             </div>
             <div>
               <label className="block mb-1 text-sm font-medium text-gray-700">
-                Term
+                {t("resultManagement.term")}
               </label>
               <select
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -542,7 +544,7 @@ export default function ResultManagement() {
                   setFilter({ ...filter, term: e.target.value });
                 }}
               >
-                <option value="">Tous</option>
+                <option value="">{t("resultManagement.all")}</option>
                 {filteredTerms.map((term) => (
                   <option key={term._id} value={term._id}>
                     {term.name}
@@ -552,7 +554,7 @@ export default function ResultManagement() {
             </div>
             <div>
               <label className="block mb-1 text-sm font-medium text-gray-700">
-                Sequence
+                {t("resultManagement.sequence")}
               </label>
               <select
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -562,7 +564,7 @@ export default function ResultManagement() {
                   setFilter({ ...filter, sequence: e.target.value });
                 }}
               >
-                <option value="">Tous</option>
+                <option value="">{t("resultManagement.all")}</option>
                 {filteredSeq.map((seq) => (
                   <option key={seq._id} value={seq._id}>
                     {seq.name}
@@ -573,7 +575,7 @@ export default function ResultManagement() {
             {activeTab === "" && (
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Subject
+                  {t("resultManagement.subject")}
                 </label>
                 <select
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -584,8 +586,10 @@ export default function ResultManagement() {
                     setFilter({ ...filter, subject: subjectId });
                   }}
                 >
-                  <option value="">Tous</option>
-                  <option value="absences">absences</option>
+                  <option value="">{t("resultManagement.all")}</option>
+                  <option value="absences">
+                    {t("resultManagement.absences")}
+                  </option>
                   {classesSubjects.map((item) => (
                     <option
                       key={item?.subjectInfo?._id}
@@ -599,15 +603,17 @@ export default function ResultManagement() {
             )}
           </div>
         </div>
+
         {/* 🔍 Search + Export */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <Input
-            placeholder="🔎 Rechercher une matière..."
+            placeholder={`🔎 ${t("resultManagement.searchPlaceholder")}`}
             className="md:w-1/3 w-full"
             onChange={handleSearch}
             value={searchTerm}
           />
         </div>
+
         {/* 📊 Grades Table */}
         {activeTab === "" ? (
           <>
@@ -634,7 +640,7 @@ export default function ResultManagement() {
                           minWidth: "120px",
                         }}
                       >
-                        Matricule
+                        {t("resultManagement.registrationNumber")}
                       </TableHead>
                       <TableHead
                         rowSpan={4}
@@ -650,7 +656,7 @@ export default function ResultManagement() {
                           minWidth: "180px",
                         }}
                       >
-                        Nom complet
+                        {t("resultManagement.fullName")}
                       </TableHead>
 
                       {showTerms.map((term) => (
@@ -676,16 +682,15 @@ export default function ResultManagement() {
                             <Button
                               size="sm"
                               className="tooltip-button"
-                              title={`Calculate rank for ${term.name}`}
-                              aria-label={`Calculate rank for ${term.name}`}
-                              onClick={() => {
-                                /* Add your calculate rank handler here */
-                              }}
+                              title={t("resultManagement.calculateRankFor", {
+                                name: term.name,
+                              })}
+                              aria-label={t(
+                                "resultManagement.calculateRankFor",
+                                { name: term.name }
+                              )}
                             >
                               <Calculator size={16} />
-                              <span className="tooltip-text">
-                                Calculate rank for {term.name}
-                              </span>
                             </Button>
                           </div>
                         </TableHead>
@@ -718,21 +723,25 @@ export default function ResultManagement() {
                                   <Button
                                     size="sm"
                                     className="tooltip-button"
-                                    title={`Calculate rank for ${seq.name}`}
-                                    aria-label={`Calculate rank for ${seq.name}`}
-                                    onClick={() => {
-                                      /* Add your calculate rank handler here */
-                                    }}
+                                    title={t(
+                                      "resultManagement.calculateRankFor",
+                                      { name: seq.name }
+                                    )}
+                                    aria-label={t(
+                                      "resultManagement.calculateRankFor",
+                                      { name: seq.name }
+                                    )}
                                   >
                                     <Calculator size={16} />
-                                    <span className="tooltip-text">
-                                      Calculate rank for {seq.name}
-                                    </span>
                                   </Button>
                                 </div>
                               </TableHead>
                             ))}
-                          {["Average", "Rank", "Discipline"].map((item) => (
+                          {[
+                            t("resultManagement.average"),
+                            t("resultManagement.rank"),
+                            t("resultManagement.discipline"),
+                          ].map((item) => (
                             <TableHead
                               rowSpan={3}
                               key={`${item}`}
@@ -778,26 +787,31 @@ export default function ResultManagement() {
                                         <Button
                                           size="sm"
                                           className="tooltip-button"
-                                          title={`Calculate rank for ${subject.subjectInfo?.subjectName}`}
-                                          aria-label={`Calculate rank for ${subject.subjectInfo?.subjectName}`}
-                                          onClick={() => {
-                                            /* Add your calculate rank handler here */
-                                          }}
+                                          title={t(
+                                            "resultManagement.calculateRankFor",
+                                            {
+                                              name: subject.subjectInfo
+                                                ?.subjectName,
+                                            }
+                                          )}
+                                          aria-label={t(
+                                            "resultManagement.calculateRankFor",
+                                            {
+                                              name: subject.subjectInfo
+                                                ?.subjectName,
+                                            }
+                                          )}
                                         >
                                           <Calculator size={16} />
-                                          <span className="tooltip-text">
-                                            Calculate rank for{" "}
-                                            {subject.subjectInfo?.subjectName}
-                                          </span>
                                         </Button>
                                       </div>
                                     </TableHead>
                                   ))}
                                 {[
-                                  "Average",
-                                  "absences",
-                                  "Rank",
-                                  "Discipline",
+                                  t("resultManagement.average"),
+                                  t("resultManagement.absences"),
+                                  t("resultManagement.rank"),
+                                  t("resultManagement.discipline"),
                                 ].map((item) => (
                                   <TableHead
                                     rowSpan={2}
@@ -831,22 +845,24 @@ export default function ResultManagement() {
                                     <React.Fragment
                                       key={`${seq._id}-su(bheaders`}
                                     >
-                                      {["Mark", "Rank", "Discipline"].map(
-                                        (item) => (
-                                          <TableHead
-                                            colSpan={1}
-                                            key={`${subject.subjectInfo._id}-${item}`}
-                                            className="text-center align-middle"
-                                            style={{
-                                              whiteSpace: "nowrap",
-                                              borderRight: "2px solid #aaa",
-                                              borderBottom: "2px solid #aaa",
-                                            }}
-                                          >
-                                            {item}
-                                          </TableHead>
-                                        )
-                                      )}
+                                      {[
+                                        t("resultManagement.mark"),
+                                        t("resultManagement.rank"),
+                                        t("resultManagement.discipline"),
+                                      ].map((item) => (
+                                        <TableHead
+                                          colSpan={1}
+                                          key={`${subject.subjectInfo._id}-${item}`}
+                                          className="text-center align-middle"
+                                          style={{
+                                            whiteSpace: "nowrap",
+                                            borderRight: "2px solid #aaa",
+                                            borderBottom: "2px solid #aaa",
+                                          }}
+                                        >
+                                          {item}
+                                        </TableHead>
+                                      ))}
                                     </React.Fragment>
                                   ))}
                               </>
@@ -1018,13 +1034,13 @@ export default function ResultManagement() {
                               ).length;
                               return (
                                 total +
-                                activeSeqCount * (activeSubjectsCount * 3 + 4) // +4 for [Average, Absences, Rank, Discipline]
+                                activeSeqCount * (activeSubjectsCount * 3 + 4)
                               );
                             }, 0)
                           }
                           className="text-center text-gray-400 italic py-4 border border-gray-300"
                         >
-                          Aucun étudiant trouvé.
+                          {t("resultManagement.noStudentsFound")}
                         </TableCell>
                       </TableRow>
                     )}
@@ -1038,7 +1054,7 @@ export default function ResultManagement() {
                     disabled={currentPage === 1}
                     className="bg-gray-100"
                   >
-                    Précédent
+                    {t("resultManagement.previous")}
                   </Button>
 
                   <div className="space-x-2">
@@ -1058,7 +1074,7 @@ export default function ResultManagement() {
                     disabled={currentPage === totalPages}
                     className="bg-gray-100"
                   >
-                    Suivant
+                    {t("resultManagement.next")}
                   </Button>
                 </div>
               </>

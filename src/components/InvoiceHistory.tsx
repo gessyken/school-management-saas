@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { printInvoicePDF } from "@/lib/printInvoice";
 import { toast } from "@/components/ui/use-toast";
 import { invoiceService } from "@/lib/services/invoiceService";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   invoices: any[];
@@ -25,6 +26,7 @@ const InvoiceHistory = ({
   setInvoices,
   handlePayInvoice,
 }: Props) => {
+  const { t } = useTranslation();
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
@@ -72,7 +74,9 @@ const InvoiceHistory = ({
     <div className="space-y-6">
       <div className="flex justify-end">
         <Button onClick={handleGenerateInvoice} disabled={submitting}>
-          {submitting ? "Génération..." : "Générer une facture"}
+          {submitting
+            ? t("invoiceHistory.generating")
+            : t("invoiceHistory.generateInvoice")}
         </Button>
       </div>
 
@@ -87,7 +91,7 @@ const InvoiceHistory = ({
               {invoice.amount.currency}
             </p>
             <p className="text-sm text-muted-foreground">
-              Statut: {invoice.paymentStatus}
+              {t("invoiceHistory.status")}: {invoice.paymentStatus}
             </p>
           </div>
 
@@ -97,29 +101,55 @@ const InvoiceHistory = ({
                 variant="outline"
                 onClick={() => setSelectedInvoice(invoice)}
               >
-                Détails
+                {t("invoiceHistory.details")}
               </Button>
             </DialogTrigger>
 
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Détails de la facture</DialogTitle>
+                <DialogTitle>{t("invoiceHistory.invoiceDetails")}</DialogTitle>
               </DialogHeader>
 
               <div className="text-sm space-y-2 p-2 border">
-                <p><strong>Numéro:</strong> {invoice.invoiceNumber}</p>
-                <p><strong>Total:</strong> {invoice.amount.total} {invoice.amount.currency}</p>
-                <p><strong>Sous-total:</strong> {invoice.amount.subtotal}</p>
-                <p><strong>Taxe:</strong> {invoice.amount.tax}</p>
-                <p><strong>Réduction:</strong> {invoice.amount.discount}</p>
-                <p><strong>Échéance:</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
-                <p><strong>Statut:</strong> {invoice.paymentStatus}</p>
-                <p><strong>Payée le:</strong> {invoice.paidAt ? new Date(invoice.paidAt).toLocaleDateString() : "Non payé"}</p>
+                <p>
+                  <strong>{t("invoiceHistory.number")}:</strong>{" "}
+                  {invoice.invoiceNumber}
+                </p>
+                <p>
+                  <strong>{t("invoiceHistory.total")}:</strong>{" "}
+                  {invoice.amount.total} {invoice.amount.currency}
+                </p>
+                <p>
+                  <strong>{t("invoiceHistory.subtotal")}:</strong>{" "}
+                  {invoice.amount.subtotal}
+                </p>
+                <p>
+                  <strong>{t("invoiceHistory.tax")}:</strong>{" "}
+                  {invoice.amount.tax}
+                </p>
+                <p>
+                  <strong>{t("invoiceHistory.discount")}:</strong>{" "}
+                  {invoice.amount.discount}
+                </p>
+                <p>
+                  <strong>{t("invoiceHistory.dueDate")}:</strong>{" "}
+                  {new Date(invoice.dueDate).toLocaleDateString()}
+                </p>
+                <p>
+                  <strong>{t("invoiceHistory.status")}:</strong>{" "}
+                  {invoice.paymentStatus}
+                </p>
+                <p>
+                  <strong>{t("invoiceHistory.paidAt")}:</strong>{" "}
+                  {invoice.paidAt
+                    ? new Date(invoice.paidAt).toLocaleDateString()
+                    : t("invoiceHistory.notPaid")}
+                </p>
               </div>
 
               <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
                 <Button onClick={() => printInvoicePDF(invoice)}>
-                  Télécharger PDF avec QR
+                  {t("invoiceHistory.downloadPDF")}
                 </Button>
 
                 {invoice.paymentStatus !== "Paid" && (
@@ -130,7 +160,7 @@ const InvoiceHistory = ({
                       setShowPayModal(true);
                     }}
                   >
-                    Marquer comme Payée
+                    {t("invoiceHistory.markAsPaid")}
                   </Button>
                 )}
               </div>
@@ -143,24 +173,21 @@ const InvoiceHistory = ({
       <Dialog open={showPayModal} onOpenChange={setShowPayModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Paiement de la facture</DialogTitle>
+            <DialogTitle>{t("invoiceHistory.paymentTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p>Entrez votre numéro de téléphone pour procéder au paiement :</p>
+            <p>{t("invoiceHistory.enterPhone")}</p>
             <Input
-              placeholder="Numéro de téléphone (ex: +237...)"
+              placeholder={t("invoiceHistory.phonePlaceholder")}
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
             />
             <div className="flex justify-end gap-2">
-              <Button
-                variant="ghost"
-                onClick={() => setShowPayModal(false)}
-              >
-                Annuler
+              <Button variant="ghost" onClick={() => setShowPayModal(false)}>
+                {t("invoiceHistory.cancel")}
               </Button>
               <Button onClick={handleSubmitPayment}>
-                Confirmer et marquer comme payée
+                {t("invoiceHistory.confirmAndMarkPaid")}
               </Button>
             </div>
           </div>

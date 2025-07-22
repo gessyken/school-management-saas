@@ -1,13 +1,18 @@
 // components/SchoolCreateModal.tsx
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } 
-from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import api from "@/lib/api";
-
+import { useTranslation } from "react-i18next";
 
 const SchoolCreateModal = ({ open, onClose, onSuccess }) => {
   const [name, setName] = useState("");
@@ -19,11 +24,14 @@ const SchoolCreateModal = ({ open, onClose, onSuccess }) => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const data = await api.post("/schools/register", { name, email, subdomain });
+      const data = await api.post("/schools/register", {
+        name,
+        email,
+        subdomain,
+      });
       toast({ title: "École créée avec succès" });
-      console.log(data.data.school._id)
-      if (data?.data?.school?._id)
-        onSuccess(data?.data?.school?._id);
+      console.log(data.data.school._id);
+      if (data?.data?.school?._id) onSuccess(data?.data?.school?._id);
       onClose();
     } catch (error) {
       toast({
@@ -35,30 +43,62 @@ const SchoolCreateModal = ({ open, onClose, onSuccess }) => {
       setLoading(false);
     }
   };
+  const { t } = useTranslation();
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-md rounded-lg p-6 bg-white shadow-lg">
         <DialogHeader>
-          <DialogTitle>Créer une nouvelle école</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-sky-600">
+            {t("schoolCreate.title")}
+          </DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+
+        <div className="space-y-5 mt-4">
           <div>
-            <Label>Nom de l’école</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <Label htmlFor="schoolName">{t("schoolCreate.schoolName")}</Label>
+            <Input
+              id="schoolName"
+              placeholder={t("schoolCreate.schoolNamePlaceholder")}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1"
+            />
           </div>
+
           <div>
-            <Label>Email</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Label htmlFor="schoolEmail">{t("schoolCreate.email")}</Label>
+            <Input
+              id="schoolEmail"
+              type="email"
+              placeholder={t("schoolCreate.emailPlaceholder")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1"
+            />
           </div>
+
           <div>
-            <Label>Sous-domaine (facultatif)</Label>
-            <Input value={subdomain} onChange={(e) => setSubdomain(e.target.value)} />
+            <Label htmlFor="schoolSubdomain">
+              {t("schoolCreate.subdomain")}
+            </Label>
+            <Input
+              id="schoolSubdomain"
+              placeholder={t("schoolCreate.subdomainPlaceholder")}
+              value={subdomain}
+              onChange={(e) => setSubdomain(e.target.value)}
+              className="mt-1"
+            />
           </div>
         </div>
-        <DialogFooter>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Création..." : "Créer"}
+
+        <DialogFooter className="mt-6 flex justify-end">
+          <Button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="bg-sky-600 hover:bg-sky-700 text-white transition-colors"
+          >
+            {loading ? t("schoolCreate.creating") : t("schoolCreate.create")}
           </Button>
         </DialogFooter>
       </DialogContent>

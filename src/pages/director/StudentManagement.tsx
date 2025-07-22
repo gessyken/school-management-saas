@@ -39,10 +39,12 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { usePagination } from "@/components/ui/usePagination";
+import { useTranslation } from "react-i18next";
 
 const itemsPerPage = 5;
 
 export default function StudentManagement() {
+  const { t } = useTranslation();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -317,13 +319,13 @@ export default function StudentManagement() {
 
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold">Student Management</h1>
+      <h1 className="text-2xl font-bold">{t("studentManagement.title")}</h1>
       <Card className="p-4">
         <div className="space-y-6">
           {/* Top Bar: Search + Actions */}
           <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
             <Input
-              placeholder="Rechercher une matière..."
+              placeholder={t("studentManagement.searchPlaceholder")}
               className="md:w-1/3 w-full"
               onChange={handleSearch}
               value={searchTerm}
@@ -335,7 +337,7 @@ export default function StudentManagement() {
                 onClick={() => handleOpenModal()}
               >
                 <FilePlus className="h-4 w-4" />
-                Ajouter un étudiant
+                {t("studentManagement.addStudent")}
               </Button>
 
               <Button
@@ -358,7 +360,7 @@ export default function StudentManagement() {
 
               <label className="cursor-pointer bg-muted hover:bg-gray-100 text-sm px-3 py-2 rounded flex items-center gap-2">
                 <Upload className="h-4 w-4" />
-                Importer
+                {t("studentManagement.import")}
                 <input
                   type="file"
                   hidden
@@ -373,7 +375,9 @@ export default function StudentManagement() {
           {/* Filter Section */}
           <div className="bg-white p-6 rounded-xl shadow border">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Filtres</h2>
+              <h2 className="text-lg font-semibold text-gray-800">
+                {t("studentManagement.filters")}
+              </h2>
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -396,14 +400,14 @@ export default function StudentManagement() {
                     d="M6 18L18 6M6 6l12 12"
                   />
                 </svg>
-                Réinitialiser
+                {t("studentManagement.reset")}
               </Button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Niveau
+                  {t("studentManagement.level")}
                 </label>
                 <select
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -413,20 +417,26 @@ export default function StudentManagement() {
                     setFilter({ ...filter, level: e.target.value });
                   }}
                 >
-                  <option value="">Tous</option>
-                  <option value="Form 1">Form 1</option>
-                  <option value="Form 2">Form 2</option>
-                  <option value="Form 3">Form 3</option>
-                  <option value="Form 4">Form 4</option>
-                  <option value="Form 5">Form 5</option>
-                  <option value="Lower Sixth">Lower Sixth</option>
-                  <option value="Upper Sixth">Upper Sixth</option>
+                  <option value="">{t("studentManagement.all")}</option>
+                  {[
+                    "Form 1",
+                    "Form 2",
+                    "Form 3",
+                    "Form 4",
+                    "Form 5",
+                    "Lower Sixth",
+                    "Upper Sixth",
+                  ].map((level) => (
+                    <option key={level} value={level}>
+                      {level}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Sexe
+                  {t("studentManagement.gender")}
                 </label>
                 <select
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -436,15 +446,17 @@ export default function StudentManagement() {
                     setFilter({ ...filter, gender: e.target.value });
                   }}
                 >
-                  <option value="">Tous</option>
-                  <option value="male">Homme</option>
-                  <option value="female">Femme</option>
+                  <option value="">{t("studentManagement.all")}</option>
+                  <option value="male">{t("studentManagement.male")}</option>
+                  <option value="female">
+                    {t("studentManagement.female")}
+                  </option>
                 </select>
               </div>
 
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Statut
+                  {t("studentManagement.status")}
                 </label>
                 <select
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -454,11 +466,19 @@ export default function StudentManagement() {
                     setFilter({ ...filter, status: e.target.value });
                   }}
                 >
-                  <option value="">Tous</option>
-                  <option value="active">Actif</option>
-                  <option value="suspended">Suspendu</option>
-                  <option value="graduated">Diplômé</option>
-                  <option value="withdrawn">Abandonné</option>
+                  <option value="">{t("studentManagement.all")}</option>
+                  <option value="active">
+                    {t("studentManagement.active")}
+                  </option>
+                  <option value="suspended">
+                    {t("studentManagement.suspended")}
+                  </option>
+                  <option value="graduated">
+                    {t("studentManagement.graduated")}
+                  </option>
+                  <option value="withdrawn">
+                    {t("studentManagement.withdrawn")}
+                  </option>
                 </select>
               </div>
             </div>
@@ -476,25 +496,25 @@ export default function StudentManagement() {
                 <TableHeader className="bg-gray-50">
                   <TableRow>
                     <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Matricule
+                      {t("studentManagement.registrationNumber")}
                     </TableHead>
                     <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Nom complet
+                      {t("studentManagement.fullName")}
                     </TableHead>
                     <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Classe
+                      {t("studentManagement.class")}
                     </TableHead>
                     <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Niveau
+                      {t("studentManagement.level")}
                     </TableHead>
                     <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Sexe
+                      {t("studentManagement.gender")}
                     </TableHead>
                     <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Statut
+                      {t("studentManagement.status")}
                     </TableHead>
                     <TableHead className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      {t("studentManagement.actions")}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -519,7 +539,7 @@ export default function StudentManagement() {
                           {student.level}
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 capitalize">
-                          {student.gender}
+                          {t(`studentManagement.${student.gender}`)}
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap text-sm">
                           <span
@@ -531,7 +551,7 @@ export default function StudentManagement() {
                                 : "bg-red-100 text-red-800"
                             }`}
                           >
-                            {student.status}
+                            {t(`studentManagement.${student.status}`)}
                           </span>
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
@@ -553,20 +573,22 @@ export default function StudentManagement() {
                                 onClick={() => openModal("view", student)}
                                 className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 cursor-pointer"
                               >
-                                <Eye className="w-4 h-4 text-blue-600" /> Voir
+                                <Eye className="w-4 h-4 text-blue-600" />{" "}
+                                {t("studentManagement.view")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleOpenModal(student)}
                                 className="flex items-center gap-2 px-4 py-2 hover:bg-yellow-50 cursor-pointer"
                               >
                                 <Pencil className="w-4 h-4 text-yellow-600" />{" "}
-                                Modifier
+                                {t("studentManagement.edit")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleDelete(student._id)}
                                 className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 cursor-pointer text-red-600"
                               >
-                                <Trash className="w-4 h-4" /> Supprimer
+                                <Trash className="w-4 h-4" />{" "}
+                                {t("studentManagement.delete")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -579,7 +601,7 @@ export default function StudentManagement() {
                         colSpan={7}
                         className="px-6 py-4 text-center text-sm text-gray-500"
                       >
-                        Aucun étudiant trouvé.
+                        {t("studentManagement.noStudentsFound")}
                       </TableCell>
                     </TableRow>
                   )}
@@ -597,7 +619,7 @@ export default function StudentManagement() {
                 disabled={currentPage === 1}
                 className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Précédent
+                {t("studentManagement.previous")}
               </button>
 
               <div className="hidden sm:flex space-x-2">
@@ -621,7 +643,7 @@ export default function StudentManagement() {
                 disabled={currentPage === totalPages}
                 className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Suivant
+                {t("studentManagement.next")}
               </button>
             </nav>
           </>
@@ -632,7 +654,9 @@ export default function StudentManagement() {
             <div className="bg-white rounded-lg w-full max-w-3xl mx-4 my-8 shadow-lg max-h-screen overflow-hidden">
               <div className="p-6">
                 <h3 className="text-xl font-semibold mb-4">
-                  {editingId ? "Modifier l'étudiant" : "Ajouter un étudiant"}
+                  {editingId
+                    ? t("studentManagement.editStudent")
+                    : t("studentManagement.addStudent")}
                 </h3>
 
                 <form
@@ -641,7 +665,9 @@ export default function StudentManagement() {
                 >
                   {/* Basic Info */}
                   <div className="col-span-2">
-                    <label className="block mb-1 font-medium">Matricule</label>
+                    <label className="block mb-1 font-medium">
+                      {t("studentManagement.registrationNumber")}
+                    </label>
                     <input
                       type="text"
                       className="w-full border p-2 rounded"
@@ -654,7 +680,9 @@ export default function StudentManagement() {
                   </div>
 
                   <div>
-                    <label className="block mb-1 font-medium">Prénom</label>
+                    <label className="block mb-1 font-medium">
+                      {t("studentManagement.firstName")}
+                    </label>
                     <input
                       type="text"
                       className="w-full border p-2 rounded"
@@ -667,7 +695,9 @@ export default function StudentManagement() {
                   </div>
 
                   <div>
-                    <label className="block mb-1 font-medium">Nom</label>
+                    <label className="block mb-1 font-medium">
+                      {t("studentManagement.lastName")}
+                    </label>
                     <input
                       type="text"
                       className="w-full border p-2 rounded"
@@ -680,7 +710,9 @@ export default function StudentManagement() {
                   </div>
 
                   <div>
-                    <label className="block mb-1 font-medium">Email</label>
+                    <label className="block mb-1 font-medium">
+                      {t("studentManagement.email")}
+                    </label>
                     <input
                       type="email"
                       className="w-full border p-2 rounded"
@@ -692,7 +724,9 @@ export default function StudentManagement() {
                   </div>
 
                   <div>
-                    <label className="block mb-1 font-medium">Téléphone</label>
+                    <label className="block mb-1 font-medium">
+                      {t("studentManagement.phone")}
+                    </label>
                     <input
                       type="tel"
                       className="w-full border p-2 rounded"
@@ -704,7 +738,9 @@ export default function StudentManagement() {
                   </div>
 
                   <div>
-                    <label className="block mb-1 font-medium">Niveau</label>
+                    <label className="block mb-1 font-medium">
+                      {t("studentManagement.level")}
+                    </label>
                     <select
                       className="w-full border p-2 rounded"
                       value={form.level}
@@ -713,20 +749,28 @@ export default function StudentManagement() {
                       }
                       required
                     >
-                      <option value="">Sélectionnez un niveau</option>
-                      <option value="Form 1">Form 1</option>
-                      <option value="Form 2">Form 2</option>
-                      <option value="Form 3">Form 3</option>
-                      <option value="Form 4">Form 4</option>
-                      <option value="Form 5">Form 5</option>
-                      <option value="Lower Sixth">Lower Sixth</option>
-                      <option value="Upper Sixth">Upper Sixth</option>
+                      <option value="">
+                        {t("studentManagement.selectLevel")}
+                      </option>
+                      {[
+                        "Form 1",
+                        "Form 2",
+                        "Form 3",
+                        "Form 4",
+                        "Form 5",
+                        "Lower Sixth",
+                        "Upper Sixth",
+                      ].map((level) => (
+                        <option key={level} value={level}>
+                          {level}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
                   <div>
                     <label className="block mb-1 font-medium">
-                      Date de naissance
+                      {t("studentManagement.dateOfBirth")}
                     </label>
                     <input
                       type="date"
@@ -739,7 +783,9 @@ export default function StudentManagement() {
                   </div>
 
                   <div>
-                    <label className="block mb-1 font-medium">Genre</label>
+                    <label className="block mb-1 font-medium">
+                      {t("studentManagement.gender")}
+                    </label>
                     <select
                       className="w-full border p-2 rounded"
                       value={form.gender}
@@ -747,18 +793,26 @@ export default function StudentManagement() {
                         setForm({ ...form, gender: e.target.value })
                       }
                     >
-                      <option value="">Sélectionnez</option>
-                      <option value="male">Masculin</option>
-                      <option value="female">Féminin</option>
-                      <option value="other">Autre</option>
+                      <option value="">{t("studentManagement.select")}</option>
+                      <option value="male">
+                        {t("studentManagement.male")}
+                      </option>
+                      <option value="female">
+                        {t("studentManagement.female")}
+                      </option>
+                      <option value="other">
+                        {t("studentManagement.other")}
+                      </option>
                     </select>
                   </div>
 
                   {/* Address */}
-                  <div className="col-span-2 pt-4 font-semibold">Adresse</div>
+                  <div className="col-span-2 pt-4 font-semibold">
+                    {t("studentManagement.address")}
+                  </div>
                   <input
                     type="text"
-                    placeholder="Rue"
+                    placeholder={t("studentManagement.street")}
                     className="border p-2 rounded"
                     value={form.address?.street || ""}
                     onChange={(e) =>
@@ -770,7 +824,7 @@ export default function StudentManagement() {
                   />
                   <input
                     type="text"
-                    placeholder="Ville"
+                    placeholder={t("studentManagement.city")}
                     className="border p-2 rounded"
                     value={form.address?.city || ""}
                     onChange={(e) =>
@@ -782,7 +836,7 @@ export default function StudentManagement() {
                   />
                   <input
                     type="text"
-                    placeholder="Région/État"
+                    placeholder={t("studentManagement.state")}
                     className="border p-2 rounded"
                     value={form.address?.state || ""}
                     onChange={(e) =>
@@ -794,7 +848,7 @@ export default function StudentManagement() {
                   />
                   <input
                     type="text"
-                    placeholder="Pays"
+                    placeholder={t("studentManagement.country")}
                     className="border p-2 rounded"
                     value={form.address?.country || ""}
                     onChange={(e) =>
@@ -807,11 +861,11 @@ export default function StudentManagement() {
 
                   {/* Emergency Contact */}
                   <div className="col-span-2 pt-4 font-semibold">
-                    Contact d'urgence
+                    {t("studentManagement.emergencyContact")}
                   </div>
                   <input
                     type="text"
-                    placeholder="Nom"
+                    placeholder={t("studentManagement.name")}
                     className="border p-2 rounded"
                     value={form.emergencyContact?.name || ""}
                     onChange={(e) =>
@@ -826,7 +880,7 @@ export default function StudentManagement() {
                   />
                   <input
                     type="text"
-                    placeholder="Relation"
+                    placeholder={t("studentManagement.relationship")}
                     className="border p-2 rounded"
                     value={form.emergencyContact?.relationship || ""}
                     onChange={(e) =>
@@ -841,7 +895,7 @@ export default function StudentManagement() {
                   />
                   <input
                     type="text"
-                    placeholder="Téléphone"
+                    placeholder={t("studentManagement.phone")}
                     className="border p-2 rounded col-span-2"
                     value={form.emergencyContact?.phone || ""}
                     onChange={(e) =>
@@ -857,7 +911,9 @@ export default function StudentManagement() {
 
                   {/* Status */}
                   <div className="col-span-2">
-                    <label className="block mb-1 font-medium">Statut</label>
+                    <label className="block mb-1 font-medium">
+                      {t("studentManagement.status")}
+                    </label>
                     <select
                       className="w-full border p-2 rounded"
                       value={form.status}
@@ -865,11 +921,21 @@ export default function StudentManagement() {
                         setForm({ ...form, status: e.target.value })
                       }
                     >
-                      <option value="">Sélectionnez un statut</option>
-                      <option value="active">Actif</option>
-                      <option value="suspended">Suspendu</option>
-                      <option value="graduated">Diplômé</option>
-                      <option value="withdrawn">Abandonné</option>
+                      <option value="">
+                        {t("studentManagement.selectStatus")}
+                      </option>
+                      <option value="active">
+                        {t("studentManagement.active")}
+                      </option>
+                      <option value="suspended">
+                        {t("studentManagement.suspended")}
+                      </option>
+                      <option value="graduated">
+                        {t("studentManagement.graduated")}
+                      </option>
+                      <option value="withdrawn">
+                        {t("studentManagement.withdrawn")}
+                      </option>
                     </select>
                   </div>
 
@@ -880,13 +946,15 @@ export default function StudentManagement() {
                       onClick={() => setShowModal(false)}
                       className="px-4 py-2 bg-gray-300 rounded"
                     >
-                      Annuler
+                      {t("studentManagement.cancel")}
                     </button>
                     <button
                       type="submit"
                       className="px-4 py-2 bg-blue-600 text-white rounded"
                     >
-                      {editingId ? "Mettre à jour" : "Ajouter"}
+                      {editingId
+                        ? t("studentManagement.update")
+                        : t("studentManagement.add")}
                     </button>
                   </div>
                 </form>
@@ -902,11 +970,11 @@ export default function StudentManagement() {
                 <div className="flex items-center">
                   <Info className="text-blue-600 w-5 h-5 mr-2" />
                   <h3 className="text-lg font-bold text-gray-800">
-                    Détails de l'étudiant
+                    {t("studentManagement.studentDetails")}
                   </h3>
                 </div>
                 <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-                  Fermer
+                  {t("studentManagement.close")}
                 </Button>
               </div>
 
@@ -917,42 +985,55 @@ export default function StudentManagement() {
                   <div className="flex items-start">
                     <BadgeCheck className="w-4 h-4 mt-1 mr-2 text-indigo-500" />
                     <div>
-                      <span className="font-medium">Matricule:</span>{" "}
+                      <span className="font-medium">
+                        {t("studentManagement.registrationNumber")}:
+                      </span>{" "}
                       {selectedStudent.matricule}
                     </div>
                   </div>
                   <div className="flex items-start">
                     <User className="w-4 h-4 mt-1 mr-2 text-blue-500" />
                     <div>
-                      <span className="font-medium">Nom complet:</span>{" "}
+                      <span className="font-medium">
+                        {t("studentManagement.fullName")}:
+                      </span>{" "}
                       {selectedStudent.firstName} {selectedStudent.lastName}
                     </div>
                   </div>
                   <div className="flex items-start">
                     <Mail className="w-4 h-4 mt-1 mr-2 text-emerald-500" />
                     <div>
-                      <span className="font-medium">Email:</span>{" "}
+                      <span className="font-medium">
+                        {t("studentManagement.email")}:
+                      </span>{" "}
                       {selectedStudent.email || "N/A"}
                     </div>
                   </div>
                   <div className="flex items-start">
                     <Phone className="w-4 h-4 mt-1 mr-2 text-pink-500" />
                     <div>
-                      <span className="font-medium">Téléphone:</span>{" "}
+                      <span className="font-medium">
+                        {t("studentManagement.phone")}:
+                      </span>{" "}
                       {selectedStudent.phoneNumber || "N/A"}
                     </div>
                   </div>
                   <div className="flex items-start">
                     <Smile className="w-4 h-4 mt-1 mr-2 text-yellow-500" />
                     <div>
-                      <span className="font-medium">Genre:</span>{" "}
-                      {selectedStudent.gender || "N/A"}
+                      <span className="font-medium">
+                        {t("studentManagement.gender")}:
+                      </span>{" "}
+                      {t(`studentManagement.${selectedStudent.gender}`) ||
+                        "N/A"}
                     </div>
                   </div>
                   <div className="flex items-start">
                     <Calendar className="w-4 h-4 mt-1 mr-2 text-cyan-600" />
                     <div>
-                      <span className="font-medium">Date de naissance:</span>{" "}
+                      <span className="font-medium">
+                        {t("studentManagement.dateOfBirth")}:
+                      </span>{" "}
                       {new Date(
                         selectedStudent.dateOfBirth
                       ).toLocaleDateString() || "N/A"}
@@ -961,7 +1042,9 @@ export default function StudentManagement() {
                   <div className="flex items-start">
                     <GraduationCap className="w-4 h-4 mt-1 mr-2 text-purple-500" />
                     <div>
-                      <span className="font-medium">Niveau:</span>{" "}
+                      <span className="font-medium">
+                        {t("studentManagement.level")}:
+                      </span>{" "}
                       {selectedStudent.level}
                     </div>
                   </div>
@@ -974,7 +1057,9 @@ export default function StudentManagement() {
                       <XCircle className="w-4 h-4 mt-1 mr-2 text-red-600" />
                     )}
                     <div>
-                      <span className="font-medium">Statut:</span>{" "}
+                      <span className="font-medium">
+                        {t("studentManagement.status")}:
+                      </span>{" "}
                       <span
                         className={`font-semibold ${
                           selectedStudent.status === "active"
@@ -984,7 +1069,7 @@ export default function StudentManagement() {
                             : "text-red-600"
                         }`}
                       >
-                        {selectedStudent.status}
+                        {t(`studentManagement.${selectedStudent.status}`)}
                       </span>
                     </div>
                   </div>
@@ -993,33 +1078,44 @@ export default function StudentManagement() {
                 {/* Address */}
                 <div>
                   <h4 className="text-base font-semibold text-gray-800 mb-2">
-                    Adresse
+                    {t("studentManagement.address")}
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>Rue: {selectedStudent.address?.street || "N/A"}</div>
-                    <div>Ville: {selectedStudent.address?.city || "N/A"}</div>
                     <div>
-                      Région/État: {selectedStudent.address?.state || "N/A"}
+                      {t("studentManagement.street")}:{" "}
+                      {selectedStudent.address?.street || "N/A"}
                     </div>
-                    <div>Pays: {selectedStudent.address?.country || "N/A"}</div>
+                    <div>
+                      {t("studentManagement.city")}:{" "}
+                      {selectedStudent.address?.city || "N/A"}
+                    </div>
+                    <div>
+                      {t("studentManagement.state")}:{" "}
+                      {selectedStudent.address?.state || "N/A"}
+                    </div>
+                    <div>
+                      {t("studentManagement.country")}:{" "}
+                      {selectedStudent.address?.country || "N/A"}
+                    </div>
                   </div>
                 </div>
 
                 {/* Emergency Contact */}
                 <div>
                   <h4 className="text-base font-semibold text-gray-800 mb-2">
-                    Contact d'urgence
+                    {t("studentManagement.emergencyContact")}
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      Nom: {selectedStudent.emergencyContact?.name || "N/A"}
+                      {t("studentManagement.name")}:{" "}
+                      {selectedStudent.emergencyContact?.name || "N/A"}
                     </div>
                     <div>
-                      Relation:{" "}
+                      {t("studentManagement.relationship")}:{" "}
                       {selectedStudent.emergencyContact?.relationship || "N/A"}
                     </div>
                     <div className="col-span-2">
-                      Téléphone:{" "}
+                      {t("studentManagement.phone")}:{" "}
                       {selectedStudent.emergencyContact?.phone || "N/A"}
                     </div>
                   </div>

@@ -10,6 +10,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { USER_KEY, TOKEN_KEY, SCHOOL_KEY } from "@/lib/key";
+import { LanguageSwitcher } from "../LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 const Header = () => {
   const [user, setUser] = useState<{
@@ -31,7 +33,7 @@ const Header = () => {
         setUser(null);
       }
     }
-     const storedSchool = localStorage.getItem(SCHOOL_KEY);
+    const storedSchool = localStorage.getItem(SCHOOL_KEY);
     if (storedSchool) {
       try {
         setSchool(JSON.parse(storedSchool));
@@ -62,9 +64,14 @@ const Header = () => {
 
   console.log("user");
   console.log(user);
+  const { t } = useTranslation();
   return (
     <header className="w-full bg-white border-b shadow-sm px-6 py-3 flex justify-between items-center">
-      <h1 className="text-xl font-bold text-skyblue">{school?.name}</h1>
+      <h1 className="text-xl font-bold text-sky-600 truncate max-w-xs sm:max-w-md" title={school?.name}>
+        {school?.name || t("header.noSchool")}
+      </h1>
+
+      <LanguageSwitcher className="" />
 
       {user && (
         <DropdownMenu>
@@ -72,20 +79,21 @@ const Header = () => {
             <Button
               variant="ghost"
               className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-gray-100 focus:outline-none"
+              aria-label={t("header.userMenu")}
             >
-              <div className="w-8 h-8 bg-skyblue text-white rounded-full flex items-center justify-center text-sm font-semibold">
+              <div className="w-8 h-8 bg-sky-600 text-white rounded-full flex items-center justify-center text-sm font-semibold select-none">
                 {getInitials(user.firstName || user.email || "U")}
               </div>
               <span className="hidden sm:inline text-sm font-medium text-gray-700 truncate max-w-[100px]">
-                {user.firstName || "Utilisateur"}
+                {user.firstName || t("header.userDefaultName")}
               </span>
-              <Menu className="w-4 h-4 ml-1 text-gray-500" />
+              <RefreshCcwIcon className="w-4 h-4 ml-1 text-gray-400" />
             </Button>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent align="end" className="w-56 shadow-lg border">
-            <div className="px-3 py-2 text-sm text-gray-600 break-words border-b">
-              {user.email || "no-email@example.com"}
+          <DropdownMenuContent align="end" className="w-56 shadow-lg border bg-white rounded-md">
+            <div className="px-3 py-2 text-sm text-gray-600 break-words border-b select-text">
+              {user.email || t("header.noEmail")}
             </div>
 
             <DropdownMenuItem
@@ -93,7 +101,7 @@ const Header = () => {
               className="cursor-pointer text-sm flex items-center text-gray-700 hover:bg-gray-100"
             >
               <RefreshCcwIcon className="w-4 h-4 mr-2 text-blue-500" />
-              Changer d'école
+              {t("header.changeSchool")}
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -101,7 +109,7 @@ const Header = () => {
               className="cursor-pointer text-sm flex items-center text-red-600 hover:bg-red-50"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              Déconnexion
+              {t("header.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

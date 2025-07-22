@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import api from "@/lib/api";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 const RegisterPage = () => {
   const [form, setForm] = useState({
@@ -21,6 +23,7 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -50,21 +53,20 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-skyblue/10 to-white p-4">
+    
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-100 to-white px-4 py-10">
+      <LanguageSwitcher className="absolute top-3 right-3"/>
       <div className="w-full max-w-md space-y-6">
-        <Card>
+        <Card className="shadow-lg border border-gray-100">
           <form onSubmit={handleRegister}>
-            <CardHeader className="mb-4">
-              <h2 className="text-2xl font-bold text-center text-skyblue">
-                Créer un compte
-              </h2>
-              <p className="text-sm text-muted-foreground text-center">
-                Remplissez les informations ci-dessous
-              </p>
+            <CardHeader className="mb-4 text-center">
+              <h2 className="text-2xl font-bold text-sky-600">{t("registerPage.title")}</h2>
+              <p className="text-sm text-gray-500">{t("registerPage.subtitle")}</p>
             </CardHeader>
+
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="firstName">Prénom</Label>
+                <Label htmlFor="firstName">{t("registerPage.firstName")}</Label>
                 <Input
                   id="firstName"
                   name="firstName"
@@ -73,8 +75,9 @@ const RegisterPage = () => {
                   required
                 />
               </div>
+
               <div>
-                <Label htmlFor="lastName">Nom</Label>
+                <Label htmlFor="lastName">{t("registerPage.lastName")}</Label>
                 <Input
                   id="lastName"
                   name="lastName"
@@ -83,8 +86,9 @@ const RegisterPage = () => {
                   required
                 />
               </div>
+
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("registerPage.email")}</Label>
                 <Input
                   id="email"
                   name="email"
@@ -94,8 +98,9 @@ const RegisterPage = () => {
                   required
                 />
               </div>
+
               <div>
-                <Label htmlFor="password">Mot de passe</Label>
+                <Label htmlFor="password">{t("registerPage.password")}</Label>
                 <Input
                   id="password"
                   name="password"
@@ -105,8 +110,9 @@ const RegisterPage = () => {
                   required
                 />
               </div>
+
               <div>
-                <Label htmlFor="phoneNumber">Téléphone</Label>
+                <Label htmlFor="phoneNumber">{t("registerPage.phoneNumber")}</Label>
                 <Input
                   id="phoneNumber"
                   name="phoneNumber"
@@ -114,43 +120,46 @@ const RegisterPage = () => {
                   onChange={handleChange}
                 />
               </div>
+
               <div>
-                <Label htmlFor="gender">Genre</Label>
+                <Label htmlFor="gender">{t("registerPage.gender")}</Label>
                 <select
-                  name="gender"
                   id="gender"
+                  name="gender"
                   value={form.gender}
                   onChange={handleChange}
                   className="w-full rounded-md border px-3 py-2"
                 >
-                  <option value="male">Homme</option>
-                  <option value="female">Femme</option>
-                  <option value="other">Autre</option>
+                  <option value="male">{t("registerPage.genderMale")}</option>
+                  <option value="female">{t("registerPage.genderFemale")}</option>
+                  <option value="other">{t("registerPage.genderOther")}</option>
                 </select>
               </div>
             </CardContent>
+
             <CardFooter className="flex flex-col gap-3">
               <Button
                 type="submit"
-                className="w-full bg-skyblue hover:bg-skyblue/90 transition-all"
+                className="w-full bg-sky-600 hover:bg-sky-500 text-white transition"
                 disabled={loading}
               >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Création...
+                    {t("registerPage.loading")}
                   </>
                 ) : (
-                  "Créer un compte"
+                  t("registerPage.submit")
                 )}
               </Button>
-              <p className="text-sm text-center text-muted-foreground">
-                Vous avez déjà un compte ?{" "}
+
+              <p className="text-sm text-center text-gray-500">
+                {t("registerPage.alreadyAccount")}{" "}
                 <Link
                   to="/login"
-                  className="text-skyblue hover:underline font-medium"
+                  className="text-sky-600 hover:underline font-medium"
                 >
-                  Se connecter
+                  {t("registerPage.login")}
                 </Link>
               </p>
             </CardFooter>

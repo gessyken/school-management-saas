@@ -1,17 +1,14 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { SCHOOL_KEY, USER_KEY } from "@/lib/key";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 interface Member {
   _id: string;
@@ -23,7 +20,7 @@ interface Member {
   }[];
 }
 
-const possibleRoles = ["ADMIN", 'DIRECTOR', 'SECRETARY', 'TEACHER'];
+const possibleRoles = ["ADMIN", "DIRECTOR", "SECRETARY", "TEACHER"];
 
 const ManageMembersPage = () => {
   const [members, setMembers] = useState<Member[]>([]);
@@ -31,13 +28,13 @@ const ManageMembersPage = () => {
   const [updating, setUpdating] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-
+  const { t } = useTranslation();
   const schoolId: String | null = (() => {
     const stored = localStorage.getItem(SCHOOL_KEY);
     if (!stored) {
       navigate("/schools-select");
     }
-    let schoolObj = JSON.parse(stored)
+    let schoolObj = JSON.parse(stored);
     return schoolObj ? schoolObj._id : null;
   })();
   const currentUser = JSON.parse(localStorage.getItem(USER_KEY) || "{}");
@@ -80,15 +77,13 @@ const ManageMembersPage = () => {
             ? {
                 ...m,
                 memberships: m.memberships.map((mem) =>
-                  mem.school === schoolId
-                    ? { ...mem, roles: newRoles }
-                    : mem
+                  mem.school === schoolId ? { ...mem, roles: newRoles } : mem
                 ),
               }
             : m
         )
       );
-       navigate("/school-dashboard/members");
+      navigate("/school-dashboard/members");
     } catch {
       toast({
         title: "Erreur",
@@ -102,36 +97,39 @@ const ManageMembersPage = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin" />
-        <span className="ml-2">Chargement des membres...</span>
+      <div className="flex justify-center items-center h-64 text-sm text-gray-600">
+        <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+        <span className="ml-3">{t("members.loading")}</span>
       </div>
     );
   }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-6">
-      <h2 className="text-2xl font-bold text-skyblue">
-        Gérer les membres de l’école
+      <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+        {t("members.title")}
       </h2>
 
       {members.length === 0 ? (
-        <p className="text-muted-foreground">Aucun membre pour cette école.</p>
+        <p className="text-muted-foreground">{t("members.empty")}</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6">
           {members.map((member) => (
-            <Card key={member._id}>
+            <Card
+              key={member._id}
+              className="shadow-md hover:shadow-lg transition-shadow"
+            >
               <CardHeader>
-                <h3 className="font-semibold">{member.name}</h3>
-                <p className="text-xs text-muted-foreground">
-                  {member.email}
-                </p>
+                <h3 className="font-semibold text-lg">{member.name}</h3>
+                <p className="text-xs text-muted-foreground">{member.email}</p>
               </CardHeader>
               <CardContent className="space-y-3">
                 <MultiSelect
                   options={possibleRoles}
                   value={getRoles(member)}
-                  disabled={updating === member._id || member._id === currentUser._id}
+                  disabled={
+                    updating === member._id || member._id === currentUser._id
+                  }
                   onChange={(newRoles) =>
                     handleRoleChange(member._id, newRoles)
                   }
@@ -140,14 +138,13 @@ const ManageMembersPage = () => {
                   disabled={
                     updating === member._id || member._id === currentUser._id
                   }
-                  onClick={() =>
-                    handleRoleChange(member._id, getRoles(member))
-                  }
+                  onClick={() => handleRoleChange(member._id, getRoles(member))}
+                  className="w-full"
                 >
                   {updating === member._id ? (
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   ) : null}
-                  Mettre à jour les rôles
+                  {t("members.updateRoles")}
                 </Button>
               </CardContent>
             </Card>

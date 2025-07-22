@@ -10,6 +10,7 @@ import SchoolCreateModal from "@/components/modals/SchoolCreateModal";
 import { SCHOOL_KEY, TOKEN_KEY, USER_KEY } from "@/lib/key";
 import Header from "@/components/header/Header";
 import { Progress } from "@/components/ui/progress"; // Make sure this is available
+import { useTranslation } from "react-i18next";
 
 interface School {
   _id: string;
@@ -38,6 +39,7 @@ const SchoolSelectPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const user: User | null = (() => {
     const stored = localStorage.getItem(USER_KEY);
@@ -135,10 +137,10 @@ const SchoolSelectPage = () => {
       <div className="w-full max-w-6xl mx-auto space-y-10 mt-6">
         {loading && (
           <div>
-            <p className="text-skyblue font-medium mb-2">
-              Chargement des écoles...
+            <p className="text-sky-600 font-medium mb-2">
+              {t("schools.loading")}
             </p>
-            <Progress value={progress} className="h-2 bg-gray-200" />
+            <Progress value={progress} className="h-2 bg-gray-200 rounded" />
           </div>
         )}
 
@@ -146,12 +148,13 @@ const SchoolSelectPage = () => {
           <>
             {/* Top: Search + Add Button */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <h2 className="text-2xl font-bold text-skyblue">
-                Sélectionnez une école
+              <h2 className="text-2xl font-bold text-sky-600">
+                {t("schools.selectSchool")}
               </h2>
               <div className="flex gap-2 w-full md:w-auto">
                 <Input
-                  placeholder="Rechercher une école..."
+                  aria-label={t("schools.searchPlaceholder")}
+                  placeholder={t("schools.searchPlaceholder")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="flex-grow"
@@ -159,8 +162,10 @@ const SchoolSelectPage = () => {
                 <Button
                   onClick={() => setShowCreateModal(true)}
                   variant="outline"
+                  aria-label={t("schools.newSchool")}
                 >
-                  <PlusCircle className="w-5 h-5 mr-1" /> Nouvelle école
+                  <PlusCircle className="w-5 h-5 mr-1" />
+                  {t("schools.newSchool")}
                 </Button>
               </div>
             </div>
@@ -168,24 +173,31 @@ const SchoolSelectPage = () => {
             {/* Member Schools */}
             {memberSchools.length > 0 && (
               <section>
-                <h3 className="text-xl font-semibold text-skyblue mb-4">
-                  Vos écoles
+                <h3 className="text-xl font-semibold text-sky-600 mb-4">
+                  {t("schools.yourSchools")}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
                   {memberSchools.map((school) => (
                     <Card
                       key={school._id}
-                      className="hover:shadow-xl transition duration-300"
+                      className="hover:shadow-xl transition-shadow duration-300"
+                      aria-label={`${school.name} ${t(
+                        "schools.schoolCardLabel"
+                      )}`}
                     >
                       <CardHeader className="flex flex-col items-center text-center space-y-2">
                         <img
                           src={school.logoUrl || "/default-school-logo.png"}
-                          alt="Logo école"
+                          alt={t("schools.schoolLogoAlt", {
+                            name: school.name,
+                          })}
                           className="h-16 w-16 object-cover rounded-full border"
                         />
-                        <h4 className="text-lg font-semibold">{school.name}</h4>
+                        <h4 className="text-lg font-semibold truncate max-w-full">
+                          {school.name}
+                        </h4>
                         <p className="text-xs text-muted-foreground">
-                          Rôles :{" "}
+                          {t("schools.roles")}{" "}
                           {school?.members
                             ?.find((opt) => opt._id === user._id)
                             ?.memberships?.find((m) => m.school === school._id)
@@ -201,7 +213,7 @@ const SchoolSelectPage = () => {
                           {switchLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
                           ) : null}
-                          Entrer
+                          {t("schools.enter")}
                         </Button>
                       </CardContent>
                     </Card>
@@ -213,24 +225,31 @@ const SchoolSelectPage = () => {
             {/* Joinable Schools */}
             {joinableSchools.length > 0 && (
               <section>
-                <h3 className="text-xl font-semibold text-skyblue mb-4">
-                  Écoles disponibles (ouvertes)
+                <h3 className="text-xl font-semibold text-sky-600 mb-4">
+                  {t("schools.availableSchools")}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
                   {joinableSchools.map((school) => (
                     <Card
                       key={school._id}
-                      className="hover:shadow-xl transition duration-300"
+                      className="hover:shadow-xl transition-shadow duration-300"
+                      aria-label={`${school.name} ${t(
+                        "schools.schoolCardLabel"
+                      )}`}
                     >
                       <CardHeader className="flex flex-col items-center text-center space-y-2">
                         <img
                           src={school.logoUrl || "/default-school-logo.png"}
-                          alt="Logo école"
+                          alt={t("schools.schoolLogoAlt", {
+                            name: school.name,
+                          })}
                           className="h-16 w-16 object-cover rounded-full border"
                         />
-                        <h4 className="text-lg font-semibold">{school.name}</h4>
+                        <h4 className="text-lg font-semibold truncate max-w-full">
+                          {school.name}
+                        </h4>
                         <p className="text-xs text-muted-foreground">
-                          Accès : Ouvert
+                          {t("schools.accessOpen")}
                         </p>
                       </CardHeader>
                       <CardContent>
@@ -239,7 +258,7 @@ const SchoolSelectPage = () => {
                           variant="outline"
                           className="w-full"
                         >
-                          Demander à rejoindre
+                          {t("schools.requestToJoin")}
                         </Button>
                       </CardContent>
                     </Card>

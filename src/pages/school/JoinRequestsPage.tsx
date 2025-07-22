@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import { SCHOOL_KEY } from "@/lib/key";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 interface UserRequest {
   _id: string;
@@ -19,14 +20,15 @@ interface JoinRequestsPageProps {
 
 const JoinRequestsPage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const schoolId: String | null = (() => {
-      const stored = localStorage.getItem(SCHOOL_KEY);
-      if (!stored) {
-        navigate("/schools-select");
-      }
-      let schoolObj = JSON.parse(stored)
-      return schoolObj ? schoolObj._id : null;
-    })();
+    const stored = localStorage.getItem(SCHOOL_KEY);
+    if (!stored) {
+      navigate("/schools-select");
+    }
+    let schoolObj = JSON.parse(stored);
+    return schoolObj ? schoolObj._id : null;
+  })();
   const [requests, setRequests] = useState<UserRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
@@ -37,8 +39,8 @@ const JoinRequestsPage = () => {
     setLoading(true);
     try {
       const res = await api.get(`/schools/${schoolId}/join-requests`);
-      setRequests(res?.data?.joinRequests||[]);
-    //   console.log(res.data.joinRequests)
+      setRequests(res?.data?.joinRequests || []);
+      //   console.log(res.data.joinRequests)
     } catch (error) {
       toast({
         title: "Erreur",
@@ -106,24 +108,22 @@ const JoinRequestsPage = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6 text-skyblue">
-        Demandes d'adhésion en attente
+      <h2 className="text-2xl font-bold mb-6 text-sky-700">
+        {t("membership.pendingTitle")}
       </h2>
+
       {requests.length === 0 ? (
-        <p className="text-center text-muted-foreground">
-          Aucune demande d'adhésion en attente.
-        </p>
+        <p className="text-center text-gray-500">{t("membership.noPending")}</p>
       ) : (
         <div className="space-y-4">
           {requests.map((request) => (
-            <Card key={request._id}>
+            <Card key={request._id} className="shadow-sm">
               <CardHeader className="flex justify-between items-center">
                 <div>
                   <h3 className="text-lg font-semibold">{request.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {request.email}
-                  </p>
+                  <p className="text-sm text-gray-500">{request.email}</p>
                 </div>
+
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -135,19 +135,20 @@ const JoinRequestsPage = () => {
                     {actionLoadingId === request._id ? (
                       <Loader2 className="animate-spin h-4 w-4" />
                     ) : (
-                      "Rejeter"
+                      t("membership.reject")
                     )}
                   </Button>
+
                   <Button
                     size="sm"
                     onClick={() => approveRequest(request._id)}
                     disabled={actionLoadingId === request._id}
-                    className="bg-skyblue hover:bg-skyblue/90 text-white"
+                    className="bg-sky-600 hover:bg-sky-700 text-white"
                   >
                     {actionLoadingId === request._id ? (
                       <Loader2 className="animate-spin h-4 w-4" />
                     ) : (
-                      "Approuver"
+                      t("membership.approve")
                     )}
                   </Button>
                 </div>
