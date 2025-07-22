@@ -7,6 +7,7 @@ import {
   AcademicFee,
   AcademicYearStudent,
 } from "@/lib/services/academicService";
+import { useTranslation } from "react-i18next";
 
 interface PaymentFormProps {
   student?: any;
@@ -21,6 +22,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   onSubmit,
   onCancel,
 }) => {
+  const { t } = useTranslation();
   const [billID, setBillID] = useState(initialData?.billID || "");
   const [type, setType] = useState(initialData?.type || "");
   const [amount, setAmount] = useState(initialData?.amount || 0);
@@ -68,51 +70,54 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       {student ? (
         <Card className="bg-gray-50 p-4 mb-6">
           <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-            <User size={20} /> Student Information
+            <User size={20} /> {t("paymentForm.studentInfo")}
           </h3>
           <p>
-            <strong>Name:</strong> {student.studentName || "N/A"}
+            <strong>{t("paymentForm.name")}:</strong>{" "}
+            {student.studentName || t("common.na")}
           </p>
           <p>
-            <strong>Class:</strong> {student.studentClass || "N/A"}
+            <strong>{t("paymentForm.class")}:</strong>{" "}
+            {student.studentClass || t("common.na")}
           </p>
           <p>
-            <strong>Academic Year:</strong> {student.year || "N/A"}
+            <strong>{t("paymentForm.academicYear")}:</strong>{" "}
+            {student.year || t("common.na")}
           </p>
-          {/* Add more student info as needed */}
         </Card>
       ) : (
         <div className="text-red-600 flex items-center gap-2">
-          <XCircle /> Student information is not available.
+          <XCircle /> {t("paymentForm.studentNotAvailable")}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block mb-1 font-medium" htmlFor="feeBillID">
-            Fee Bill
+            {t("paymentForm.feeBill")}
           </label>
           <Input
             id="feeBillID"
-            placeholder="Enter fee bill ID"
+            placeholder={t("paymentForm.feeBillPlaceholder")}
             value={billID}
             onChange={(e) => setBillID(e.target.value)}
             aria-invalid={!!errors.billID}
             aria-describedby="feeBillID-error"
           />
-          {errors.type && (
-            <p id="feeType-error" className="text-red-600 text-sm mt-1">
+          {errors.billID && (
+            <p id="feeBillID-error" className="text-red-600 text-sm mt-1">
               {errors.billID}
             </p>
           )}
         </div>
+
         <div>
           <label className="block mb-1 font-medium" htmlFor="feeType">
-            Fee Type
+            {t("paymentForm.feeType")}
           </label>
           <Input
             id="feeType"
-            placeholder="Enter fee type"
+            placeholder={t("paymentForm.feeTypePlaceholder")}
             value={type}
             onChange={(e) => setType(e.target.value)}
             aria-invalid={!!errors.type}
@@ -127,14 +132,14 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 
         <div>
           <label className="block mb-1 font-medium" htmlFor="amount">
-            Amount
+            {t("paymentForm.amount")}
           </label>
           <Input
             id="amount"
             type="number"
             min={0}
             step={0.01}
-            placeholder="Enter amount"
+            placeholder={t("paymentForm.amountPlaceholder")}
             value={amount}
             onChange={(e) => setAmount(parseFloat(e.target.value))}
             aria-invalid={!!errors.amount}
@@ -149,7 +154,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 
         <div>
           <label className="block mb-1 font-medium" htmlFor="paymentDate">
-            Payment Date
+            {t("paymentForm.paymentDate")}
           </label>
           <Input
             id="paymentDate"
@@ -158,7 +163,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             onChange={(e) => setPaymentDate(e.target.value)}
             aria-invalid={!!errors.paymentDate}
             aria-describedby="paymentDate-error"
-            // icon={<Calendar />}
           />
           {errors.paymentDate && (
             <p id="paymentDate-error" className="text-red-600 text-sm mt-1">
@@ -169,16 +173,15 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 
         <div>
           <label className="block mb-1 font-medium" htmlFor="paymentMethod">
-            Payment Method
+            {t("paymentForm.paymentMethod")}
           </label>
           <Input
             id="paymentMethod"
-            placeholder="Enter payment method"
+            placeholder={t("paymentForm.paymentMethodPlaceholder")}
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}
             aria-invalid={!!errors.paymentMethod}
             aria-describedby="paymentMethod-error"
-            // icon={<Info />}
           />
           {errors.paymentMethod && (
             <p id="paymentMethod-error" className="text-red-600 text-sm mt-1">
@@ -189,10 +192,10 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 
         <div className="flex justify-between pt-4">
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button type="submit" disabled={!student}>
-            {initialData ? "Update Fee" : "Add Fee"}
+            {initialData ? t("paymentForm.updateFee") : t("paymentForm.addFee")}
           </Button>
         </div>
       </form>

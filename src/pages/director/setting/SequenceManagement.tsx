@@ -16,8 +16,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { Pencil, Trash, Plus } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useTranslation } from "react-i18next";
 
 const SequenceManagement: React.FC = () => {
+  const { t } = useTranslation();
   const [sequences, setSequences] = useState<Sequence[]>([]);
   const [terms, setTerms] = useState<Term[]>([]);
   const [currentTerms, setCurrentTerms] = useState<Term[]>([]);
@@ -137,7 +139,9 @@ const SequenceManagement: React.FC = () => {
     <div className="p-6">
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <h2 className="text-2xl font-semibold">Manage Sequences</h2>
+          <h2 className="text-2xl font-semibold">
+            {t("sequenceManagement.title")}
+          </h2>
           <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
             {/* Academic Year Filter */}
             <select
@@ -153,7 +157,7 @@ const SequenceManagement: React.FC = () => {
               className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="" disabled>
-                Select Academic Year
+                {t("sequenceManagement.selectAcademicYear")}
               </option>
               {academicYears.map((year) => (
                 <option key={year._id} value={year.name}>
@@ -171,7 +175,7 @@ const SequenceManagement: React.FC = () => {
               }}
               className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All Terms</option>
+              <option value="">{t("sequenceManagement.allTerms")}</option>
               {currentTerms.map((term) => (
                 <option key={term._id} value={term._id}>
                   {term.name}
@@ -183,19 +187,22 @@ const SequenceManagement: React.FC = () => {
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button onClick={resetForm} className="w-full sm:w-auto">
-                  <Plus className="w-4 h-4 mr-2" /> Add Sequence
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t("sequenceManagement.addSequence")}
                 </Button>
               </DialogTrigger>
 
               <DialogContent>
                 <DialogHeader>
-                  {editingId ? "Edit Sequence" : "New Sequence"}
+                  {editingId
+                    ? t("sequenceManagement.editSequence")
+                    : t("sequenceManagement.newSequence")}
                 </DialogHeader>
 
                 <div className="space-y-4 mt-4">
                   {/* Sequence Name */}
                   <div>
-                    <Label>Name</Label>
+                    <Label>{t("sequenceManagement.name")}</Label>
                     <select
                       name="name"
                       required
@@ -204,19 +211,20 @@ const SequenceManagement: React.FC = () => {
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="" disabled>
-                        Select a Sequence
+                        {t("sequenceManagement.selectSequence")}
                       </option>
-                      <option value="Sequence 1">Sequence 1</option>
-                      <option value="Sequence 2">Sequence 2</option>
-                      <option value="Sequence 3">Sequence 3</option>
-                      <option value="Sequence 4">Sequence 4</option>
+                      {[1, 2, 3, 4].map((num) => (
+                        <option key={num} value={`Sequence ${num}`}>
+                          {t("sequenceManagement.sequence")} {num}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
                   {/* Start and End Date */}
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1">
-                      <Label>Start Date</Label>
+                      <Label>{t("sequenceManagement.startDate")}</Label>
                       <Input
                         name="startDate"
                         type="date"
@@ -226,7 +234,7 @@ const SequenceManagement: React.FC = () => {
                       />
                     </div>
                     <div className="flex-1">
-                      <Label>End Date</Label>
+                      <Label>{t("sequenceManagement.endDate")}</Label>
                       <Input
                         name="endDate"
                         type="date"
@@ -241,7 +249,7 @@ const SequenceManagement: React.FC = () => {
                   {!editingId && (
                     <div className="flex flex-col sm:flex-row gap-4">
                       <div className="flex-1">
-                        <Label>Academic Year</Label>
+                        <Label>{t("sequenceManagement.academicYear")}</Label>
                         <select
                           name="year"
                           value={filter.academicYear}
@@ -264,7 +272,9 @@ const SequenceManagement: React.FC = () => {
                           required
                           className="border px-3 py-2 w-full rounded"
                         >
-                          <option value="">Select Year</option>
+                          <option value="">
+                            {t("sequenceManagement.selectYear")}
+                          </option>
                           {academicYears.map((year) => (
                             <option key={year._id} value={year.name}>
                               {year.name}
@@ -274,7 +284,7 @@ const SequenceManagement: React.FC = () => {
                       </div>
 
                       <div className="flex-1">
-                        <Label>Term</Label>
+                        <Label>{t("sequenceManagement.term")}</Label>
                         <select
                           name="term"
                           value={form.term || ""}
@@ -283,7 +293,9 @@ const SequenceManagement: React.FC = () => {
                           disabled={!currentTerms.length}
                           className="border px-3 py-2 w-full rounded"
                         >
-                          <option value="">Select a Term</option>
+                          <option value="">
+                            {t("sequenceManagement.selectTerm")}
+                          </option>
                           {currentTerms.map((term) => (
                             <option key={term._id} value={term._id}>
                               {term.name}
@@ -296,7 +308,9 @@ const SequenceManagement: React.FC = () => {
 
                   {/* Submit Button */}
                   <Button onClick={handleSubmit} className="w-full sm:w-auto">
-                    {editingId ? "Update Sequence" : "Create Sequence"}
+                    {editingId
+                      ? t("sequenceManagement.updateSequence")
+                      : t("sequenceManagement.createSequence")}
                   </Button>
                 </div>
               </DialogContent>
@@ -308,11 +322,15 @@ const SequenceManagement: React.FC = () => {
       <table className="min-w-full border text-sm">
         <thead className="bg-gray-100">
           <tr>
-            <th className="px-3 py-2 border">Name</th>
-            <th className="px-3 py-2 border">Start</th>
-            <th className="px-3 py-2 border">End</th>
-            <th className="px-3 py-2 border">Term</th>
-            <th className="px-3 py-2 border">Actions</th>
+            <th className="px-3 py-2 border">{t("sequenceManagement.name")}</th>
+            <th className="px-3 py-2 border">
+              {t("sequenceManagement.start")}
+            </th>
+            <th className="px-3 py-2 border">{t("sequenceManagement.end")}</th>
+            <th className="px-3 py-2 border">{t("sequenceManagement.term")}</th>
+            <th className="px-3 py-2 border">
+              {t("sequenceManagement.actions")}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -323,7 +341,9 @@ const SequenceManagement: React.FC = () => {
                 {seq.startDate?.slice(0, 10)}
               </td>
               <td className="border px-3 py-2">{seq.endDate?.slice(0, 10)}</td>
-              <td className="border px-3 py-2">{seq?.term?.name || "N/A"}</td>
+              <td className="border px-3 py-2">
+                {seq?.term?.name || t("common.na")}
+              </td>
               <td className="border px-3 py-2 flex items-center space-x-2">
                 <Label className="relative inline-flex items-center cursor-pointer mt-2">
                   <Input
@@ -334,14 +354,12 @@ const SequenceManagement: React.FC = () => {
                   />
                   <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition"></div>
                   <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition"></div>
-                  {/* <span className="ml-3 text-sm font-medium text-gray-900">
-                                                  {form.isCurrent ? "Active" : "Inactive"}
-                                                </span> */}
                 </Label>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleEdit(seq)}
+                  aria-label={t("sequenceManagement.edit")}
                 >
                   <Pencil className="w-4 h-4" />
                 </Button>
@@ -350,6 +368,7 @@ const SequenceManagement: React.FC = () => {
                   size="sm"
                   className="text-red-600"
                   onClick={() => handleDelete(seq._id)}
+                  aria-label={t("sequenceManagement.delete")}
                 >
                   <Trash className="w-4 h-4" />
                 </Button>

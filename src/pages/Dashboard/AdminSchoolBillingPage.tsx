@@ -3,11 +3,7 @@ import { billingService } from "@/lib/services/billingService";
 import { invoiceService } from "@/lib/services/invoiceService";
 import { useToast } from "@/components/ui/use-toast";
 import { useParams } from "react-router-dom";
-import {
-  Card,
-  CardHeader,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -19,10 +15,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import InvoiceHistory from "@/components/InvoiceHistory";
+import { useTranslation } from "react-i18next";
+import { Label } from "@/components/ui/label";
 
-const AdminSchoolBillingPage = ({schoolId}) => {
-//   const { schoolId } = useParams(); /
+const AdminSchoolBillingPage = ({ schoolId }) => {
+  //   const { schoolId } = useParams();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const [billingInfo, setBillingInfo] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -39,10 +38,10 @@ const AdminSchoolBillingPage = ({schoolId}) => {
           billingService.get(schoolId),
           invoiceService.getBySchool(schoolId),
         ]);
-        console.log(billingRes, invoiceRes)
+        console.log(billingRes, invoiceRes);
         setBillingInfo(billingRes.data);
         setInvoices(invoiceRes.data);
-      } catch (err){
+      } catch (err) {
         console.log(err);
         toast({
           title: "Erreur",
@@ -96,54 +95,79 @@ const AdminSchoolBillingPage = ({schoolId}) => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-6">
       <h2 className="text-2xl font-bold text-orange-600">
-        Gestion de la facturation de l’école (Admin)
+        {t("billing.adminTitle")}
       </h2>
 
       {/* Billing Rules */}
-      <Card>
-        <CardHeader>
-          <h3 className="font-semibold">Règles de facturation</h3>
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="border-b border-gray-200">
+          <h3 className="font-semibold text-lg">{t("billing.rulesTitle")}</h3>
         </CardHeader>
-        <CardContent className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+        <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 p-6">
           {[
-            ["baseMonthlyFee", "Frais de base (mensuel)"],
-            ["perStudentFee", "Coût par élève"],
-            ["perStaffFee", "Coût par personnel"],
-            ["perClassFee", "Coût par classe"],
-          ].map(([key, label]) => (
-            <div key={key}>
-              <label className="block text-sm mb-1">{label}</label>
+            ["baseMonthlyFee", "baseFee"],
+            ["perStudentFee", "perStudent"],
+            ["perStaffFee", "perStaff"],
+            ["perClassFee", "perClass"],
+          ].map(([key, labelKey]) => (
+            <div key={key} className="space-y-1">
+              <Label htmlFor={key}>{t(`billing.rules.${labelKey}`)}</Label>
               <Input
+                id={key}
                 type="number"
                 value={billingInfo.billingRules[key]}
                 onChange={(e) =>
                   handleRuleChange(key, parseFloat(e.target.value))
                 }
+                className="w-full"
               />
             </div>
           ))}
-          <Button onClick={handleSaveRules} disabled={saving} className="mt-3">
-            {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            Enregistrer les règles
-          </Button>
+          <div className="sm:col-span-2 md:col-span-3">
+            <Button
+              onClick={handleSaveRules}
+              disabled={saving}
+              className="mt-2 w-full sm:w-auto"
+            >
+              {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              {t("common.save")}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       {/* Usage Overview */}
-      <Card>
-        <CardHeader>
-          <h3 className="font-semibold">Utilisation actuelle</h3>
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="border-b border-gray-200">
+          <h3 className="font-semibold text-lg">{t("billing.usageTitle")}</h3>
         </CardHeader>
-        <CardContent className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-          <div><strong>Élèves:</strong> {billingInfo.usage.studentsCount}</div>
-          <div><strong>Personnel:</strong> {billingInfo.usage.staffCount}</div>
-          <div><strong>Classes:</strong> {billingInfo.usage.classCount}</div>
-          <div><strong>Dernier calcul:</strong> {billingInfo.usage.lastUsageCalculated ? new Date(billingInfo.usage.lastUsageCalculated).toLocaleDateString() : "—"}</div>
+        <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 p-6">
+          {[
+            ["studentsCount", "students"],
+            ["staffCount", "staff"],
+            ["classCount", "classes"],
+            ["lastUsageCalculated", "lastCalculation"],
+          ].map(([key, labelKey]) => (
+            <div key={key} className="space-y-1">
+              <p className="text-sm font-medium text-gray-600">
+                {t(`billing.usage.${labelKey}`)}:
+              </p>
+              <p className="text-lg font-semibold">
+                {key === "lastUsageCalculated" && billingInfo.usage[key]
+                  ? new Date(billingInfo.usage[key]).toLocaleDateString()
+                  : billingInfo.usage[key] || 0}
+              </p>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
       {/* Invoice History */}
-      <InvoiceHistory invoices={invoices} />
+      <InvoiceHistory
+        invoices={invoices}
+        schoolId={schoolId}
+        setInvoices={setInvoices}
+      />
     </div>
   );
 };

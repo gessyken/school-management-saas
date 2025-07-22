@@ -17,20 +17,32 @@ type Props = {
   invoices: any[];
   schoolId?: string;
   setInvoices: (invoices: any[]) => void;
-  handlePayInvoice: (invoiceId: string, phoneNumber?: string) => Promise<void>;
 };
 
 const InvoiceHistory = ({
   invoices,
   schoolId,
-  setInvoices,
-  handlePayInvoice,
+  setInvoices
 }: Props) => {
   const { t } = useTranslation();
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
+ const handlePayInvoice = async (invoiceId: string, phoneNumber?: string) => {
+    try {
+      await invoiceService.pay(invoiceId, phoneNumber); // Pass to backend
+      toast({ title: "Facture marquée comme payée" });
+      const invoiceRes = await invoiceService.getBySchool(schoolId!);
+      setInvoices(invoiceRes.data);
+    } catch {
+      toast({
+        title: "Erreur",
+        description: "Échec du paiement",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleGenerateInvoice = async () => {
     if (!schoolId) return;

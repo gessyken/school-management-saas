@@ -12,9 +12,11 @@ import { DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Pencil, Trash, Plus } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "react-i18next";
 
 const TermManagement = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const [terms, setTerms] = useState<Term[]>([]);
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
@@ -130,7 +132,9 @@ const TermManagement = () => {
   return (
     <Card className="m-4 shadow-lg border">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <CardTitle className="text-xl font-bold">Terms</CardTitle>
+        <CardTitle className="text-xl font-bold">
+          {t("termManagement.title")}
+        </CardTitle>
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <select
@@ -148,7 +152,7 @@ const TermManagement = () => {
             ))}
           </select>
           <Input
-            placeholder="Search terms..."
+            placeholder={t("termManagement.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-xs"
@@ -159,14 +163,16 @@ const TermManagement = () => {
               setDialogOpen(true);
             }}
           >
-            <Plus className="mr-1 h-4 w-4" /> Add
+            <Plus className="mr-1 h-4 w-4" /> {t("termManagement.addButton")}
           </Button>
         </div>
       </CardHeader>
 
       <CardContent className="grid gap-4">
         {filteredTerms.length === 0 ? (
-          <p className="text-center text-muted-foreground">No terms found.</p>
+          <p className="text-center text-muted-foreground">
+            {t("termManagement.noTermsFound")}
+          </p>
         ) : (
           filteredTerms.map((term) => (
             <div
@@ -179,7 +185,8 @@ const TermManagement = () => {
                   {term.startDate?.slice(0, 10)} - {term.endDate?.slice(0, 10)}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Year: {term.academicYear || "N/A"}
+                  {t("termManagement.yearLabel")}:{" "}
+                  {term.academicYear || t("common.na")}
                 </p>
               </div>
               <div className="flex gap-2 items-center">
@@ -192,14 +199,12 @@ const TermManagement = () => {
                   />
                   <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition"></div>
                   <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition"></div>
-                  {/* <span className="ml-3 text-sm font-medium text-gray-900">
-                                  {form.isCurrent ? "Active" : "Inactive"}
-                                </span> */}
                 </Label>
                 <Button
                   size="icon"
                   variant="outline"
                   onClick={() => handleEdit(term)}
+                  aria-label={t("termManagement.edit")}
                 >
                   <Pencil className="w-4 h-4" />
                 </Button>
@@ -207,6 +212,7 @@ const TermManagement = () => {
                   size="icon"
                   variant="destructive"
                   onClick={() => handleDelete(term._id!)}
+                  aria-label={t("termManagement.delete")}
                 >
                   <Trash className="w-4 h-4" />
                 </Button>
@@ -220,7 +226,9 @@ const TermManagement = () => {
         <DialogContent>
           <DialogHeader>
             <h3 className="text-lg font-semibold">
-              {editItem ? "Edit Term" : "Add Term"}
+              {editItem
+                ? t("termManagement.editTerm")
+                : t("termManagement.addTerm")}
             </h3>
           </DialogHeader>
 
@@ -238,12 +246,13 @@ const TermManagement = () => {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="" disabled>
-                Select an Term
+                {t("termManagement.selectTerm")}
               </option>
-              <option value="Term 1">Term 1</option>
-              <option value="Term 2">Term 2</option>
-              <option value="Term 3">Term 3</option>
-              <option value="Term 4">Term 4</option>
+              {[1, 2, 3, 4].map((num) => (
+                <option key={num} value={`${t("termManagement.term")} ${num}`}>
+                  {t("termManagement.term")} {num}
+                </option>
+              ))}
             </select>
             <Label className="relative inline-flex items-center cursor-pointer mt-2">
               <Input
@@ -257,20 +266,22 @@ const TermManagement = () => {
               <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition"></div>
               <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition"></div>
               <span className="ml-3 text-sm font-medium text-gray-900">
-                {form.isActive ? "Active" : "Inactive"}
+                {form.isActive
+                  ? t("termManagement.active")
+                  : t("termManagement.inactive")}
               </span>
             </Label>
             <Input
               required
               type="date"
-              placeholder="Start Date"
+              placeholder={t("termManagement.startDate")}
               value={form.startDate}
               onChange={(e) => setForm({ ...form, startDate: e.target.value })}
             />
             <Input
               required
               type="date"
-              placeholder="End Date"
+              placeholder={t("termManagement.endDate")}
               value={form.endDate}
               onChange={(e) => setForm({ ...form, endDate: e.target.value })}
             />
@@ -283,7 +294,7 @@ const TermManagement = () => {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="" disabled>
-                Select Academic Year
+                {t("termManagement.selectAcademicYear")}
               </option>
               {academicYears.map((year) => (
                 <option key={year._id} value={year.name}>
@@ -298,9 +309,13 @@ const TermManagement = () => {
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
-              <Button type="submit">{editItem ? "Update" : "Create"}</Button>
+              <Button type="submit">
+                {editItem
+                  ? t("termManagement.updateButton")
+                  : t("termManagement.createButton")}
+              </Button>
             </div>
           </form>
         </DialogContent>

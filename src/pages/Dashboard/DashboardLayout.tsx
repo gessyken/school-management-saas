@@ -1,7 +1,16 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, School, Users, BarChart3, CreditCard, FileClock, Settings } from "lucide-react";
+import {
+  LayoutDashboard,
+  School,
+  Users,
+  BarChart3,
+  CreditCard,
+  FileClock,
+  Settings,
+} from "lucide-react";
 import Header from "@/components/header/Header";
+import { useTranslation } from "react-i18next";
 
 const navItems = [
   {
@@ -29,25 +38,27 @@ const navItems = [
   //   path: "/admin-dashboard/billing",
   //   icon: <CreditCard className="w-5 h-5" />,
   // },
-  {
-    label: "Logs",
-    path: "/admin-dashboard/logs",
-    icon: <FileClock className="w-5 h-5" />,
-  },
-  {
-    label: "Settings",
-    path: "/admin-dashboard/settings",
-    icon: <Settings className="w-5 h-5" />,
-  },
+  // {
+  //   label: "Logs",
+  //   path: "/admin-dashboard/logs",
+  //   icon: <FileClock className="w-5 h-5" />,
+  // },
+  // {
+  //   label: "Settings",
+  //   path: "/admin-dashboard/settings",
+  //   icon: <Settings className="w-5 h-5" />,
+  // },
 ];
 
 const AdminDashboardLayout = () => {
+  const { t } = useTranslation();
+
   return (
     <div className="flex h-screen bg-gray-100 text-gray-800">
       {/* Sidebar */}
       <aside className="w-[260px] bg-[#0f172f] text-white flex flex-col">
         <div className="p-6 text-2xl font-bold border-b border-gray-700">
-          Admin Panel
+          {t("adminPanel.title")}
         </div>
         <nav className="flex-1 p-4 space-y-2">
           {navItems.map(({ label, path, icon }) => (
@@ -63,12 +74,12 @@ const AdminDashboardLayout = () => {
               }
             >
               {icon}
-              {label}
+              {t(`nav.${label.toLowerCase()}`)}
             </NavLink>
           ))}
         </nav>
         <div className="p-4 text-xs text-center border-t border-gray-700">
-          &copy; {new Date().getFullYear()} School SaaS Admin
+          &copy; {new Date().getFullYear()} {t("footer.copyright")}
         </div>
       </aside>
 
@@ -78,7 +89,7 @@ const AdminDashboardLayout = () => {
         <Header />
 
         {/* Page Content */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-6 overflow-y-auto bg-white rounded-lg shadow-sm m-4">
           <Outlet />
         </main>
       </div>

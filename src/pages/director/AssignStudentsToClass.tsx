@@ -16,6 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 
 export default function AssignStudentsToClass({
   students,
@@ -23,9 +24,10 @@ export default function AssignStudentsToClass({
   selectedYear,
   selectedStudents,
   setSelectedStudents,
-  fetchStudents
+  fetchStudents,
 }) {
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleStudentSelection = (id: string) => {
     setSelectedStudents((prev) =>
@@ -54,9 +56,9 @@ export default function AssignStudentsToClass({
       });
 
       setSelectedStudents([]); // reset selection
-      fetchStudents()
+      fetchStudents();
     } catch (err) {
-        console.log(err)
+      console.log(err);
       toast({
         title: "Erreur",
         description:
@@ -69,13 +71,13 @@ export default function AssignStudentsToClass({
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex items-center gap-3">
         <GraduationCap className="text-blue-600" />
-        <h2 className="text-2xl font-semibold">
-          Assigner les élèves à une classe
-        </h2>
+        <h2 className="text-2xl font-semibold">{t("assignStudents.title")}</h2>
       </div>
 
       <Card className="p-4 space-y-4 shadow-md">
-        <h3 className="text-lg font-medium">Liste des élèves</h3>
+        <h3 className="text-lg font-medium">
+          {t("assignStudents.studentList")}
+        </h3>
 
         <div className="border rounded-lg p-4 max-h-80 overflow-y-auto space-y-2">
           {students.map((student) => {
@@ -90,7 +92,9 @@ export default function AssignStudentsToClass({
                         <TooltipTrigger>
                           <CheckCircle className="w-4 h-4 text-green-600" />
                         </TooltipTrigger>
-                        <TooltipContent>Actif</TooltipContent>
+                        <TooltipContent>
+                          {t("studentStatus.active")}
+                        </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   );
@@ -101,7 +105,9 @@ export default function AssignStudentsToClass({
                         <TooltipTrigger>
                           <AlertCircle className="w-4 h-4 text-yellow-600" />
                         </TooltipTrigger>
-                        <TooltipContent>Suspens</TooltipContent>
+                        <TooltipContent>
+                          {t("studentStatus.suspended")}
+                        </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   );
@@ -112,7 +118,9 @@ export default function AssignStudentsToClass({
                         <TooltipTrigger>
                           <XCircle className="w-4 h-4 text-red-600" />
                         </TooltipTrigger>
-                        <TooltipContent>Inactif</TooltipContent>
+                        <TooltipContent>
+                          {t("studentStatus.inactive")}
+                        </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   );
@@ -134,7 +142,8 @@ export default function AssignStudentsToClass({
                       {student.firstName} {student.lastName}
                     </div>
                     <div className="text-muted-foreground text-xs">
-                      {student.matricule} – {student.level} - {student?.classInfo?.classesName || "N/A"} 
+                      {student.matricule} – {student.level} -{" "}
+                      {student?.classInfo?.classesName || t("common.na")}
                     </div>
                   </div>
                 </div>
@@ -151,7 +160,7 @@ export default function AssignStudentsToClass({
           {selectedClass && selectedYear && selectedStudents.length > 0 && (
             <Button onClick={handleSubmit} className="ml-auto">
               <CheckCircle className="w-4 h-4 mr-2" />
-              Assigner
+              {t("assignStudents.assignButton")}
             </Button>
           )}
         </div>

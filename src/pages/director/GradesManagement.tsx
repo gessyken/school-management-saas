@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
+import { useTranslation } from "react-i18next";
 
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -55,6 +56,7 @@ import "../../assets/style.css";
 const itemsPerPage = 5;
 
 export default function GradesManagement() {
+  const { t } = useTranslation();
   const [students, setStudents] = useState<Student[]>([]);
   const [academicStudents, setAcademicStudents] = useState<
     AcademicYearStudent[]
@@ -455,7 +457,9 @@ export default function GradesManagement() {
 
   return (
     <div className="p-4 space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800">📘 Grade Management</h1>
+      <h1 className="text-3xl font-bold text-gray-800">
+        📘 {t("gradeManagement.title")}
+      </h1>
 
       <Card className="p-6 space-y-6 shadow-sm">
         {/* 🔍 Search + Export */}
@@ -469,7 +473,7 @@ export default function GradesManagement() {
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
-              Excel
+              {t("common.excel")}
             </Button>
             <Button
               variant="outline"
@@ -477,19 +481,19 @@ export default function GradesManagement() {
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
-              PDF
+              {t("common.pdf")}
             </Button>
           </div>
         </div>
 
         {/* 📚 Filters */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <FilterBlock label="Academic Year">
+          <FilterBlock label={t("gradeManagement.academicYear")}>
             <Input readOnly value={filter.academicYear} />
           </FilterBlock>
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-700">
-              Classes
+              {t("gradeManagement.class")}
             </label>
             <select
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -498,16 +502,13 @@ export default function GradesManagement() {
               onChange={(e) => {
                 const classId = e.target.value;
                 setFilter({ ...filter, classes: classId, subject: "" });
-                console.log(
-                  filteredClasses.find((c) => c._id === classId).subjects
-                );
                 setClassesSubjects(
-                  filteredClasses.find((c) => c._id === classId).subjects || []
+                  filteredClasses.find((c) => c._id === classId)?.subjects || []
                 );
                 generateMarksMap(academicStudents);
               }}
             >
-              <option value="">Select a classe</option>
+              <option value="">{t("gradeManagement.selectClass")}</option>
               {filteredClasses.map((item) => (
                 <option key={item._id} value={item._id}>
                   {item.classesName}
@@ -517,7 +518,7 @@ export default function GradesManagement() {
           </div>
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-700">
-              Subject
+              {t("gradeManagement.subject")}
             </label>
             <select
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -529,8 +530,8 @@ export default function GradesManagement() {
                 generateMarksMap(academicStudents);
               }}
             >
-              <option value="">Select a Subject</option>
-              <option value="absences">absences</option>
+              <option value="">{t("gradeManagement.selectSubject")}</option>
+              <option value="absences">{t("gradeManagement.absences")}</option>
               {classesSubjects.map((item) => (
                 <option
                   key={item?.subjectInfo?._id}
@@ -543,7 +544,7 @@ export default function GradesManagement() {
           </div>
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-700">
-              Term
+              {t("gradeManagement.term")}
             </label>
             <select
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -554,7 +555,7 @@ export default function GradesManagement() {
                 generateMarksMap(academicStudents);
               }}
             >
-              <option value="">Select a Term</option>
+              <option value="">{t("gradeManagement.selectTerm")}</option>
               {filteredTerms.map((term) => (
                 <option key={term._id} value={term._id}>
                   {term.name}
@@ -571,21 +572,17 @@ export default function GradesManagement() {
               <>
                 <div className="text-sm text-gray-700 space-y-2">
                   <p className="font-semibold text-red-600">
-                    ⚠️ Absences sélectionnées
+                    ⚠️ {t("gradeManagement.absencesSelected")}
                   </p>
                   <p>
-                    Ici, vous pouvez enregistrer ou afficher les absences des
-                    élèves pour le trimestre{" "}
+                    {t("gradeManagement.absencesDescription1")}{" "}
                     <strong>
                       {filteredTerms.find((t) => t._id === filter.term)?.name}
                     </strong>
-                    de l'année académique <strong>{filter.academicYear}</strong>
-                    .
+                    {t("gradeManagement.absencesDescription2")}{" "}
+                    <strong>{filter.academicYear}</strong>.
                   </p>
-                  <p>
-                    Veuillez utiliser la section de saisie ou de visualisation
-                    d'absences ci-dessous.
-                  </p>
+                  <p>{t("gradeManagement.absencesDescription3")}</p>
                 </div>
               </>
             ) : (
@@ -597,22 +594,23 @@ export default function GradesManagement() {
                   selected && (
                     <div className="text-sm text-gray-700 space-y-2">
                       <p>
-                        <strong>📘 Nom:</strong>{" "}
+                        <strong>📘 {t("gradeManagement.name")}:</strong>{" "}
                         {selected.subjectInfo.subjectName}
                       </p>
                       <p>
-                        <strong>🔢 Code:</strong>{" "}
+                        <strong>🔢 {t("gradeManagement.code")}:</strong>{" "}
                         {selected.subjectInfo.subjectCode}
                       </p>
                       <p>
-                        <strong>🎯 Coefficient:</strong> {selected.coefficient}
+                        <strong>🎯 {t("gradeManagement.coefficient")}:</strong>{" "}
+                        {selected.coefficient}
                       </p>
                       <p>
-                        <strong>📅 Trimestre:</strong>{" "}
+                        <strong>📅 {t("gradeManagement.term")}:</strong>{" "}
                         {filteredTerms.find((t) => t._id === filter.term)?.name}
                       </p>
                       <p>
-                        <strong>🗓️ Année académique:</strong>{" "}
+                        <strong>🗓️ {t("gradeManagement.academicYear")}:</strong>{" "}
                         {filter.academicYear}
                       </p>
                     </div>
@@ -623,17 +621,15 @@ export default function GradesManagement() {
           </div>
         )}
 
-        {/* <Card className="p-6 space-y-6 shadow-sm"> */}
-        {/* 🔍 Search + Export */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <Input
-            placeholder="🔎 Rechercher une matière..."
+            placeholder={`🔎 ${t("gradeManagement.searchPlaceholder")}`}
             className="md:w-1/3 w-full"
             onChange={handleSearch}
             value={searchTerm}
           />
         </div>
-        {/* </Card> */}
+
         {/* 📊 Grades Table */}
         {loading ? (
           <div className="flex justify-center items-center p-8">
@@ -648,13 +644,13 @@ export default function GradesManagement() {
                     rowSpan={2}
                     style={{ verticalAlign: "middle", textAlign: "center" }}
                   >
-                    Matricule
+                    {t("gradeManagement.registrationNumber")}
                   </TableHead>
                   <TableHead
                     rowSpan={2}
                     style={{ verticalAlign: "middle", textAlign: "center" }}
                   >
-                    Nom complet
+                    {t("gradeManagement.fullName")}
                   </TableHead>
 
                   {filteredSeq
@@ -671,10 +667,12 @@ export default function GradesManagement() {
                             <Button
                               size="sm"
                               className="tooltip-button"
-                              title="Calculate rank"
-                              aria-label={`Calculate rank for ${seq.name}`}
+                              title={t("gradeManagement.calculateRank")}
+                              aria-label={t(
+                                "gradeManagement.calculateRankFor",
+                                { name: seq.name }
+                              )}
                               onClick={() => {
-                                /* Add your calculate rank handler here */
                                 calculateRank(
                                   filter.classes,
                                   filter.academicYear,
@@ -685,9 +683,6 @@ export default function GradesManagement() {
                               }}
                             >
                               <Calculator size={16} />
-                              <span className="tooltip-text">
-                                Calculate rank
-                              </span>
                             </Button>
                           )}
                         </div>
@@ -702,16 +697,20 @@ export default function GradesManagement() {
                       <React.Fragment key={`${seq._id}-su(bheaders`}>
                         {filter.subject !== "absences" ? (
                           <>
-                            <TableHead className="text-center">Mark</TableHead>
-                            <TableHead className="text-center">Rank</TableHead>
                             <TableHead className="text-center">
-                              Discipline
+                              {t("gradeManagement.mark")}
+                            </TableHead>
+                            <TableHead className="text-center">
+                              {t("gradeManagement.rank")}
+                            </TableHead>
+                            <TableHead className="text-center">
+                              {t("gradeManagement.discipline")}
                             </TableHead>
                           </>
                         ) : (
                           <>
                             <TableHead className="text-center">
-                              Absences
+                              {t("gradeManagement.absences")}
                             </TableHead>
                           </>
                         )}
@@ -858,7 +857,7 @@ export default function GradesManagement() {
                       colSpan={sequences.length * 2 + 2}
                       className="text-center text-gray-400 italic py-4"
                     >
-                      Aucun étudiant trouvé.
+                      {t("gradeManagement.noStudentsFound")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -872,7 +871,7 @@ export default function GradesManagement() {
                 disabled={currentPage === 1}
                 className="bg-gray-100"
               >
-                Précédent
+                {t("gradeManagement.previous")}
               </Button>
 
               <div className="space-x-2">
@@ -892,7 +891,7 @@ export default function GradesManagement() {
                 disabled={currentPage === totalPages}
                 className="bg-gray-100"
               >
-                Suivant
+                {t("gradeManagement.next")}
               </Button>
             </div>
           </>

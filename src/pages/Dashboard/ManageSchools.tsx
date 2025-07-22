@@ -10,11 +10,14 @@ import {
   Pause,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const ManageSchools = () => {
+  const { t } = useTranslation();
+
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const fetchSchools = async () => {
     setLoading(true);
     try {
@@ -58,109 +61,152 @@ const ManageSchools = () => {
 
   return (
     <div className="p-6">
-      <h2 className="text-xl font-bold mb-4">School Management</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        {t("schoolManagement.title")}
+      </h2>
 
       {loading ? (
-        <p>Loading...</p>
+        <div className="flex justify-center items-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full table-auto border border-collapse rounded overflow-hidden shadow-sm">
-            <thead className="bg-gray-100 text-xs text-gray-700 uppercase">
-              <tr>
-                <th className="p-3 border">School</th>
-                <th className="p-3 border">Email</th>
-                <th className="p-3 border">Phone</th>
-                <th className="p-3 border">Subdomain</th>
-                <th className="p-3 border">Plan</th>
-                <th className="p-3 border">Usage</th>
-                <th className="p-3 border">Billing Status</th>
-                <th className="p-3 border">Access</th>
-                <th className="p-3 border text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm text-gray-800">
-              {schools.map((school) => (
-                <tr key={school._id} className="even:bg-gray-50 text-center">
-                  <td className="p-3 border text-left font-semibold">
-                    {school.name}
-                  </td>
-                  <td className="p-3 border">{school.email}</td>
-                  <td className="p-3 border">{school.phone || "—"}</td>
-                  <td className="p-3 border text-xs text-gray-600">
-                    {school.subdomain || "—"}
-                  </td>
-                  <td className="p-3 border font-medium text-blue-600">
-                    {school.plan}
-                  </td>
-                  <td className="p-3 border text-left text-xs space-y-1">
-                    <div>Students: {school.usage?.studentsCount || 0}</div>
-                    <div>Staff: {school.usage?.staffCount || 0}</div>
-                    <div>Classes: {school.usage?.classCount || 0}</div>
-                  </td>
-                  <td className="p-3 border">
-                    <span
-                      className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                        school.billing?.status === "active"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {school.billing?.status}
-                    </span>
-                  </td>
-                  <td className="p-3 border">
-                    <span
-                      className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                        school.accessStatus === "active"
-                          ? "bg-green-100 text-green-800"
-                          : school.accessStatus === "suspended"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {school.accessStatus}
-                    </span>
-                  </td>
-                  <td className="p-3 border">
-                    <div className="flex justify-center items-center space-x-2">
-                      <button
-                        title="View School"
-                        onClick={() => navigate(`/admin-dashboard/manage-schools/${school._id}`)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
-                        title="Toggle Access"
-                        onClick={() =>
-                          toggleAccess(school._id, school.accessStatus)
-                        }
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        {school.accessStatus === "active" ? (
-                          <Pause className="h-4 w-4" />
-                        ) : school.accessStatus === "suspended" ? (
-                          <XCircle className="h-4 w-4" />
-                        ) : (
-                          <CheckCircle className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {schools.length === 0 && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <td
-                    colSpan="9"
-                    className="text-center text-gray-500 py-8 text-sm"
-                  >
-                    No schools found.
-                  </td>
+                  {[
+                    "school",
+                    "email",
+                    "phone",
+                    "subdomain",
+                    "plan",
+                    "usage",
+                    "billingStatus",
+                    "access",
+                    "actions",
+                  ].map((header) => (
+                    <th
+                      key={header}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {t(`schoolManagement.headers.${header}`)}
+                    </th>
+                  ))}
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {schools.map((school) => (
+                  <tr key={school._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                      {school.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                      {school.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                      {school.phone || <span className="text-gray-400">—</span>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-500 text-sm">
+                      {school.subdomain || (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap font-medium text-blue-600">
+                      {t(`plans.${school.plan?.toLowerCase() || "free"}`)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="space-y-1">
+                        <div>
+                          {t("schoolManagement.usage.students")}:{" "}
+                          {school.usage?.studentsCount || 0}
+                        </div>
+                        <div>
+                          {t("schoolManagement.usage.staff")}:{" "}
+                          {school.usage?.staffCount || 0}
+                        </div>
+                        <div>
+                          {t("schoolManagement.usage.classes")}:{" "}
+                          {school.usage?.classCount || 0}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          school.billing?.status === "active"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {t(
+                          `billingStatus.${
+                            school.billing?.status || "inactive"
+                          }`
+                        )}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          school.accessStatus === "active"
+                            ? "bg-green-100 text-green-800"
+                            : school.accessStatus === "suspended"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {t(`accessStatus.${school.accessStatus || "inactive"}`)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end space-x-3">
+                        <button
+                          title={t("actions.view")}
+                          onClick={() =>
+                            navigate(
+                              `/admin-dashboard/manage-schools/${school._id}`
+                            )
+                          }
+                          className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          title={t("actions.toggleAccess")}
+                          onClick={() =>
+                            toggleAccess(school._id, school.accessStatus)
+                          }
+                          className={`p-1 rounded ${
+                            school.accessStatus === "active"
+                              ? "text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50"
+                              : "text-green-600 hover:text-green-900 hover:bg-green-50"
+                          }`}
+                        >
+                          {school.accessStatus === "active" ? (
+                            <Pause className="h-4 w-4" />
+                          ) : school.accessStatus === "suspended" ? (
+                            <XCircle className="h-4 w-4" />
+                          ) : (
+                            <CheckCircle className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {schools.length === 0 && (
+                  <tr>
+                    <td
+                      className="px-6 py-8 text-center text-sm text-gray-500"
+                    >
+                      {t("schoolManagement.noSchools")}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

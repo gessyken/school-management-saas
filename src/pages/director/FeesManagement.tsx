@@ -29,6 +29,7 @@ import { usePagination } from "@/components/ui/usePagination";
 import { AcademicYear, settingService } from "@/lib/services/settingService";
 import { classService, SchoolClass } from "@/lib/services/classService";
 import { Input } from "@/components/ui/input";
+import { useTranslation } from "react-i18next";
 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -46,6 +47,8 @@ const emptyFee: AcademicFee = {
 const itemsPerPage = 5;
 export default function FeesManagement() {
   const { toast } = useToast();
+  const { t } = useTranslation();
+
   const [fees, setFees] = useState<any[]>([]);
   const [newFee, setNewFee] = useState<AcademicFee>(emptyFee);
   const [editingFeeId, setEditingFeeId] = useState<string | null>(null);
@@ -256,7 +259,7 @@ export default function FeesManagement() {
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg max-w-7xl mx-auto">
       <h2 className="text-3xl font-semibold mb-8 text-gray-800">
-        Gestion des Frais Académiques
+        {t("feeManagement.title")}
       </h2>
       <div className="flex justify-end gap-4 mb-4">
         <Button
@@ -264,21 +267,23 @@ export default function FeesManagement() {
           onClick={() => exportToExcel(filteredFees)}
           className="text-green-600 border-green-600 hover:bg-green-50"
         >
-          📄 Exporter Excel
+          📄 {t("feeManagement.exportExcel")}
         </Button>
         <Button
           variant="outline"
           onClick={() => exportToPDF(filteredFees)}
           className="text-red-600 border-red-600 hover:bg-red-50"
         >
-          🧾 Exporter PDF
+          🧾 {t("feeManagement.exportPDF")}
         </Button>
       </div>
 
       {/* Filter Section */}
       <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">🎯 Filtres</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            🎯 {t("feeManagement.filters")}
+          </h2>
           <Button
             variant="ghost"
             onClick={() => {
@@ -305,7 +310,7 @@ export default function FeesManagement() {
                 d="M6 18L18 6M6 6l12 12"
               />
             </svg>
-            Réinitialiser
+            {t("feeManagement.reset")}
           </Button>
         </div>
 
@@ -313,10 +318,10 @@ export default function FeesManagement() {
           {/* Search */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-700">
-              Rechercher une Étudiant
+              {t("feeManagement.searchStudent")}
             </label>
             <Input
-              placeholder="Ex: Étudiant"
+              placeholder={t("feeManagement.searchPlaceholder")}
               className="w-full"
               onChange={handleSearch}
               value={searchTerm}
@@ -326,7 +331,7 @@ export default function FeesManagement() {
           {/* Level */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-700">
-              Niveau
+              {t("feeManagement.level")}
             </label>
             <select
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -336,7 +341,7 @@ export default function FeesManagement() {
                 setFilter({ ...filter, level: e.target.value });
               }}
             >
-              <option value="">Tous</option>
+              <option value="">{t("feeManagement.all")}</option>
               {[
                 "Form 1",
                 "Form 2",
@@ -356,7 +361,7 @@ export default function FeesManagement() {
           {/* Classes */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-700">
-              Classes
+              {t("feeManagement.class")}
             </label>
             <select
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -366,7 +371,7 @@ export default function FeesManagement() {
                 setFilter({ ...filter, classes: classId });
               }}
             >
-              <option value="">Tous</option>
+              <option value="">{t("feeManagement.all")}</option>
               {filteredClasses.map((item) => (
                 <option key={item._id} value={item.classesName}>
                   {item.classesName}
@@ -378,7 +383,7 @@ export default function FeesManagement() {
           {/* Academic Year */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-700">
-              Année académique
+              {t("feeManagement.academicYear")}
             </label>
             <select
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -388,7 +393,7 @@ export default function FeesManagement() {
                 setFilter({ ...filter, academicYear: yearId });
               }}
             >
-              <option value="">Tous</option>
+              <option value="">{t("feeManagement.all")}</option>
               {academicYears.map((year) => (
                 <option key={year._id} value={year.name}>
                   {year.name}
@@ -402,18 +407,20 @@ export default function FeesManagement() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Bill ID</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Montant (FCFA)</TableHead>
-            <TableHead>Date de Paiement</TableHead>
-            <TableHead className="text-center">Actions</TableHead>
+            <TableHead>{t("feeManagement.billId")}</TableHead>
+            <TableHead>{t("feeManagement.type")}</TableHead>
+            <TableHead>{t("feeManagement.amount")}</TableHead>
+            <TableHead>{t("feeManagement.paymentDate")}</TableHead>
+            <TableHead className="text-center">
+              {t("feeManagement.actions")}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {currentData.length === 0 && (
             <TableRow>
               <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                Aucun frais disponible.
+                {t("feeManagement.noFees")}
               </TableCell>
             </TableRow>
           )}
@@ -425,7 +432,7 @@ export default function FeesManagement() {
               <TableCell>{fee.billID}</TableCell>
               <TableCell>{fee.type}</TableCell>
               <TableCell className="text-right font-semibold text-indigo-600">
-                {fee.amount.toLocaleString()}
+                {fee.amount.toLocaleString()} FCFA
               </TableCell>
               <TableCell className="text-center">
                 {fee.paymentDate
@@ -437,7 +444,7 @@ export default function FeesManagement() {
                   size="sm"
                   variant="outline"
                   onClick={() => setSelectedFee(fee)}
-                  aria-label={`view fee ${fee.billID}`}
+                  aria-label={t("feeManagement.viewFee", { id: fee.billID })}
                 >
                   <Eye className="w-4 h-4" />
                 </Button>
@@ -445,7 +452,7 @@ export default function FeesManagement() {
                   size="sm"
                   variant="outline"
                   onClick={() => handleOpenPaymentForm(fee)}
-                  aria-label={`Edit fee ${fee.billID}`}
+                  aria-label={t("feeManagement.editFee", { id: fee.billID })}
                 >
                   <Edit2 className="w-4 h-4" />
                 </Button>
@@ -453,7 +460,7 @@ export default function FeesManagement() {
                   size="sm"
                   variant="destructive"
                   onClick={() => handleDeleteFee(fee)}
-                  aria-label={`Delete fee ${fee.billID}`}
+                  aria-label={t("feeManagement.deleteFee", { id: fee.billID })}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -462,10 +469,14 @@ export default function FeesManagement() {
           ))}
         </TableBody>
       </Table>
+
       {/* Pagination */}
       <div className="flex justify-between items-center mt-6">
         <div className="text-sm text-gray-500">
-          Page {currentPage} sur {totalPages}
+          {t("feeManagement.pageInfo", {
+            current: currentPage,
+            total: totalPages,
+          })}
         </div>
         <div className="flex gap-2">
           <Button
@@ -473,26 +484,27 @@ export default function FeesManagement() {
             onClick={goToPreviousPage}
             disabled={currentPage === 1}
           >
-            Précédent
+            {t("feeManagement.previous")}
           </Button>
           <Button
             variant="outline"
             onClick={goToNextPage}
             disabled={currentPage === totalPages}
           >
-            Suivant
+            {t("feeManagement.next")}
           </Button>
         </div>
       </div>
+
       {/* Detail Modal */}
       <Dialog open={!!selectedFee} onOpenChange={closeModal}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-gray-800">
-              🧾 Détails du frais
+              🧾 {t("feeManagement.feeDetails")}
             </DialogTitle>
             <DialogDescription className="text-sm text-gray-500">
-              Informations complètes sur le frais sélectionné.
+              {t("feeManagement.feeDetailsDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -500,22 +512,28 @@ export default function FeesManagement() {
             <div className="mt-4 space-y-6 text-sm text-gray-700">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <span className="font-medium text-gray-600">📌 Bill ID:</span>
+                  <span className="font-medium text-gray-600">
+                    📌 {t("feeManagement.billId")}:
+                  </span>
                   <div className="text-gray-800">{selectedFee.billID}</div>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">💳 Type:</span>
+                  <span className="font-medium text-gray-600">
+                    💳 {t("feeManagement.type")}:
+                  </span>
                   <div className="text-gray-800">{selectedFee.type}</div>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">💰 Montant:</span>
+                  <span className="font-medium text-gray-600">
+                    💰 {t("feeManagement.amount")}:
+                  </span>
                   <div className="text-gray-800">
                     {selectedFee.amount.toLocaleString()} FCFA
                   </div>
                 </div>
                 <div>
                   <span className="font-medium text-gray-600">
-                    📅 Date de paiement:
+                    📅 {t("feeManagement.paymentDate")}:
                   </span>
                   <div className="text-gray-800">
                     {new Date(selectedFee.paymentDate).toLocaleDateString()}
@@ -523,7 +541,7 @@ export default function FeesManagement() {
                 </div>
                 <div>
                   <span className="font-medium text-gray-600">
-                    🏦 Mode de paiement:
+                    🏦 {t("feeManagement.paymentMethod")}:
                   </span>
                   <div className="text-gray-800">
                     {selectedFee.paymentMethod}
@@ -531,19 +549,21 @@ export default function FeesManagement() {
                 </div>
                 <div>
                   <span className="font-medium text-gray-600">
-                    🎓 Étudiant:
+                    🎓 {t("feeManagement.student")}:
                   </span>
                   <div className="text-gray-800">{selectedFee.studentName}</div>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">🏫 Classe:</span>
+                  <span className="font-medium text-gray-600">
+                    🏫 {t("feeManagement.class")}:
+                  </span>
                   <div className="text-gray-800">
                     {selectedFee.studentClass}
                   </div>
                 </div>
                 <div>
                   <span className="font-medium text-gray-600">
-                    📚 Année académique:
+                    📚 {t("feeManagement.academicYear")}:
                   </span>
                   <div className="text-gray-800">{selectedFee.year}</div>
                 </div>
@@ -552,7 +572,7 @@ export default function FeesManagement() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
                 <div>
                   <span className="font-medium text-gray-600">
-                    ✅ Total payé:
+                    ✅ {t("feeManagement.totalPaid")}:
                   </span>
                   <div className="text-green-700 font-semibold">
                     {selectedFee.totalFeesPaid.toLocaleString()} FCFA
@@ -560,7 +580,7 @@ export default function FeesManagement() {
                 </div>
                 <div>
                   <span className="font-medium text-gray-600">
-                    📉 Reste à payer:
+                    📉 {t("feeManagement.remaining")}:
                   </span>
                   <div className="text-red-600 font-semibold">
                     {(
@@ -575,7 +595,7 @@ export default function FeesManagement() {
 
           <DialogFooter className="mt-6">
             <Button onClick={closeModal} className="w-full sm:w-auto">
-              Fermer
+              {t("feeManagement.close")}
             </Button>
           </DialogFooter>
         </DialogContent>

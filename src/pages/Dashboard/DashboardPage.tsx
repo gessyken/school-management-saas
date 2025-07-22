@@ -13,6 +13,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useTranslation } from "react-i18next";
 
 // Helper to convert month number to name
 const monthName = (month: number) =>
@@ -25,6 +26,7 @@ const prepareChartData = (data: any[]) =>
   }));
 
 const AdminDashboard = () => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -43,91 +45,96 @@ const AdminDashboard = () => {
     fetchStats();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-60">
-        <Loader2 className="animate-spin w-6 h-6 mr-2" />
-        Chargement des statistiques...
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 space-y-6">
       <h2 className="text-2xl font-bold text-skyblue">
-        Tableau de bord administrateur
+        {t("adminDashboard.title")}
       </h2>
 
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {[
-          { label: "Écoles", value: stats.totalSchools },
-          { label: "Utilisateurs", value: stats.totalUsers },
-          { label: "Étudiants", value: stats.totalStudents },
-          { label: "Factures", value: stats.totalInvoices },
-          { label: "Factures payées", value: stats.paidInvoices },
-          { label: "Factures impayées", value: stats.unpaidInvoices },
-          { label: "Écoles en retard", value: stats.overdueSchools },
-          { label: "Écoles bloquées", value: stats.blockedSchools },
-          { label: "Matières", value: stats.totalSubjects },
-          { label: "Classes", value: stats.totalClasses },
-          {
-            label: "Années scolaires actives",
-            value: stats.currentAcademicYears,
-          },
-        ].map((item, i) => (
-          <Card key={i} className="shadow hover:shadow-lg transition">
-            <CardHeader className="text-gray-600 text-sm">
-              {item.label}
-            </CardHeader>
-            <CardContent className="text-3xl font-bold text-skyblue">
-              {item.value}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      {/* 📊 Charts Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        {/* Revenue Chart */}
-        <Card>
-          <CardHeader className="text-sm font-semibold">
-            Revenus mensuels
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={prepareChartData(stats.charts.revenueByMonth)}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#0ea5e9" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      {loading ? (
+        <div className="flex items-center justify-center h-60">
+          <Loader2 className="animate-spin w-6 h-6 mr-2" />
+          {t("common.loading")}
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {[
+              { key: "schools", value: stats.totalSchools },
+              { key: "users", value: stats.totalUsers },
+              { key: "students", value: stats.totalStudents },
+              { key: "invoices", value: stats.totalInvoices },
+              { key: "paidInvoices", value: stats.paidInvoices },
+              { key: "unpaidInvoices", value: stats.unpaidInvoices },
+              { key: "overdueSchools", value: stats.overdueSchools },
+              { key: "blockedSchools", value: stats.blockedSchools },
+              { key: "subjects", value: stats.totalSubjects },
+              { key: "classes", value: stats.totalClasses },
+              { key: "activeAcademicYears", value: stats.currentAcademicYears },
+            ].map((item, i) => (
+              <Card
+                key={i}
+                className="shadow hover:shadow-lg transition hover:bg-gray-50"
+              >
+                <CardHeader className="text-gray-600 text-sm">
+                  {t(`adminDashboard.stats.${item.key}`)}
+                </CardHeader>
+                <CardContent className="text-3xl font-bold text-skyblue">
+                  {item.value}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-        {/* School Growth */}
-        <Card>
-          <CardHeader className="text-sm font-semibold">
-            Nouvelles écoles / mois
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={prepareChartData(stats.charts.schoolsByMonth)}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="text-sm font-semibold">
+                {t("adminDashboard.charts.monthlyRevenue")}
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={prepareChartData(stats.charts.revenueByMonth)}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="month" stroke="#888" />
+                    <YAxis stroke="#888" />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="text-sm font-semibold">
+                {t("adminDashboard.charts.newSchools")}
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart
+                    data={prepareChartData(stats.charts.schoolsByMonth)}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="month" stroke="#888" />
+                    <YAxis stroke="#888" />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
     </div>
   );
 };

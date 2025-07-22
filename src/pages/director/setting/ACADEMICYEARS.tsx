@@ -8,9 +8,11 @@ import { DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Pencil, Trash, Plus } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "react-i18next";
 
 const AcademicYearManagement = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -123,11 +125,13 @@ const AcademicYearManagement = () => {
   return (
     <Card className="m-4 shadow-lg border">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <CardTitle className="text-xl font-bold">Academic Years</CardTitle>
+        <CardTitle className="text-xl font-bold">
+          {t("academicYearManagement.title")}
+        </CardTitle>
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <Input
-            placeholder="Search academic years..."
+            placeholder={t("academicYearManagement.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-xs"
@@ -139,7 +143,8 @@ const AcademicYearManagement = () => {
               setDialogOpen(true);
             }}
           >
-            <Plus className="mr-1 h-4 w-4" /> Add
+            <Plus className="mr-1 h-4 w-4" />{" "}
+            {t("academicYearManagement.addButton")}
           </Button>
         </div>
       </CardHeader>
@@ -147,7 +152,7 @@ const AcademicYearManagement = () => {
       <CardContent className="grid gap-4">
         {filteredAcademicYears.length === 0 && (
           <p className="text-center text-muted-foreground">
-            No academic years found.
+            {t("academicYearManagement.noYearsFound")}
           </p>
         )}
 
@@ -173,15 +178,13 @@ const AcademicYearManagement = () => {
                 />
                 <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition"></div>
                 <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition"></div>
-                {/* <span className="ml-3 text-sm font-medium text-gray-900">
-                  {form.isCurrent ? "Active" : "Inactive"}
-                </span> */}
               </Label>
 
               <Button
                 size="icon"
                 variant="outline"
                 onClick={() => handleEdit(item)}
+                aria-label={t("academicYearManagement.edit")}
               >
                 <Pencil className="w-4 h-4" />
               </Button>
@@ -189,6 +192,7 @@ const AcademicYearManagement = () => {
                 size="icon"
                 variant="destructive"
                 onClick={() => handleDelete(item._id!)}
+                aria-label={t("academicYearManagement.delete")}
               >
                 <Trash className="w-4 h-4" />
               </Button>
@@ -201,7 +205,9 @@ const AcademicYearManagement = () => {
         <DialogContent>
           <DialogHeader>
             <h3 className="text-lg font-semibold">
-              {editItem ? "Edit Academic Year" : "Add Academic Year"}
+              {editItem
+                ? t("academicYearManagement.editTitle")
+                : t("academicYearManagement.addTitle")}
             </h3>
           </DialogHeader>
 
@@ -219,7 +225,7 @@ const AcademicYearManagement = () => {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             >
               <option value="" disabled>
-                Select Academic Year
+                {t("academicYearManagement.selectYear")}
               </option>
               {years.map((yearRange) => (
                 <option key={yearRange} value={yearRange}>
@@ -239,21 +245,23 @@ const AcademicYearManagement = () => {
               <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition"></div>
               <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition"></div>
               <span className="ml-3 text-sm font-medium text-gray-900">
-                {form.isCurrent ? "Active" : "Inactive"}
+                {form.isCurrent
+                  ? t("academicYearManagement.active")
+                  : t("academicYearManagement.inactive")}
               </span>
             </Label>
 
             <Input
               required
               type="date"
-              placeholder="Start Date"
+              placeholder={t("academicYearManagement.startDate")}
               value={form.startDate}
               onChange={(e) => setForm({ ...form, startDate: e.target.value })}
             />
             <Input
               required
               type="date"
-              placeholder="End Date"
+              placeholder={t("academicYearManagement.endDate")}
               value={form.endDate}
               onChange={(e) => setForm({ ...form, endDate: e.target.value })}
             />
@@ -264,9 +272,13 @@ const AcademicYearManagement = () => {
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
-              <Button type="submit">{editItem ? "Update" : "Create"}</Button>
+              <Button type="submit">
+                {editItem
+                  ? t("academicYearManagement.updateButton")
+                  : t("academicYearManagement.createButton")}
+              </Button>
             </div>
           </form>
         </DialogContent>

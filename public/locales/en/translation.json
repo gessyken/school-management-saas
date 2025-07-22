@@ -108,18 +108,38 @@
   },
   "billing": {
     "title": "School Billing",
-    "usageTitle": "Usage",
     "saveUsage": "Save Usage",
     "students": "Students",
     "staff": "Staff",
     "classes": "Classes",
     "generateInvoice": "Generate Invoice",
-    "generating": "Generating..."
+    "generating": "Generating...",
+    "adminTitle": "School Billing Management (Admin)",
+    "rulesTitle": "Billing Rules",
+    "rules": {
+      "baseFee": "Base Monthly Fee",
+      "perStudent": "Cost per Student",
+      "perStaff": "Cost per Staff",
+      "perClass": "Cost per Class"
+    },
+    "usageTitle": "Current Usage",
+    "usage": {
+      "students": "Students",
+      "staff": "Staff",
+      "classes": "Classes",
+      "lastCalculation": "Last Calculated"
+    }
   },
   "common": {
     "loading": "Loading data...",
     "excel": "Excel",
-    "pdf": "PDF"
+    "pdf": "PDF",
+    "na": "N/A",
+    "cancel": "Cancel",
+    "none": "—",
+    "register": "Register",
+    "total": "Total",
+    "save": "Save Rules"
   },
   "usage": {
     "studentsCount": "Number of students",
@@ -368,5 +388,355 @@
     "noStudentsFound": "No students found",
     "previous": "Previous",
     "next": "Next"
+  },
+  "classListManagement": {
+    "title": "Class List Management",
+    "searchPlaceholder": "Search for a subject...",
+    "assignStudent": "Assign Student",
+    "viewList": "View List",
+    "filters": "Filters",
+    "reset": "Reset",
+    "level": "Level",
+    "all": "All",
+    "classes": "Classes",
+    "academicYear": "Academic Year",
+    "selectAcademicYear": "Select Academic Year",
+    "registrationNumber": "Registration Number",
+    "fullName": "Full Name",
+    "class": "Class",
+    "status": "Status",
+    "statuses": {
+      "active": "Active",
+      "suspended": "Suspended",
+      "graduated": "Graduated",
+      "withdrawn": "Withdrawn"
+    },
+    "actions": "Actions",
+    "addPayment": "Add Payment",
+    "noStudentsFound": "No students found",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "assignStudents": {
+    "title": "Assign Students to Class",
+    "studentList": "Student List",
+    "assignButton": "Assign"
+  },
+  "studentStatus": {
+    "active": "Active",
+    "suspended": "Suspended",
+    "inactive": "Inactive"
+  },
+  "paymentForm": {
+    "studentInfo": "Student Information",
+    "name": "Name",
+    "class": "Class",
+    "academicYear": "Academic Year",
+    "studentNotAvailable": "Student information is not available",
+    "feeBill": "Fee Bill",
+    "feeBillPlaceholder": "Enter fee bill ID",
+    "feeType": "Fee Type",
+    "feeTypePlaceholder": "Enter fee type",
+    "amount": "Amount",
+    "amountPlaceholder": "Enter amount",
+    "paymentDate": "Payment Date",
+    "paymentMethod": "Payment Method",
+    "paymentMethodPlaceholder": "Enter payment method",
+    "updateFee": "Update Fee",
+    "addFee": "Add Fee"
+  },
+  "settingsManagement": {
+    "title": "Settings Management",
+    "tabs": {
+      "academic": "Academic Years",
+      "term": "Terms",
+      "sequence": "Sequences"
+    }
+  },
+  "sequenceManagement": {
+    "title": "Manage Sequences",
+    "selectAcademicYear": "Select Academic Year",
+    "allTerms": "All Terms",
+    "addSequence": "Add Sequence",
+    "editSequence": "Edit Sequence",
+    "newSequence": "New Sequence",
+    "name": "Name",
+    "selectSequence": "Select a Sequence",
+    "sequence": "Sequence",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "academicYear": "Academic Year",
+    "selectYear": "Select Year",
+    "term": "Term",
+    "selectTerm": "Select a Term",
+    "updateSequence": "Update Sequence",
+    "createSequence": "Create Sequence",
+    "start": "Start",
+    "end": "End",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "termManagement": {
+    "title": "Terms",
+    "searchPlaceholder": "Search terms...",
+    "addButton": "Add",
+    "noTermsFound": "No terms found",
+    "yearLabel": "Year",
+    "edit": "Edit",
+    "delete": "Delete",
+    "editTerm": "Edit Term",
+    "addTerm": "Add Term",
+    "selectTerm": "Select a Term",
+    "term": "Term",
+    "active": "Active",
+    "inactive": "Inactive",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "selectAcademicYear": "Select Academic Year",
+    "updateButton": "Update",
+    "createButton": "Create"
+  },
+  "academicYearManagement": {
+    "title": "Academic Years",
+    "searchPlaceholder": "Search academic years...",
+    "addButton": "Add",
+    "noYearsFound": "No academic years found",
+    "edit": "Edit",
+    "delete": "Delete",
+    "editTitle": "Edit Academic Year",
+    "addTitle": "Add Academic Year",
+    "selectYear": "Select Academic Year",
+    "active": "Active",
+    "inactive": "Inactive",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "updateButton": "Update",
+    "createButton": "Create"
+  },
+  "feeManagement": {
+    "title": "Academic Fees Management",
+    "exportExcel": "Export Excel",
+    "exportPDF": "Export PDF",
+    "filters": "Filters",
+    "reset": "Reset",
+    "searchStudent": "Search Student",
+    "searchPlaceholder": "E.g. Student",
+    "level": "Level",
+    "all": "All",
+    "class": "Class",
+    "academicYear": "Academic Year",
+    "billId": "Bill ID",
+    "type": "Type",
+    "amount": "Amount (FCFA)",
+    "paymentDate": "Payment Date",
+    "actions": "Actions",
+    "noFees": "No fees available",
+    "viewFee": "View fee {id}",
+    "editFee": "Edit fee {id}",
+    "deleteFee": "Delete fee {id}",
+    "pageInfo": "Page {current} of {total}",
+    "previous": "Previous",
+    "next": "Next",
+    "feeDetails": "Fee Details",
+    "feeDetailsDescription": "Complete information about selected fee",
+    "paymentMethod": "Payment Method",
+    "student": "Student",
+    "totalPaid": "Total Paid",
+    "remaining": "Remaining",
+    "close": "Close"
+  },
+  "gradeManagement": {
+    "title": "Grade Management",
+    "academicYear": "Academic Year",
+    "class": "Class",
+    "selectClass": "Select a class",
+    "subject": "Subject",
+    "selectSubject": "Select a Subject",
+    "absences": "Absences",
+    "term": "Term",
+    "selectTerm": "Select a Term",
+    "absencesSelected": "Absences selected",
+    "absencesDescription1": "Here you can record or view student absences for the term",
+    "absencesDescription2": "of the academic year",
+    "absencesDescription3": "Please use the absences input or view section below.",
+    "name": "Name",
+    "code": "Code",
+    "coefficient": "Coefficient",
+    "searchPlaceholder": "Search for a subject...",
+    "registrationNumber": "Registration Number",
+    "fullName": "Full Name",
+    "calculateRank": "Calculate rank",
+    "calculateRankFor": "Calculate rank for {name}",
+    "mark": "Mark",
+    "rank": "Rank",
+    "discipline": "Discipline",
+    "noStudentsFound": "No students found",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "adminPanel": {
+    "title": "Admin Panel"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "settings": "Settings",
+    "schools": "Schools",
+    "logs": "Logs"
+  },
+  "footer": {
+    "copyright": "School SaaS Admin"
+  },
+  "adminDashboard": {
+    "title": "Admin Dashboard",
+    "stats": {
+      "schools": "Schools",
+      "users": "Users",
+      "students": "Students",
+      "invoices": "Invoices",
+      "paidInvoices": "Paid Invoices",
+      "unpaidInvoices": "Unpaid Invoices",
+      "overdueSchools": "Overdue Schools",
+      "blockedSchools": "Blocked Schools",
+      "subjects": "Subjects",
+      "classes": "Classes",
+      "activeAcademicYears": "Active Academic Years"
+    },
+    "charts": {
+      "monthlyRevenue": "Monthly Revenue",
+      "newSchools": "New Schools Per Month"
+    }
+  },
+  "userManagement": {
+    "title": "User Management",
+    "registerNew": "Register New",
+    "registerTitle": "Register New User",
+    "headers": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "status": "Status",
+      "globalRole": "Global Role",
+      "memberships": "Memberships",
+      "actions": "Actions"
+    },
+    "unknownSchool": "Unknown School",
+    "noMemberships": "No memberships"
+  },
+  "userForm": {
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "password": "Password",
+    "phoneNumber": "Phone Number",
+    "gender": "Gender",
+    "role": "Role",
+    "school": "School",
+    "selectSchool": "Select School",
+    "schoolRoles": "School Roles"
+  },
+  "filters": {
+    "allSchools": "All Schools",
+    "allStatus": "All Status",
+    "allRoles": "All Roles"
+  },
+  "status": {
+    "active": "Active",
+    "suspended": "Suspended",
+    "inactive": "Inactive"
+  },
+  "roles": {
+    "user": "User",
+    "admin": "Admin"
+  },
+  "schoolRoles": {
+    "director": "Director",
+    "secretary": "Secretary",
+    "teacher": "Teacher",
+    "admin": "School Admin"
+  },
+  "genders": {
+    "male": "Male",
+    "female": "Female",
+    "other": "Other"
+  },
+  "actions": {
+    "toggleStatus": "Toggle Status",
+    "toggleRole": "Toggle Role",
+    "resetPassword": "Reset Password",
+    "view": "View School",
+    "toggleAccess": "Toggle Access"
+  },
+  "schoolManagement": {
+    "title": "School Management",
+    "headers": {
+      "school": "School",
+      "email": "Email",
+      "phone": "Phone",
+      "subdomain": "Subdomain",
+      "plan": "Plan",
+      "usage": "Usage",
+      "billingStatus": "Billing Status",
+      "access": "Access",
+      "actions": "Actions"
+    },
+    "usage": {
+      "students": "Students",
+      "staff": "Staff",
+      "classes": "Classes"
+    },
+    "noSchools": "No schools found"
+  },
+  "plans": {
+    "free": "Free",
+    "basic": "Basic",
+    "premium": "Premium",
+    "enterprise": "Enterprise"
+  },
+  "billingStatus": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "overdue": "Overdue"
+  },
+  "accessStatus": {
+    "active": "Active",
+    "suspended": "Suspended",
+    "inactive": "Inactive",
+    "blocked": "Blocked"
+  },
+  "school": {
+    "idLabel": "ID",
+    "info": {
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address",
+      "subdomain": "Subdomain",
+      "plan": "Plan",
+      "status": "Status"
+    },
+    "usage": {
+      "students": "Students",
+      "staff": "Staff",
+      "classes": "Classes"
+    }
+  },
+  "tabs": {
+    "students": "Students",
+    "billing": "Billing"
+  },
+  "students": {
+    "headers": {
+      "matricule": "Matricule",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone"
+    },
+    "empty": "No students found"
+  },
+  "schoolInterface": {
+    "loading": "Loading school data...",
+    "notFound": "School not found."
   }
 }

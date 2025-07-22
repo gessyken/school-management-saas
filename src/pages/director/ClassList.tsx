@@ -42,12 +42,13 @@ import {
 } from "@/lib/services/academicService";
 import { useSearchParams } from "react-router-dom";
 import AssignStudentsToClass from "./AssignStudentsToClass";
-import Classes from "../../../backend/src/models/Classes";
 import PaymentForm from "./setting/PaymentForm";
+import { useTranslation } from "react-i18next";
 
 const itemsPerPage = 5;
 
 export default function ClassesList() {
+  const { t } = useTranslation();
   const [students, setStudents] = useState<Student[]>([]);
   const [academicStudents, setAcademicStudents] = useState<
     AcademicYearStudent[]
@@ -340,13 +341,13 @@ export default function ClassesList() {
   };
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold">Class List Management</h1>
+      <h1 className="text-2xl font-bold">{t("classListManagement.title")}</h1>
       <Card className="p-4">
         <div className="space-y-6">
           {/* Top Bar: Search + Actions */}
           <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
             <Input
-              placeholder="Rechercher une matière..."
+              placeholder={t("classListManagement.searchPlaceholder")}
               className="md:w-1/3 w-full"
               onChange={handleSearch}
               value={searchTerm}
@@ -359,7 +360,7 @@ export default function ClassesList() {
                 className="flex items-center gap-2"
               >
                 <Download className="h-4 w-4" />
-                Excel
+                {t("common.excel")}
               </Button>
 
               <Button
@@ -368,7 +369,7 @@ export default function ClassesList() {
                 className="flex items-center gap-2"
               >
                 <Download className="h-4 w-4" />
-                PDF
+                {t("common.pdf")}
               </Button>
             </div>
             <Button
@@ -377,14 +378,18 @@ export default function ClassesList() {
                 handleTabChange(activeTab === "" ? "assign-student" : "")
               }
             >
-              {activeTab === "" ? "Assign Student" : "view list"}
+              {activeTab === ""
+                ? t("classListManagement.assignStudent")
+                : t("classListManagement.viewList")}
             </Button>
           </div>
 
           {/* Filter Section */}
           <div className="bg-white p-6 rounded-xl shadow border">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Filtres</h2>
+              <h2 className="text-lg font-semibold text-gray-800">
+                {t("classListManagement.filters")}
+              </h2>
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -413,14 +418,14 @@ export default function ClassesList() {
                     d="M6 18L18 6M6 6l12 12"
                   />
                 </svg>
-                Réinitialiser
+                {t("classListManagement.reset")}
               </Button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Niveau
+                  {t("classListManagement.level")}
                 </label>
                 <select
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -428,23 +433,28 @@ export default function ClassesList() {
                   onChange={(e) => {
                     goToPage(1);
                     setFilter({ ...filter, level: e.target.value });
-                    console.log("filteredStudents", filteredStudents);
                     setSelectedStudents([]);
                   }}
                 >
-                  <option value="">Tous</option>
-                  <option value="Form 1">Form 1</option>
-                  <option value="Form 2">Form 2</option>
-                  <option value="Form 3">Form 3</option>
-                  <option value="Form 4">Form 4</option>
-                  <option value="Form 5">Form 5</option>
-                  <option value="Lower Sixth">Lower Sixth</option>
-                  <option value="Upper Sixth">Upper Sixth</option>
+                  <option value="">{t("classListManagement.all")}</option>
+                  {[
+                    "Form 1",
+                    "Form 2",
+                    "Form 3",
+                    "Form 4",
+                    "Form 5",
+                    "Lower Sixth",
+                    "Upper Sixth",
+                  ].map((level) => (
+                    <option key={level} value={level}>
+                      {level}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Classes
+                  {t("classListManagement.classes")}
                 </label>
                 <select
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -455,7 +465,7 @@ export default function ClassesList() {
                     setFilter({ ...filter, classes: classId });
                   }}
                 >
-                  <option value="">Tous</option>
+                  <option value="">{t("classListManagement.all")}</option>
                   {filteredClasses.map((item) => (
                     <option key={item._id} value={item._id}>
                       {item.classesName}
@@ -465,7 +475,7 @@ export default function ClassesList() {
               </div>
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Academic Year
+                  {t("classListManagement.academicYear")}
                 </label>
                 <select
                   required
@@ -477,7 +487,7 @@ export default function ClassesList() {
                   className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="" disabled>
-                    Select Academic Year
+                    {t("classListManagement.selectAcademicYear")}
                   </option>
                   {academicYears.map((year) => (
                     <option key={year._id} value={year.name}>
@@ -500,12 +510,14 @@ export default function ClassesList() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Matricule</TableHead>
-                      <TableHead>Nom complet</TableHead>
-                      <TableHead>classe</TableHead>
-                      <TableHead>Niveau</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>
+                        {t("classListManagement.registrationNumber")}
+                      </TableHead>
+                      <TableHead>{t("classListManagement.fullName")}</TableHead>
+                      <TableHead>{t("classListManagement.class")}</TableHead>
+                      <TableHead>{t("classListManagement.level")}</TableHead>
+                      <TableHead>{t("classListManagement.status")}</TableHead>
+                      <TableHead>{t("classListManagement.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -518,17 +530,21 @@ export default function ClassesList() {
                               `${academic?.student?.firstName} ${academic?.student?.lastName}`}
                           </TableCell>
                           <TableCell>
-                            {academic?.classes?.classesName || "N/A"}
+                            {academic?.classes?.classesName || t("common.na")}
                           </TableCell>
                           <TableCell>{academic?.student?.level}</TableCell>
-                          <TableCell>{academic?.student?.status}</TableCell>
                           <TableCell>
-                            <button
-                              onClick={() => handleOpenPaymentForm(academic)} // Replace row._id with the academic year or student ID
+                            {t(
+                              `classListManagement.statuses.${academic?.student?.status}`
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              onClick={() => handleOpenPaymentForm(academic)}
                               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded"
                             >
-                              Add Payment
-                            </button>
+                              {t("classListManagement.addPayment")}
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -538,44 +554,42 @@ export default function ClassesList() {
                           colSpan={7}
                           className="text-center text-muted-foreground"
                         >
-                          Aucun étudiant trouvé.
+                          {t("classListManagement.noStudentsFound")}
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
                 <div className="flex justify-between items-center mt-4">
-                  <button
-                    className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                  <Button
+                    variant="outline"
                     onClick={goToPreviousPage}
                     disabled={currentPage === 1}
                   >
-                    Précédent
-                  </button>
+                    {t("classListManagement.previous")}
+                  </Button>
 
                   <div className="space-x-2">
                     {Array.from({ length: totalPages }, (_, index) => (
-                      <button
+                      <Button
                         key={index + 1}
-                        className={`px-3 py-1 rounded ${
-                          currentPage === index + 1
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
+                        variant={
+                          currentPage === index + 1 ? "default" : "outline"
+                        }
                         onClick={() => goToPage(index + 1)}
                       >
                         {index + 1}
-                      </button>
+                      </Button>
                     ))}
                   </div>
 
-                  <button
-                    className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                  <Button
+                    variant="outline"
                     onClick={goToNextPage}
                     disabled={currentPage === totalPages}
                   >
-                    Suivant
-                  </button>
+                    {t("classListManagement.next")}
+                  </Button>
                 </div>
               </>
             )}
@@ -597,10 +611,7 @@ export default function ClassesList() {
               if (e.target === e.currentTarget) setOpenPaymentForm(false);
             }}
           >
-            <div
-              className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg"
-              // max height = 90% of viewport height
-            >
+            <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg">
               <PaymentForm
                 student={selectedStudent}
                 onCancel={() => setOpenPaymentForm(false)}

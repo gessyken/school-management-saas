@@ -79,21 +79,6 @@ const SchoolBillingPage = () => {
     }
   };
 
-  const handlePayInvoice = async (invoiceId: string, phoneNumber?: string) => {
-    try {
-      await invoiceService.pay(invoiceId, phoneNumber); // Pass to backend
-      toast({ title: "Facture marquée comme payée" });
-      const invoiceRes = await invoiceService.getBySchool(schoolId!);
-      setInvoices(invoiceRes.data);
-    } catch {
-      toast({
-        title: "Erreur",
-        description: "Échec du paiement",
-        variant: "destructive",
-      });
-    }
-  };
-
   if (loading || !billingInfo) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -141,7 +126,6 @@ const SchoolBillingPage = () => {
         invoices={invoices}
         schoolId={schoolId}
         setInvoices={setInvoices}
-        handlePayInvoice={handlePayInvoice}
       />
     </div>
   );

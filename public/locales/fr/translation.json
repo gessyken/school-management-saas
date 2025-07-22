@@ -107,8 +107,22 @@
     "updateRoles": "Mettre à jour les rôles"
   },
   "billing": {
+    "adminTitle": "Gestion de la facturation de l'école (Admin)",
+    "rulesTitle": "Règles de facturation",
+    "rules": {
+      "baseFee": "Frais de base (mensuel)",
+      "perStudent": "Coût par élève",
+      "perStaff": "Coût par personnel",
+      "perClass": "Coût par classe"
+    },
+    "usageTitle": "Utilisation actuelle",
+    "usage": {
+      "students": "Élèves",
+      "staff": "Personnel",
+      "classes": "Classes",
+      "lastCalculation": "Dernier calcul"
+    },
     "title": "Facturation de l’école",
-    "usageTitle": "Utilisation",
     "saveUsage": "Enregistrer l'utilisation",
     "students": "Étudiants",
     "staff": "Personnel",
@@ -119,7 +133,13 @@
   "common": {
     "loading": "Chargement des données...",
     "excel": "Excel",
-    "pdf": "PDF"
+    "pdf": "PDF",
+    "na": "N/D",
+    "cancel": "Annuler",
+    "none": "—",
+    "register": "Enregistrer",
+    "total": "Total",
+    "save": "Enregistrer les règles"
   },
   "usage": {
     "studentsCount": "Nombre d’élèves",
@@ -368,5 +388,355 @@
     "noStudentsFound": "Aucun étudiant trouvé",
     "previous": "Précédent",
     "next": "Suivant"
+  },
+  "classListManagement": {
+    "title": "Gestion des Listes de Classe",
+    "searchPlaceholder": "Rechercher une matière...",
+    "assignStudent": "Assigner un Étudiant",
+    "viewList": "Voir la Liste",
+    "filters": "Filtres",
+    "reset": "Réinitialiser",
+    "level": "Niveau",
+    "all": "Tous",
+    "classes": "Classes",
+    "academicYear": "Année Académique",
+    "selectAcademicYear": "Sélectionner une Année Académique",
+    "registrationNumber": "Matricule",
+    "fullName": "Nom Complet",
+    "class": "Classe",
+    "status": "Statut",
+    "statuses": {
+      "active": "Actif",
+      "suspended": "Suspendu",
+      "graduated": "Diplômé",
+      "withdrawn": "Abandon"
+    },
+    "actions": "Actions",
+    "addPayment": "Ajouter Paiement",
+    "noStudentsFound": "Aucun étudiant trouvé",
+    "previous": "Précédent",
+    "next": "Suivant"
+  },
+  "assignStudents": {
+    "title": "Assigner les élèves à une classe",
+    "studentList": "Liste des élèves",
+    "assignButton": "Assigner"
+  },
+  "studentStatus": {
+    "active": "Actif",
+    "suspended": "Suspendu",
+    "inactive": "Inactif"
+  },
+  "paymentForm": {
+    "studentInfo": "Informations de l'étudiant",
+    "name": "Nom",
+    "class": "Classe",
+    "academicYear": "Année académique",
+    "studentNotAvailable": "Les informations de l'étudiant ne sont pas disponibles",
+    "feeBill": "Facture de frais",
+    "feeBillPlaceholder": "Entrez l'ID de la facture",
+    "feeType": "Type de frais",
+    "feeTypePlaceholder": "Entrez le type de frais",
+    "amount": "Montant",
+    "amountPlaceholder": "Entrez le montant",
+    "paymentDate": "Date de paiement",
+    "paymentMethod": "Méthode de paiement",
+    "paymentMethodPlaceholder": "Entrez la méthode de paiement",
+    "updateFee": "Mettre à jour les frais",
+    "addFee": "Ajouter des frais"
+  },
+  "settingsManagement": {
+    "title": "Gestion des Paramètres",
+    "tabs": {
+      "academic": "Années Académiques",
+      "term": "Trimestres",
+      "sequence": "Séquences"
+    }
+  },
+  "sequenceManagement": {
+    "title": "Gestion des Séquences",
+    "selectAcademicYear": "Sélectionner l'année académique",
+    "allTerms": "Tous les trimestres",
+    "addSequence": "Ajouter une séquence",
+    "editSequence": "Modifier la séquence",
+    "newSequence": "Nouvelle séquence",
+    "name": "Nom",
+    "selectSequence": "Sélectionner une séquence",
+    "sequence": "Séquence",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "academicYear": "Année académique",
+    "selectYear": "Sélectionner une année",
+    "term": "Trimestre",
+    "selectTerm": "Sélectionner un trimestre",
+    "updateSequence": "Mettre à jour la séquence",
+    "createSequence": "Créer une séquence",
+    "start": "Début",
+    "end": "Fin",
+    "actions": "Actions",
+    "edit": "Modifier",
+    "delete": "Supprimer"
+  },
+  "termManagement": {
+    "title": "Trimestres",
+    "searchPlaceholder": "Rechercher des trimestres...",
+    "addButton": "Ajouter",
+    "noTermsFound": "Aucun trimestre trouvé",
+    "yearLabel": "Année",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "editTerm": "Modifier le trimestre",
+    "addTerm": "Ajouter un trimestre",
+    "selectTerm": "Sélectionner un trimestre",
+    "term": "Trimestre",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "selectAcademicYear": "Sélectionner l'année académique",
+    "updateButton": "Mettre à jour",
+    "createButton": "Créer"
+  },
+  "academicYearManagement": {
+    "title": "Années Académiques",
+    "searchPlaceholder": "Rechercher des années académiques...",
+    "addButton": "Ajouter",
+    "noYearsFound": "Aucune année académique trouvée",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "editTitle": "Modifier l'Année Académique",
+    "addTitle": "Ajouter une Année Académique",
+    "selectYear": "Sélectionner une Année Académique",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "startDate": "Date de Début",
+    "endDate": "Date de Fin",
+    "updateButton": "Mettre à Jour",
+    "createButton": "Créer"
+  },
+  "feeManagement": {
+    "title": "Gestion des Frais Académiques",
+    "exportExcel": "Exporter Excel",
+    "exportPDF": "Exporter PDF",
+    "filters": "Filtres",
+    "reset": "Réinitialiser",
+    "searchStudent": "Rechercher un Étudiant",
+    "searchPlaceholder": "Ex: Étudiant",
+    "level": "Niveau",
+    "all": "Tous",
+    "class": "Classe",
+    "academicYear": "Année Académique",
+    "billId": "ID Facture",
+    "type": "Type",
+    "amount": "Montant (FCFA)",
+    "paymentDate": "Date de Paiement",
+    "actions": "Actions",
+    "noFees": "Aucun frais disponible",
+    "viewFee": "Voir frais {id}",
+    "editFee": "Modifier frais {id}",
+    "deleteFee": "Supprimer frais {id}",
+    "pageInfo": "Page {current} sur {total}",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "feeDetails": "Détails du Frais",
+    "feeDetailsDescription": "Informations complètes sur le frais sélectionné",
+    "paymentMethod": "Mode de Paiement",
+    "student": "Étudiant",
+    "totalPaid": "Total Payé",
+    "remaining": "Reste à Payer",
+    "close": "Fermer"
+  },
+  "gradeManagement": {
+    "title": "Gestion des Notes",
+    "academicYear": "Année Académique",
+    "class": "Classe",
+    "selectClass": "Sélectionner une classe",
+    "subject": "Matière",
+    "selectSubject": "Sélectionner une matière",
+    "absences": "Absences",
+    "term": "Trimestre",
+    "selectTerm": "Sélectionner un trimestre",
+    "absencesSelected": "Absences sélectionnées",
+    "absencesDescription1": "Ici, vous pouvez enregistrer ou afficher les absences des élèves pour le trimestre",
+    "absencesDescription2": "de l'année académique",
+    "absencesDescription3": "Veuillez utiliser la section de saisie ou de visualisation d'absences ci-dessous.",
+    "name": "Nom",
+    "code": "Code",
+    "coefficient": "Coefficient",
+    "searchPlaceholder": "Rechercher une matière...",
+    "registrationNumber": "Matricule",
+    "fullName": "Nom Complet",
+    "calculateRank": "Calculer le rang",
+    "calculateRankFor": "Calculer le rang pour {name}",
+    "mark": "Note",
+    "rank": "Rang",
+    "discipline": "Discipline",
+    "noStudentsFound": "Aucun étudiant trouvé",
+    "previous": "Précédent",
+    "next": "Suivant"
+  },
+  "adminPanel": {
+    "title": "Panneau d'administration"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "users": "Utilisateurs",
+    "settings": "Paramètres",
+    "schools": "Écoles",
+    "logs": "Journaux"
+  },
+  "footer": {
+    "copyright": "Admin School SaaS"
+  },
+  "adminDashboard": {
+    "title": "Tableau de bord administrateur",
+    "stats": {
+      "schools": "Écoles",
+      "users": "Utilisateurs",
+      "students": "Étudiants",
+      "invoices": "Factures",
+      "paidInvoices": "Factures payées",
+      "unpaidInvoices": "Factures impayées",
+      "overdueSchools": "Écoles en retard",
+      "blockedSchools": "Écoles bloquées",
+      "subjects": "Matières",
+      "classes": "Classes",
+      "activeAcademicYears": "Années scolaires actives"
+    },
+    "charts": {
+      "monthlyRevenue": "Revenus mensuels",
+      "newSchools": "Nouvelles écoles / mois"
+    }
+  },
+  "userManagement": {
+    "title": "Gestion des utilisateurs",
+    "registerNew": "Enregistrer un nouveau",
+    "registerTitle": "Enregistrer un nouvel utilisateur",
+    "headers": {
+      "name": "Nom",
+      "email": "Email",
+      "phone": "Téléphone",
+      "status": "Statut",
+      "globalRole": "Rôle global",
+      "memberships": "Membres",
+      "actions": "Actions"
+    },
+    "unknownSchool": "École inconnue",
+    "noMemberships": "Aucune adhésion"
+  },
+  "userForm": {
+    "firstName": "Prénom",
+    "lastName": "Nom de famille",
+    "email": "Email",
+    "password": "Mot de passe",
+    "phoneNumber": "Numéro de téléphone",
+    "gender": "Genre",
+    "role": "Rôle",
+    "school": "École",
+    "selectSchool": "Sélectionner une école",
+    "schoolRoles": "Rôles dans l'école"
+  },
+  "filters": {
+    "allSchools": "Toutes les écoles",
+    "allStatus": "Tous les statuts",
+    "allRoles": "Tous les rôles"
+  },
+  "status": {
+    "active": "Actif",
+    "inactive": "Inactif",
+    "suspended": "Suspendu"
+  },
+  "roles": {
+    "user": "Utilisateur",
+    "admin": "Administrateur"
+  },
+  "schoolRoles": {
+    "director": "Directeur",
+    "secretary": "Secrétaire",
+    "teacher": "Enseignant",
+    "admin": "Admin d'école"
+  },
+  "genders": {
+    "male": "Masculin",
+    "female": "Féminin",
+    "other": "Autre"
+  },
+  "actions": {
+    "toggleStatus": "Basculer le statut",
+    "toggleRole": "Basculer le rôle",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "view": "Voir l'école",
+    "toggleAccess": "Basculer l'accès"
+  },
+  "schoolManagement": {
+    "title": "Gestion des écoles",
+    "headers": {
+      "school": "École",
+      "email": "Email",
+      "phone": "Téléphone",
+      "subdomain": "Sous-domaine",
+      "plan": "Plan",
+      "usage": "Utilisation",
+      "billingStatus": "Statut de facturation",
+      "access": "Accès",
+      "actions": "Actions"
+    },
+    "usage": {
+      "students": "Étudiants",
+      "staff": "Personnel",
+      "classes": "Classes"
+    },
+    "noSchools": "Aucune école trouvée"
+  },
+  "plans": {
+    "free": "Gratuit",
+    "basic": "Basique",
+    "premium": "Premium",
+    "enterprise": "Entreprise"
+  },
+  "billingStatus": {
+    "active": "Actif",
+    "inactive": "Inactif",
+    "pending": "En attente",
+    "overdue": "En retard"
+  },
+  "accessStatus": {
+    "active": "Actif",
+    "suspended": "Suspendu",
+    "inactive": "Inactif",
+    "blocked": "Bloqué"
+  },
+  "school": {
+    "idLabel": "ID",
+    "info": {
+      "email": "Email",
+      "phone": "Téléphone",
+      "address": "Adresse",
+      "subdomain": "Sous-domaine",
+      "plan": "Plan",
+      "status": "Statut"
+    },
+    "usage": {
+      "students": "Étudiants",
+      "staff": "Personnel",
+      "classes": "Classes"
+    }
+  },
+  "tabs": {
+    "students": "Étudiants",
+    "billing": "Facturation"
+  },
+  "students": {
+    "headers": {
+      "matricule": "Matricule",
+      "name": "Nom",
+      "email": "Email",
+      "phone": "Téléphone"
+    },
+    "empty": "Aucun étudiant trouvé"
+  },
+  "schoolInterface": {
+    "loading": "Chargement des données de l'école...",
+    "notFound": "École non trouvée."
   }
 }

@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import AcademicYearManagement from "./setting/ACADEMICYEARS";
 import TermManagement from "./setting/TermManagement";
 import SequenceManagement from "./setting/SequenceManagement";
+import { useTranslation } from "react-i18next";
 
 const tabs = [
   { key: "academic", label: "Academic Years" },
@@ -26,6 +27,8 @@ const tabs = [
 
 const SettingManagement = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
+
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -59,7 +62,9 @@ const SettingManagement = () => {
   return (
     <Card className="m-4 shadow-lg border">
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <CardTitle className="text-xl font-bold">Settings Management</CardTitle>
+        <CardTitle className="text-xl font-bold">
+          {t("settingsManagement.title")}
+        </CardTitle>
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="flex gap-2">
             {tabs.map((tab) => (
@@ -68,7 +73,7 @@ const SettingManagement = () => {
                 variant={tab.key === activeTab ? "default" : "outline"}
                 onClick={() => handleTabChange(tab.key)}
               >
-                {tab.label}
+                {t(`settingsManagement.tabs.${tab.key}`)}
               </Button>
             ))}
           </div>
