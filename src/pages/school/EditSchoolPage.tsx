@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -131,7 +131,7 @@ const EditSchoolPage = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-48">
-        <Loader2 className="animate-spin h-8 w-8 text-skyblue" />
+        <Loader2 className="animate-spin h-8 w-8 text-primary" />
       </div>
     );
   }
@@ -140,7 +140,7 @@ const EditSchoolPage = () => {
     <Card className="max-w-3xl mx-auto">
       <form onSubmit={handleSubmit}>
         <CardHeader>
-          <h2 className="text-2xl font-bold text-skyblue">Modifier l'école</h2>
+          <h2 className="text-2xl font-bold text-primary">Modifier l'école</h2>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -195,7 +195,7 @@ const EditSchoolPage = () => {
           <Button
             type="submit"
             disabled={saving}
-            className="w-full bg-skyblue hover:bg-skyblue/90"
+            className="w-full bg-primary hover:bg-primary/90"
           >
             {saving ? (
               <>

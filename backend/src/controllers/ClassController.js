@@ -2,6 +2,7 @@ import Classes from '../models/Classes.js';
 import Subject from '../models/Subject.js';
 import Student from '../models/Student.js';
 import AcademicYear from '../models/AcademicYear.js';
+import { logAction } from '../utils/logAction.js';
 
 class ClassController {
   // Get all classes for school
@@ -19,16 +20,20 @@ class ClassController {
         .populate('subjects.teacherInfo')
         .populate('mainTeacherInfo');
       // Enhanced logging
-      req.log = {
+      await logAction({
         action: 'VIEW',
         module: 'Classes',
         description: `Fetched classes for school ${schoolId}`,
+        user: req.user?.id,
+        school: req.user?.school,
         metadata: {
           filterYear: year || 'all',
           filterStatus: status || 'all',
           count: classes.length
-        }
-      }
+        },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
       res.json({ classes });
     } catch (error) {
       console.error("Fetch classes error:", error);
@@ -81,15 +86,19 @@ class ClassController {
       await newClass.save();
       await newClass.populate('school', 'name');
 
-      await req.log({
+      await logAction({
         action: 'CREATE',
         module: 'Classes',
         description: `Created new class '${classesName}' for school ${newClass.school.name}`,
+        user: req.user?.id,
+        school: req.user?.school,
         metadata: {
           classId: newClass._id,
           level,
           year
-        }
+        },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
       });
 
       res.status(201).json({
@@ -117,11 +126,15 @@ class ClassController {
         return res.status(404).json({ message: 'Class not found' });
       }
 
-      await req.log({
+      await logAction({
         action: 'VIEW',
         module: 'Classes',
         description: `Viewed class ${classData.classesName}`,
-        metadata: { classId: req.params.id }
+        user: req.user?.id,
+        school: req.user?.school,
+        metadata: { classId: req.params.id },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
       });
 
       res.json({ class: classData });
@@ -181,11 +194,15 @@ class ClassController {
         .populate('subjects.subjectInfo')
         .populate('subjects.teacherInfo')
         .populate('mainTeacherInfo');
-      await req.log({
+      await logAction({
         action: 'UPDATE',
         module: 'Classes',
         description: `Updated class ${updated.classesName}`,
-        metadata: { updatedFields: Object.keys(req.body) }
+        user: req.user?.id,
+        school: req.user?.school,
+        metadata: { updatedFields: Object.keys(req.body) },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
       });
 
       res.json({ message: 'Class updated successfully', class: updated });
@@ -209,12 +226,16 @@ class ClassController {
         { $pull: { classes: req.params.id } }
       );
 
-      await classData.remove();
-      await req.log({
+      await classData.deleteOne();
+      await logAction({
         action: 'DELETE',
         module: 'Class',
         description: `Deleted class ${classData.classesName}`,
-        metadata: { classId: req.params.id }
+        user: req.user?.id,
+        school: req.user?.school,
+        metadata: { classId: req.params.id },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
       });
 
       res.json({ message: 'Class deleted successfully' });
@@ -283,11 +304,15 @@ class ClassController {
       }
 
       await classData.save();
-      await req.log({
+      await logAction({
         action: 'UPDATE',
         module: 'Class',
         description: `Updated subjects in class ${classData.classesName}`,
-        metadata: req.body
+        user: req.user?.id,
+        school: req.user?.school,
+        metadata: req.body,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
       });
 
       res.json({
@@ -338,11 +363,15 @@ class ClassController {
       }
 
       await classData.save();
-      await req.log({
+      await logAction({
         action: 'UPDATE',
         module: 'Class',
         description: `Updated subject ${subjectId} in class ${classData.classesName}`,
-        metadata: { coefficient, teacherInfo }
+        user: req.user?.id,
+        school: req.user?.school,
+        metadata: { coefficient, teacherInfo },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
       });
 
       res.json({
@@ -372,11 +401,15 @@ class ClassController {
       );
 
       await classData.save();
-      await req.log({
+      await logAction({
         action: 'DELETE',
         module: 'Class',
         description: `Removed subject ${subjectId} from class ${classId}`,
-        metadata: {}
+        user: req.user?.id,
+        school: req.user?.school,
+        metadata: {},
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
       });
 
       res.json({
@@ -420,11 +453,15 @@ class ClassController {
       // Update student with class reference
       student.classes = classId;
       await student.save();
-      await req.log({
+      await logAction({
         action: 'UPDATE',
         module: 'Class',
         description: `Added student ${studentId} to class ${classId}`,
-        metadata: { studentId }
+        user: req.user?.id,
+        school: req.user?.school,
+        metadata: { studentId },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
       });
 
       res.json({
@@ -461,11 +498,15 @@ class ClassController {
         { _id: studentId, school: schoolId },
         { $unset: { classes: "" } }
       );
-      await req.log({
+      await logAction({
         action: 'UPDATE',
         module: 'Class',
         description: `Removed student ${studentId} from class ${classId}`,
-        metadata: { studentId }
+        user: req.user?.id,
+        school: req.user?.school,
+        metadata: { studentId },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
       });
 
       res.json({
@@ -625,15 +666,19 @@ class ClassController {
           };
         }
       }
-      await req.log({
+      await logAction({
         action: 'VIEW',
         module: 'Class',
         description: `Fetched performance analytics for class ${classId} - year ${year}`,
+        user: req.user?.id,
+        school: req.user?.school,
         metadata: {
           studentCount: academicYears.length,
           classId,
           year
-        }
+        },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
       });
 
       res.json({ classPerformance: classStats });

@@ -44,23 +44,23 @@ const SecretaryDashboard = () => {
               <CardTitle className="text-lg font-medium">Tâches à effectuer</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-amber-50 rounded-md border border-amber-200">
+              <div className="flex items-center justify-between p-3 bg-secondary/10 rounded-md border border-secondary/30">
                 <div className="flex items-center">
-                  <AlertCircle className="h-5 w-5 text-amber-500 mr-3" />
+                  <AlertCircle className="h-5 w-5 text-secondary mr-3" />
                   <span>Valider les inscriptions (12)</span>
                 </div>
                 <Button size="sm" variant="outline">Traiter</Button>
               </div>
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-md border border-blue-200">
-                <div className="flex items-center">
-                  <CreditCard className="h-5 w-5 text-blue-500 mr-3" />
+              <div className="flex items-center justify-between p-3 bg-primary/10 rounded-md border border-primary/30">
+          <div className="flex items-center">
+            <CreditCard className="h-5 w-5 text-primary mr-3" />
                   <span>Paiements à enregistrer (8)</span>
                 </div>
                 <Button size="sm" variant="outline">Traiter</Button>
               </div>
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-md border border-green-200">
-                <div className="flex items-center">
-                  <Users className="h-5 w-5 text-green-500 mr-3" />
+              <div className="flex items-center justify-between p-3 bg-secondary/10 rounded-md border border-secondary/30">
+          <div className="flex items-center">
+            <Users className="h-5 w-5 text-secondary mr-3" />
                   <span>Mettre à jour les fiches élèves</span>
                 </div>
                 <Button size="sm" variant="outline">Traiter</Button>
@@ -77,7 +77,7 @@ const SecretaryDashboard = () => {
                 {['6ème A', '5ème B', '4ème A', 'Terminale C'].map((className) => (
                   <li key={className} className="p-3 border rounded-md flex justify-between items-center">
                     <span>{className}</span>
-                    <Badge variant="outline" className="bg-skyblue/10 text-skyblue">En attente</Badge>
+                    <Badge variant="outline" className="bg-primary/10 text-primary">En attente</Badge>
                   </li>
                 ))}
               </ul>

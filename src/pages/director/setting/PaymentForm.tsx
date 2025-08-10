@@ -66,7 +66,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     <div>
       {/* Student info */}
       {student ? (
-        <Card className="bg-gray-50 p-4 mb-6">
+        <Card className="bg-muted p-4 mb-6">
           <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
             <User size={20} /> Student Information
           </h3>
@@ -82,7 +82,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           {/* Add more student info as needed */}
         </Card>
       ) : (
-        <div className="text-red-600 flex items-center gap-2">
+        <div className="text-destructive flex items-center gap-2">
           <XCircle /> Student information is not available.
         </div>
       )}
@@ -101,7 +101,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             aria-describedby="feeBillID-error"
           />
           {errors.type && (
-            <p id="feeType-error" className="text-red-600 text-sm mt-1">
+            <p id="feeType-error" className="text-destructive text-sm mt-1">
               {errors.billID}
             </p>
           )}
@@ -119,7 +119,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             aria-describedby="feeType-error"
           />
           {errors.type && (
-            <p id="feeType-error" className="text-red-600 text-sm mt-1">
+            <p id="feeType-error" className="text-destructive text-sm mt-1">
               {errors.type}
             </p>
           )}
@@ -141,7 +141,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             aria-describedby="amount-error"
           />
           {errors.amount && (
-            <p id="amount-error" className="text-red-600 text-sm mt-1">
+            <p id="amount-error" className="text-destructive text-sm mt-1">
               {errors.amount}
             </p>
           )}
@@ -161,7 +161,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             // icon={<Calendar />}
           />
           {errors.paymentDate && (
-            <p id="paymentDate-error" className="text-red-600 text-sm mt-1">
+            <p id="paymentDate-error" className="text-destructive text-sm mt-1">
               {errors.paymentDate}
             </p>
           )}
@@ -181,7 +181,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             // icon={<Info />}
           />
           {errors.paymentMethod && (
-            <p id="paymentMethod-error" className="text-red-600 text-sm mt-1">
+            <p id="paymentMethod-error" className="text-destructive text-sm mt-1">
               {errors.paymentMethod}
             </p>
           )}

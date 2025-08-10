@@ -61,10 +61,10 @@ const TeacherDashboard = () => {
                       variant="outline" 
                       className={
                         classItem.status === 'Complété' 
-                          ? "bg-green-50 text-green-600 border-green-200" 
+                          ? "bg-primary/10 text-primary border-primary/30" 
                           : classItem.status === 'En cours'
-                            ? "bg-amber-50 text-amber-600 border-amber-200"
-                            : "bg-blue-50 text-blue-600 border-blue-200"
+                            ? "bg-secondary/10 text-secondary border-secondary/30"
+                            : "bg-primary/10 text-primary border-primary/30"
                       }
                     >
                       {classItem.status === 'Complété' && (
@@ -87,7 +87,7 @@ const TeacherDashboard = () => {
             <CardHeader>
               <CardTitle className="text-lg font-medium">Calendrier des évaluations</CardTitle>
             </CardHeader>
-            <CardContent className="h-64 flex items-center justify-center bg-gray-50 rounded border">
+            <CardContent className="h-64 flex items-center justify-center bg-muted rounded border">
               <p className="text-muted-foreground">Calendrier des prochaines évaluations</p>
             </CardContent>
           </Card>
@@ -96,7 +96,7 @@ const TeacherDashboard = () => {
             <CardHeader>
               <CardTitle className="text-lg font-medium">Statistiques de réussite</CardTitle>
             </CardHeader>
-            <CardContent className="h-64 flex items-center justify-center bg-gray-50 rounded border">
+            <CardContent className="h-64 flex items-center justify-center bg-muted rounded border">
               <p className="text-muted-foreground">Graphique des statistiques de réussite</p>
             </CardContent>
           </Card>

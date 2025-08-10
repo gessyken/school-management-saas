@@ -19,7 +19,7 @@ const mockStudents = [
 
 const TeacherGrades = () => {
   const [selectedClass, setSelectedClass] = useState('6A');
-  const [selectedSubject, setSelectedSubject] = useState('math');
+  const [selectedSubject, setSelectedSubject] = useState('mathematiques');
   const [search, setSearch] = useState('');
 
   const filteredStudents = mockStudents.filter(student =>
@@ -36,7 +36,7 @@ const TeacherGrades = () => {
               <FileSpreadsheet className="h-4 w-4" />
               Exporter
             </Button>
-            <Button className="bg-skyblue hover:bg-skyblue/90 flex items-center gap-2">
+            <Button className="bg-primary hover:bg-primary/90 flex items-center gap-2">
               <Save className="h-4 w-4" />
               Enregistrer
             </Button>
@@ -44,19 +44,19 @@ const TeacherGrades = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <Card className="bg-skyblue/10">
+          <Card className="bg-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Moyenne de classe</CardTitle>
               <div className="text-2xl font-bold">14.5/20</div>
             </CardHeader>
           </Card>
-          <Card className="bg-skyblue/10">
+          <Card className="bg-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Notes saisies</CardTitle>
               <div className="text-2xl font-bold">5/25</div>
             </CardHeader>
           </Card>
-          <Card className="bg-skyblue/10">
+          <Card className="bg-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Notes manquantes</CardTitle>
               <div className="text-2xl font-bold">20</div>
@@ -84,9 +84,9 @@ const TeacherGrades = () => {
                   <SelectValue placeholder="Sélectionner une matière" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="math">Mathématiques</SelectItem>
-                  <SelectItem value="fr">Français</SelectItem>
-                  <SelectItem value="eng">Anglais</SelectItem>
+                  <SelectItem value="mathematiques">Mathématiques</SelectItem>
+                  <SelectItem value="francais">Français</SelectItem>
+                  <SelectItem value="anglais">Anglais</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -131,7 +131,7 @@ const TeacherGrades = () => {
                       </TableCell>
                     ))}
                     <TableCell>
-                      <Badge variant="outline" className="bg-skyblue/10">
+                      <Badge variant="outline" className="bg-primary/10">
                         {student.grades[0] ? `${student.grades[0]}/20` : '--'}
                       </Badge>
                     </TableCell>

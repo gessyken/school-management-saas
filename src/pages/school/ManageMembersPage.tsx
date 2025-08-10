@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { SCHOOL_KEY, USER_KEY } from "@/lib/key";
 import {
@@ -23,7 +23,7 @@ interface Member {
   }[];
 }
 
-const possibleRoles = ["ADMIN", 'DIRECTOR', 'SECRETARY', 'TEACHER'];
+const possibleRoles = ["ADMINISTRATEUR", 'DIRECTEUR', 'SECRÉTAIRE', 'ENSEIGNANT'];
 
 const ManageMembersPage = () => {
   const [members, setMembers] = useState<Member[]>([]);
@@ -111,8 +111,8 @@ const ManageMembersPage = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-6">
-      <h2 className="text-2xl font-bold text-skyblue">
-        Gérer les membres de l’école
+      <h2 className="text-2xl font-bold text-primary">
+        Gérer les membres de l'école
       </h2>
 
       {members.length === 0 ? (

@@ -386,7 +386,7 @@ export default function ResultManagement() {
   return (
     <div className="p-4 space-y-6">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <h1 className="text-3xl font-bold text-gray-800">
+        <h1 className="text-3xl font-bold text-foreground">
           📘 Result Management
         </h1>
 
@@ -442,9 +442,9 @@ export default function ResultManagement() {
         </div>
 
         {/* 📚 Filters */}
-        <div className="bg-white p-6 rounded-xl shadow border">
+        <div className="bg-background p-6 rounded-xl shadow border">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Filtres</h2>
+            <h2 className="text-lg font-semibold text-foreground">Filtres</h2>
             <Button
               variant="ghost"
               onClick={() => {
@@ -460,7 +460,7 @@ export default function ResultManagement() {
                   sequence: "",
                 });
               }}
-              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              className="text-sm text-primary hover:text-primary/80 flex items-center gap-1"
             >
               <svg
                 className="w-4 h-4"
@@ -480,7 +480,7 @@ export default function ResultManagement() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700">
+              <label className="block mb-1 text-sm font-medium text-muted-foreground">
                 Academic Year
               </label>
               <select
@@ -490,7 +490,7 @@ export default function ResultManagement() {
                   const yearId = e.target.value;
                   setFilter({ ...filter, academicYear: yearId });
                 }}
-                className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-auto border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="" disabled>
                   Select Academic Year
@@ -503,11 +503,11 @@ export default function ResultManagement() {
               </select>
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700">
+              <label className="block mb-1 text-sm font-medium text-muted-foreground">
                 Classes
               </label>
               <select
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                 required
                 value={filter.classes}
                 onChange={(e) => {
@@ -531,11 +531,11 @@ export default function ResultManagement() {
               </select>
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700">
+              <label className="block mb-1 text-sm font-medium text-muted-foreground">
                 Term
               </label>
               <select
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                 required
                 value={filter.term}
                 onChange={(e) => {
@@ -551,7 +551,7 @@ export default function ResultManagement() {
               </select>
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700">
+              <label className="block mb-1 text-sm font-medium text-muted-foreground">
                 Sequence
               </label>
               <select
@@ -572,11 +572,11 @@ export default function ResultManagement() {
             </div>
             {activeTab === "" && (
               <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
+                <label className="block mb-1 text-sm font-medium text-muted-foreground">
                   Subject
                 </label>
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                   value={filter.subject}
                   onChange={(e) => {
@@ -902,7 +902,7 @@ export default function ResultManagement() {
                                           return (
                                             <React.Fragment key={key}>
                                               {/* Mark Input */}
-                                              <TableCell className="py-2 px-3 border border-gray-300">
+                                              <TableCell className="py-2 px-3 border border-border">
                                                 <Input
                                                   type="number"
                                                   min="0"
@@ -920,7 +920,7 @@ export default function ResultManagement() {
                                                       ? mark.toFixed(2)
                                                       : str;
                                                   })()}
-                                                  className="w-[10ch] text-center text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                  className="w-[10ch] text-center text-sm border border-border rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-ring"
                                                   onChange={(e) => {
                                                     // TODO: handle mark change
                                                   }}
@@ -928,24 +928,24 @@ export default function ResultManagement() {
                                               </TableCell>
 
                                               {/* Rank */}
-                                              <TableCell className="py-2 px-3 border border-gray-300">
+                                              <TableCell className="py-2 px-3 border border-border">
                                                 <Input
                                                   type="number"
                                                   readOnly
                                                   value={marksData.rank ?? ""}
-                                                  className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
+                                                  className="w-[10ch] text-center text-sm border border-border bg-muted rounded-md px-2 py-1"
                                                 />
                                               </TableCell>
 
                                               {/* Discipline */}
-                                              <TableCell className="py-2 px-3 border border-gray-300">
+                                              <TableCell className="py-2 px-3 border border-border">
                                                 <Input
                                                   type="text"
                                                   readOnly
                                                   value={
                                                     marksData.discipline ?? ""
                                                   }
-                                                  className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
+                                                  className="w-[10ch] text-center text-sm border border-border bg-muted rounded-md px-2 py-1"
                                                 />
                                               </TableCell>
                                             </React.Fragment>
@@ -965,13 +965,13 @@ export default function ResultManagement() {
                                           return (
                                             <TableCell
                                               key={`${key}-${metric}`}
-                                              className="py-2 px-3 border border-gray-300"
+                                              className="py-2 px-3 border border-border"
                                             >
                                               <Input
                                                 type="text"
                                                 readOnly
                                                 value={summary[metric] ?? ""}
-                                                className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
+                                                className="w-[10ch] text-center text-sm border border-border bg-muted rounded-md px-2 py-1"
                                               />
                                             </TableCell>
                                           );
@@ -986,13 +986,13 @@ export default function ResultManagement() {
                                     return (
                                       <TableCell
                                         key={`${key}-${metric}`}
-                                        className="py-2 px-3 border border-gray-300"
+                                        className="py-2 px-3 border border-border"
                                       >
                                         <Input
                                           type="text"
                                           readOnly
                                           value={summary[metric] ?? ""}
-                                          className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
+                                          className="w-[10ch] text-center text-sm border border-border bg-muted rounded-md px-2 py-1"
                                         />
                                       </TableCell>
                                     );
@@ -1022,7 +1022,7 @@ export default function ResultManagement() {
                               );
                             }, 0)
                           }
-                          className="text-center text-gray-400 italic py-4 border border-gray-300"
+                          className="text-center text-muted-foreground italic py-4 border border-border"
                         >
                           Aucun étudiant trouvé.
                         </TableCell>
@@ -1036,7 +1036,7 @@ export default function ResultManagement() {
                   <Button
                     onClick={goToPreviousPage}
                     disabled={currentPage === 1}
-                    className="bg-gray-100"
+                    className="bg-muted"
                   >
                     Précédent
                   </Button>
@@ -1056,7 +1056,7 @@ export default function ResultManagement() {
                   <Button
                     onClick={goToNextPage}
                     disabled={currentPage === totalPages}
-                    className="bg-gray-100"
+                    className="bg-muted"
                   >
                     Suivant
                   </Button>

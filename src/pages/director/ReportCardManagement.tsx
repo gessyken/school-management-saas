@@ -127,38 +127,38 @@ const ReportCardManagement: React.FC<StudentReportCardProps> = ({
       <div className="flex justify-end gap-3 mb-4">
         <button
           onClick={exportPDF}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90 transition"
         >
           Export as PDF
         </button>
         <button
           onClick={exportCSV}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+          className="bg-secondary text-secondary-foreground px-4 py-2 rounded hover:bg-secondary/90 transition"
         >
           Export as CSV
         </button>
       </div>
       <div
         ref={reportRef}
-        className="max-w-6xl mx-auto bg-white p-6 border border-gray-300 rounded-xl shadow print:break-after-page text-sm"
+        className="max-w-6xl mx-auto bg-background p-6 border border-border rounded-xl shadow print:break-after-page text-sm"
       >
-        <h2 className="text-3xl font-bold text-center text-gray-900 uppercase underline mb-6">
+        <h2 className="text-3xl font-bold text-center text-foreground uppercase underline mb-6">
           Report Card
         </h2>
 
-        <Card className="mb-8 p-6 shadow-lg border border-gray-200 rounded-lg">
-  <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 text-gray-700">
+        <Card className="mb-8 p-6 shadow-lg border border-border rounded-lg">
+  <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 text-muted-foreground">
     <div className="flex items-center space-x-3">
-      <User className="text-blue-600" size={24} />
+      <User className="text-primary" size={24} />
       <div>
-        <p className="text-sm font-semibold text-gray-900">Matricule</p>
+        <p className="text-sm font-semibold text-foreground">Matricule</p>
         <p className="text-base">{student.student.matricule}</p>
       </div>
     </div>
     <div className="flex items-center space-x-3">
-      <GraduationCap className="text-green-600" size={24} />
+      <GraduationCap className="text-secondary" size={24} />
       <div>
-        <p className="text-sm font-semibold text-gray-900">Full Name</p>
+        <p className="text-sm font-semibold text-foreground">Full Name</p>
         <p className="text-base">
           {student.student.fullName ||
             `${student.student.firstName} ${student.student.lastName}`}
@@ -169,12 +169,12 @@ const ReportCardManagement: React.FC<StudentReportCardProps> = ({
 </Card>
 
 {/* Subject-centric Report Table */}
-<Card className="overflow-x-auto p-6 shadow-lg border border-gray-200 rounded-lg">
-  <Table className="min-w-full border border-gray-300">
-    <TableHeader className="bg-gray-50">
+<Card className="overflow-x-auto p-6 shadow-lg border border-border rounded-lg">
+  <Table className="min-w-full border border-border">
+    <TableHeader className="bg-muted/50">
       <TableRow>
         <TableHead
-        className="w-1/6 text-gray-700 uppercase tracking-wide text-sm font-semibold">
+        className="w-1/6 text-foreground uppercase tracking-wide text-sm font-semibold">
           Subject
         </TableHead>
         {terms.map((term) => (
@@ -185,20 +185,20 @@ const ReportCardManagement: React.FC<StudentReportCardProps> = ({
                 (seq) => seq.term._id === term._id && seq.isActive
               ).length + 1
             }
-            className="text-center text-gray-700 uppercase tracking-wide text-sm font-semibold"
+            className="text-center text-foreground uppercase tracking-wide text-sm font-semibold"
           >
             {term.name}
           </TableHead>
         ))}
       </TableRow>
       <TableRow>
-      <TableHead  className="w-1/6 text-gray-700 uppercase tracking-wide text-sm font-semibold">
+      <TableHead  className="w-1/6 text-foreground uppercase tracking-wide text-sm font-semibold">
           Name
         </TableHead>
       {/* <TableHead  className="w-1/6 text-gray-700 uppercase tracking-wide text-sm font-semibold">
           Coeff
         </TableHead> */}
-        <TableHead className="bg-gray-100" />
+        <TableHead className="bg-muted" />
         {terms.map((term) => {
           const termSeqs = sequences.filter(
             (seq) => seq.term._id === term._id && seq.isActive
@@ -208,12 +208,12 @@ const ReportCardManagement: React.FC<StudentReportCardProps> = ({
               {termSeqs.map((seq) => (
                 <TableHead
                   key={seq._id}
-                  className="bg-gray-100 text-center text-gray-600 text-xs font-medium"
+                  className="bg-muted text-center text-muted-foreground text-xs font-medium"
                 >
                   {seq.name}
                 </TableHead>
               ))}
-              <TableHead className="bg-gray-200 text-center font-semibold text-gray-800 text-xs">
+              <TableHead className="bg-muted/80 text-center font-semibold text-foreground text-xs">
                 Avg
               </TableHead>
             </React.Fragment>
@@ -226,20 +226,20 @@ const ReportCardManagement: React.FC<StudentReportCardProps> = ({
       {subjects.map((subject, idx) => (
         <TableRow
           key={subject.subjectInfo._id}
-          className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+          className={idx % 2 === 0 ? "bg-background" : "bg-muted/50"}
           style={{ transition: "background-color 0.3s ease" }}
           // subtle hover effect
           onMouseEnter={e =>
-            (e.currentTarget.style.backgroundColor = "#f9fafb")
+            (e.currentTarget.style.backgroundColor = "hsl(var(--muted))")
           }
           onMouseLeave={e =>
-            (e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "#fff" : "#f9fafb")
+            (e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "hsl(var(--background))" : "hsl(var(--muted) / 0.5)")
           }
         >
-          <TableCell className="font-semibold text-gray-900">
+          <TableCell className="font-semibold text-foreground">
             {subject.subjectInfo.subjectName}
           </TableCell>
-          <TableCell className="font-semibold text-gray-900">
+          <TableCell className="font-semibold text-foreground">
             {subject.coefficient}
           </TableCell>
           {terms.map((term) => {
@@ -262,13 +262,13 @@ const ReportCardManagement: React.FC<StudentReportCardProps> = ({
                       title={`Rank: ${data.rank ?? "-"}, Discipline: ${
                         data.discipline ?? "-"
                       }`}
-                      className="text-center text-gray-700 font-medium"
+                      className="text-center text-muted-foreground font-medium"
                     >
                       {data.marks?.currentMark?.toFixed(2) ?? "-"}
                     </TableCell>
                   );
                 })}
-                <TableCell className="text-center font-semibold text-gray-900 bg-gray-100">
+                <TableCell className="text-center font-semibold text-foreground bg-muted">
                   {termSeqs.length
                     ? (avg / termSeqs.length).toFixed(2)
                     : "-"}
@@ -290,33 +290,33 @@ const ReportCardManagement: React.FC<StudentReportCardProps> = ({
     return (
       <Card
         key={term._id}
-        className="p-6 shadow-lg border border-gray-200 rounded-lg"
+        className="p-6 shadow-lg border border-border rounded-lg"
       >
-        <h4 className="text-xl font-bold text-gray-900 mb-5 border-b border-gray-300 pb-2">
+        <h4 className="text-xl font-bold text-foreground mb-5 border-b border-border pb-2">
           {term.name} Summary
         </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-gray-700 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-muted-foreground text-sm">
           <div>
-            <p className="text-gray-500 uppercase tracking-wide font-semibold mb-1">
+            <p className="text-muted-foreground uppercase tracking-wide font-semibold mb-1">
               Overall Average
             </p>
-            <p className="text-lg font-semibold text-gray-900">
+            <p className="text-lg font-semibold text-foreground">
               {termSummary.average?.toFixed(2) ?? "-"}
             </p>
           </div>
           <div>
-            <p className="text-gray-500 uppercase tracking-wide font-semibold mb-1">
+            <p className="text-muted-foreground uppercase tracking-wide font-semibold mb-1">
               Rank
             </p>
-            <p className="text-lg font-semibold text-gray-900">
+            <p className="text-lg font-semibold text-foreground">
               {termSummary.rank ?? "-"}
             </p>
           </div>
           <div>
-            <p className="text-gray-500 uppercase tracking-wide font-semibold mb-1">
+            <p className="text-muted-foreground uppercase tracking-wide font-semibold mb-1">
               Discipline
             </p>
-            <p className="text-lg font-semibold text-gray-900">
+            <p className="text-lg font-semibold text-foreground">
               {termSummary.discipline ?? "-"}
             </p>
           </div>

@@ -87,8 +87,8 @@ const classDistributionData = [
 ];
 
 // Custom colors
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
-const GENDER_COLORS = ["#FF6384", "#36A2EB"];
+const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "hsl(var(--destructive))"];
+const GENDER_COLORS = ["hsl(var(--destructive))", "hsl(var(--primary))"];
 
 const DirectorStatistics = () => {
   const [yearFilter, setYearFilter] = useState("2024");
@@ -151,7 +151,7 @@ const DirectorStatistics = () => {
                       )}
                     />
                     <Legend />
-                    <Bar dataKey="moyenne" fill="#33C3F0" name="Moyenne" />
+                    <Bar dataKey="moyenne" fill="hsl(var(--primary))" name="Moyenne" />
                   </BarChart>
                 </ChartContainer>
               </CardContent>
@@ -187,7 +187,7 @@ const DirectorStatistics = () => {
                     <Line
                       type="monotone"
                       dataKey="élèves"
-                      stroke="#33C3F0"
+                      stroke="hsl(var(--primary))"
                       name="Élèves"
                       activeDot={{ r: 8 }}
                     />
@@ -215,7 +215,7 @@ const DirectorStatistics = () => {
                           `${name}: ${(percent * 100).toFixed(0)}%`
                         }
                         outerRadius={80}
-                        fill="#8884d8"
+                        fill="hsl(var(--muted))"
                         dataKey="value"
                       >
                         {classDistributionData.map((entry, index) => (
@@ -252,7 +252,7 @@ const DirectorStatistics = () => {
                           `${name}: ${(percent * 100).toFixed(0)}%`
                         }
                         outerRadius={80}
-                        fill="#8884d8"
+                        fill="hsl(var(--muted))"
                         dataKey="value"
                       >
                         {genderData.map((entry, index) => (
@@ -309,14 +309,14 @@ const DirectorStatistics = () => {
                   <Line
                     type="monotone"
                     dataKey="présence"
-                    stroke="#33C3F0"
+                    stroke="hsl(var(--primary))"
                     name="Présence (%)"
                     activeDot={{ r: 8 }}
                   />
                   <Line
                     type="monotone"
                     dataKey="absence"
-                    stroke="#FF6384"
+                    stroke="hsl(var(--destructive))"
                     name="Absence (%)"
                   />
                 </LineChart>
@@ -360,13 +360,13 @@ const DirectorStatistics = () => {
                   <Bar
                     dataKey="payé"
                     stackId="a"
-                    fill="#33C3F0"
+                    fill="hsl(var(--primary))"
                     name="Payé (%)"
                   />
                   <Bar
                     dataKey="nonPayé"
                     stackId="a"
-                    fill="#FF6384"
+                    fill="hsl(var(--destructive))"
                     name="Non payé (%)"
                   />
                 </BarChart>
@@ -375,7 +375,7 @@ const DirectorStatistics = () => {
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-skyblue/10">
+            <Card className="bg-primary/10">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Taux de recouvrement
@@ -383,7 +383,7 @@ const DirectorStatistics = () => {
                 <div className="text-2xl font-bold">78%</div>
               </CardHeader>
             </Card>
-            <Card className="bg-skyblue/10">
+            <Card className="bg-primary/10">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Montant recouvré
@@ -391,7 +391,7 @@ const DirectorStatistics = () => {
                 <div className="text-2xl font-bold">15.6M FCFA</div>
               </CardHeader>
             </Card>
-            <Card className="bg-skyblue/10">
+            <Card className="bg-primary/10">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Montant à recouvrer

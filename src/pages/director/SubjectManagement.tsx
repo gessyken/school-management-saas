@@ -28,13 +28,14 @@ import {
   Download,
   CheckCircle,
 } from "lucide-react";
-import { Info, BookOpen, Code2, XCircle } from "lucide-react";
+import { Info, BookOpen, Code2, XCircle, AlertCircle } from "lucide-react";
 import { subjectService } from "@/lib/services/subjectService";
 import { useToast } from "@/components/ui/use-toast";
 import { usePagination } from "@/components/ui/usePagination";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import CameroonSubjectsImporter from "@/components/CameroonSubjectsImporter";
 
 // Subject interface/type
 interface Subject {
@@ -61,8 +62,8 @@ const ConfirmationModal = ({
 }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 px-4">
-      <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-lg">
+    <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 px-4">
+      <div className="bg-background rounded-lg p-6 max-w-sm w-full shadow-lg">
         <p className="mb-4">{message}</p>
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={onCancel}>
@@ -84,6 +85,7 @@ const Subjects = () => {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Modal state
   const [modalMode, setModalMode] = useState<"view" | "edit" | "create" | null>(null);
@@ -122,14 +124,19 @@ const Subjects = () => {
   // Fetch subjects, optionally filtered by debounced search
   const fetchSubjects = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       // Assuming backend supports search filter as query param
       const res = await subjectService.getAll({ search: debouncedSearch });
-      setSubjects(res.data.subjects);
-    } catch {
+      setSubjects(res.data.subjects || []);
+    } catch (error) {
+      console.error("Failed to fetch subjects:", error);
+      setError("Erreur lors du chargement des matières. Veuillez réessayer.");
+      setSubjects([]);
       toast({
         title: "Erreur",
         description: "Impossible de charger les matières",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -143,6 +150,7 @@ const Subjects = () => {
   // Handle Import from Excel
   const handleImport = async (file: File) => {
     setLoading(true);
+    setError(null);
     try {
       const reader = new FileReader();
       reader.onload = async (e) => {
@@ -153,12 +161,22 @@ const Subjects = () => {
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json(ws);
         await subjectService.bulkImport(data);
-        toast({ title: "Import réussi", description: "Matières importées avec succès." });
+        toast({ 
+          title: "Import réussi", 
+          description: "Matières importées avec succès.",
+          variant: "default"
+        });
         fetchSubjects();
       };
       reader.readAsBinaryString(file);
-    } catch {
-      toast({ title: "Erreur", description: "L'import a échoué." });
+    } catch (error) {
+      console.error("Failed to import subjects:", error);
+      setError("Erreur lors de l'importation des matières. Veuillez réessayer.");
+      toast({ 
+        title: "Erreur", 
+        description: "L'import a échoué.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -224,19 +242,26 @@ const Subjects = () => {
   // Submit form (create or update)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setLoading(true);
     try {
       if (editingId) {
         await subjectService.update(editingId, form);
-        toast({ title: "Matière mise à jour" });
+        toast({ title: "Matière mise à jour", variant: "default" });
       } else {
         await subjectService.create(form);
-        toast({ title: "Matière créée" });
+        toast({ title: "Matière créée", variant: "default" });
       }
       fetchSubjects();
       closeModal();
-    } catch {
-      toast({ title: "Erreur", description: "Échec de l'enregistrement" });
+    } catch (error) {
+      console.error('Error saving subject:', error);
+      setError('Échec de l\'enregistrement de la matière');
+      toast({ 
+        title: "Erreur", 
+        description: "Échec de l'enregistrement",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -244,12 +269,19 @@ const Subjects = () => {
 
   // Handle toggle active status
   const toggleActive = async (subject: Subject) => {
+    setError(null);
     setLoading(true);
     try {
       await subjectService.update(subject._id!, { ...subject, isActive: !subject.isActive });
       fetchSubjects();
-    } catch {
-      toast({ title: "Erreur", description: "Impossible de changer le statut" });
+    } catch (error) {
+      console.error('Error toggling subject status:', error);
+      setError('Impossible de changer le statut de la matière');
+      toast({ 
+        title: "Erreur", 
+        description: "Impossible de changer le statut",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -264,13 +296,20 @@ const Subjects = () => {
   // Delete subject after confirmation
   const handleDeleteConfirmed = async () => {
     if (!subjectToDelete?._id) return;
+    setError(null);
     setLoading(true);
     try {
       await subjectService.remove(subjectToDelete._id);
-      toast({ title: "Suppression réussie" });
+      toast({ title: "Suppression réussie", variant: "default" });
       fetchSubjects();
-    } catch {
-      toast({ title: "Erreur", description: "Échec de la suppression" });
+    } catch (error) {
+      console.error('Error deleting subject:', error);
+      setError('Échec de la suppression de la matière');
+      toast({ 
+        title: "Erreur", 
+        description: "Échec de la suppression",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
       setConfirmOpen(false);
@@ -285,7 +324,7 @@ const Subjects = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <Card className="bg-skyblue/10">
+        <Card className="bg-primary/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Nombre total de matières
@@ -315,6 +354,11 @@ const Subjects = () => {
             </div>
           </CardHeader>
         </Card>
+      </div>
+
+      {/* Cameroon Subjects Importer */}
+      <div className="mb-6">
+        <CameroonSubjectsImporter onImportComplete={fetchSubjects} />
       </div>
 
       <Card className="p-4">
@@ -353,6 +397,20 @@ const Subjects = () => {
           </div>
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center">
+            <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+            <span className="text-red-700">{error}</span>
+            <button
+              onClick={() => setError(null)}
+              className="ml-auto text-red-500 hover:text-red-700"
+            >
+              <XCircle className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <p>Chargement...</p>
         ) : (
@@ -374,7 +432,7 @@ const Subjects = () => {
                     <TableCell>
                       <CheckCircle
                         className={`h-4 w-4 ${
-                          subject.isActive ? "text-green-500" : "text-red-500"
+                          subject.isActive ? "text-primary" : "text-destructive"
                         }`}
                       />
                     </TableCell>
@@ -448,8 +506,8 @@ const Subjects = () => {
 
       {/* Modal for create/edit/view */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 relative max-h-[90vh] overflow-auto">
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
+          <div className="bg-background rounded-lg max-w-md w-full p-6 relative max-h-[90vh] overflow-auto">
             <h2 className="text-xl font-bold mb-4 capitalize">
               {modalMode === "create"
                 ? "Ajouter une matière"
@@ -487,7 +545,7 @@ const Subjects = () => {
                 <div>
                   <label className="block mb-1 font-semibold">Description</label>
                   <textarea
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border-border rounded px-3 py-2"
                     value={form.description}
                     onChange={(e) =>
                       setForm({ ...form, description: e.target.value })

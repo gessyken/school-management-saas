@@ -65,7 +65,7 @@ const SecretaryPayments = () => {
               <FileSpreadsheet className="h-4 w-4" />
               Exporter
             </Button>
-            <Button className="bg-skyblue hover:bg-skyblue/90 flex items-center gap-2">
+            <Button className="bg-primary hover:bg-primary/90 flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Nouveau paiement
             </Button>
@@ -73,19 +73,19 @@ const SecretaryPayments = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <Card className="bg-skyblue/10">
+          <Card className="bg-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total encaissé aujourd'hui</CardTitle>
               <div className="text-2xl font-bold">125.000 FCFA</div>
             </CardHeader>
           </Card>
-          <Card className="bg-skyblue/10">
+          <Card className="bg-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Paiements en attente</CardTitle>
               <div className="text-2xl font-bold">3</div>
             </CardHeader>
           </Card>
-          <Card className="bg-skyblue/10">
+          <Card className="bg-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total du mois</CardTitle>
               <div className="text-2xl font-bold">2.450.000 FCFA</div>
@@ -134,8 +134,8 @@ const SecretaryPayments = () => {
                       <Badge 
                         variant="outline"
                         className={payment.status === 'Validé' ? 
-                          "bg-green-50 text-green-600 border-green-200" : 
-                          "bg-amber-50 text-amber-600 border-amber-200"
+                          "bg-skyblue/10 text-skyblue border-skyblue/30" : 
+                          "bg-mustard/10 text-mustard border-mustard/30"
                         }
                       >
                         {payment.status}

@@ -31,7 +31,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
           className={`px-3 py-1 rounded-full text-sm border ${
             value.includes(option)
               ? "bg-skyblue text-white border-skyblue"
-              : "bg-white text-gray-700 border-gray-300"
+              : "bg-white text-foreground border-border"
           } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           {option}

@@ -68,7 +68,7 @@ const SecretaryClasses = () => {
               <FileSpreadsheet className="h-4 w-4" />
               Importer
             </Button>
-            <Button className="bg-skyblue hover:bg-skyblue/90 flex items-center gap-2">
+            <Button className="bg-primary hover:bg-primary/90 flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Nouvelle classe
             </Button>
@@ -76,13 +76,13 @@ const SecretaryClasses = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <Card className="bg-skyblue/10">
+          <Card className="bg-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total des classes</CardTitle>
               <div className="text-2xl font-bold">{mockClasses.length}</div>
             </CardHeader>
           </Card>
-          <Card className="bg-skyblue/10">
+          <Card className="bg-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Places disponibles</CardTitle>
               <div className="text-2xl font-bold">
@@ -90,7 +90,7 @@ const SecretaryClasses = () => {
               </div>
             </CardHeader>
           </Card>
-          <Card className="bg-skyblue/10">
+          <Card className="bg-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Classes complètes</CardTitle>
               <div className="text-2xl font-bold">
@@ -139,8 +139,8 @@ const SecretaryClasses = () => {
                       <Badge 
                         variant="outline"
                         className={classe.status === 'Complet' ? 
-                          "bg-amber-50 text-amber-600 border-amber-200" : 
-                          "bg-green-50 text-green-600 border-green-200"
+                          "bg-mustard/10 text-mustard border-mustard/30" : 
+                          "bg-skyblue/10 text-skyblue border-skyblue/30"
                         }
                       >
                         {classe.status}
@@ -158,7 +158,7 @@ const SecretaryClasses = () => {
                             <Pencil className="h-4 w-4" />
                             Modifier
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="flex items-center gap-2 text-red-500">
+                          <DropdownMenuItem className="flex items-center gap-2 text-mustard">
                             <Trash2 className="h-4 w-4" />
                             Supprimer
                           </DropdownMenuItem>

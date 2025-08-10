@@ -1,6 +1,6 @@
 // src/pages/AssignStudentsToClass.tsx
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { academicService } from "@/lib/services/academicService";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -68,7 +68,7 @@ export default function AssignStudentsToClass({
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex items-center gap-3">
-        <GraduationCap className="text-blue-600" />
+        <GraduationCap className="text-primary" />
         <h2 className="text-2xl font-semibold">
           Assigner les élèves à une classe
         </h2>
@@ -88,7 +88,7 @@ export default function AssignStudentsToClass({
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger>
-                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <CheckCircle className="w-4 h-4 text-primary" />
                         </TooltipTrigger>
                         <TooltipContent>Actif</TooltipContent>
                       </Tooltip>
@@ -99,7 +99,7 @@ export default function AssignStudentsToClass({
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger>
-                          <AlertCircle className="w-4 h-4 text-yellow-600" />
+                          <AlertCircle className="w-4 h-4 text-destructive" />
                         </TooltipTrigger>
                         <TooltipContent>Suspens</TooltipContent>
                       </Tooltip>
@@ -110,7 +110,7 @@ export default function AssignStudentsToClass({
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger>
-                          <XCircle className="w-4 h-4 text-red-600" />
+                          <XCircle className="w-4 h-4 text-destructive" />
                         </TooltipTrigger>
                         <TooltipContent>Inactif</TooltipContent>
                       </Tooltip>

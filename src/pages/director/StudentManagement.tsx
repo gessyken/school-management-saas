@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { studentService, Student } from "@/lib/services/studentService";
 import { Card } from "@/components/ui/card";
@@ -39,24 +39,36 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { usePagination } from "@/components/ui/usePagination";
+import { useToast } from "@/components/ui/use-toast";
 
 const itemsPerPage = 5;
 
 export default function StudentManagement() {
+  const { toast } = useToast();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Générer un matricule automatique
+  const generateMatricule = () => {
+    const year = new Date().getFullYear();
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    return `STU${year}${random}`;
+  };
+
   const [form, setForm] = useState<Student>({
-    matricule: "",
+    matricule: generateMatricule(),
     firstName: "",
     lastName: "",
     email: "",
     level: "",
     dateOfBirth: "",
   });
+  const [educationSystem, setEducationSystem] = useState<'francophone' | 'anglophone'>('francophone');
 
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [modalMode, setModalMode] = useState<"view" | "edit" | "create" | null>(
@@ -69,12 +81,21 @@ export default function StudentManagement() {
   }, []);
 
   const fetchStudents = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const data = await studentService.getAll();
       console.log(data);
-      setStudents(data.students);
+      setStudents(data.students || []);
     } catch (error) {
       console.error("Failed to fetch students", error);
+      setError("Erreur lors du chargement des étudiants. Veuillez réessayer.");
+      setStudents([]);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les étudiants",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -116,7 +137,7 @@ export default function StudentManagement() {
 
   const handleDelete = async (id?: string) => {
     if (!id) return;
-    if (confirm("Are you sure you want to delete this student?")) {
+    if (confirm("Êtes-vous sûr de vouloir supprimer cet étudiant ?")) {
       try {
         await studentService.delete(id);
         fetchStudents();
@@ -285,39 +306,73 @@ export default function StudentManagement() {
 
   const handleOpenModal = (student?: Student) => {
     if (student) {
+      // Detect education system based on level
+      const francophonesLevels = ['6e', '5e', '4e', '3e', '2nde', '1ère', 'Terminale'];
+      const detectedSystem = francophonesLevels.includes(student.level) ? 'francophone' : 'anglophone';
+      
       setForm(student);
+      setEducationSystem(detectedSystem);
       setEditingId(student._id || null);
     } else {
-      setForm({
-        matricule: "",
-        firstName: "",
-        lastName: "",
-        email: "",
-        level: "",
-        dateOfBirth: "",
-      });
-      setEditingId(null);
+      resetForm();
     }
+    setError(null);
     setShowModal(true);
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    
     try {
       if (editingId) {
         await studentService.update(editingId, form);
       } else {
         await studentService.create(form);
       }
-      fetchStudents();
+      await fetchStudents();
       setShowModal(false);
+      resetForm();
     } catch (error) {
       console.error("Failed to submit student:", error);
+      setError(editingId ? "Erreur lors de la modification de l'étudiant" : "Erreur lors de l'ajout de l'étudiant");
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const resetForm = () => {
+    setForm({
+      matricule: generateMatricule(),
+      firstName: "",
+      lastName: "",
+      email: "",
+      level: "",
+      dateOfBirth: "",
+    });
+    setEducationSystem('francophone');
+    setEditingId(null);
+    setError(null);
   };
 
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">Student Management</h1>
+      
+      {/* Affichage des erreurs */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-center gap-2">
+          <AlertCircle className="h-4 w-4" />
+          <span>{error}</span>
+          <button 
+            onClick={() => setError(null)}
+            className="ml-auto text-red-500 hover:text-red-700"
+          >
+            <XCircle className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+      
       <Card className="p-4">
         <div className="space-y-6">
           {/* Top Bar: Search + Actions */}
@@ -356,7 +411,7 @@ export default function StudentManagement() {
                 PDF
               </Button>
 
-              <label className="cursor-pointer bg-muted hover:bg-gray-100 text-sm px-3 py-2 rounded flex items-center gap-2">
+              <label className="cursor-pointer bg-muted hover:bg-muted/80 text-sm px-3 py-2 rounded flex items-center gap-2">
                 <Upload className="h-4 w-4" />
                 Importer
                 <input
@@ -371,9 +426,9 @@ export default function StudentManagement() {
           </div>
 
           {/* Filter Section */}
-          <div className="bg-white p-6 rounded-xl shadow border">
+          <div className="bg-background p-6 rounded-xl shadow border">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Filtres</h2>
+              <h2 className="text-lg font-semibold text-foreground">Filtres</h2>
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -381,7 +436,7 @@ export default function StudentManagement() {
                   setSearchTerm("");
                   setFilter({ level: "", gender: "", status: "" });
                 }}
-                className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                className="text-sm text-primary hover:text-primary/80 flex items-center gap-1"
               >
                 <svg
                   className="w-4 h-4"
@@ -402,11 +457,11 @@ export default function StudentManagement() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
+                <label className="block mb-1 text-sm font-medium text-foreground">
                   Niveau
                 </label>
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                   value={filter.level}
                   onChange={(e) => {
                     goToPage(1);
@@ -414,22 +469,33 @@ export default function StudentManagement() {
                   }}
                 >
                   <option value="">Tous</option>
-                  <option value="Form 1">Form 1</option>
-                  <option value="Form 2">Form 2</option>
-                  <option value="Form 3">Form 3</option>
-                  <option value="Form 4">Form 4</option>
-                  <option value="Form 5">Form 5</option>
-                  <option value="Lower Sixth">Lower Sixth</option>
-                  <option value="Upper Sixth">Upper Sixth</option>
+                  <optgroup label="🇫🇷 Système Francophone">
+                    <option value="6e">6e (Sixième)</option>
+                    <option value="5e">5e (Cinquième)</option>
+                    <option value="4e">4e (Quatrième)</option>
+                    <option value="3e">3e (Troisième)</option>
+                    <option value="2nde">2nde (Seconde)</option>
+                    <option value="1ère">1ère (Première)</option>
+                    <option value="Terminale">Terminale</option>
+                  </optgroup>
+                  <optgroup label="🇬🇧 Système Anglophone">
+                    <option value="Form 1">Form 1</option>
+                    <option value="Form 2">Form 2</option>
+                    <option value="Form 3">Form 3</option>
+                    <option value="Form 4">Form 4</option>
+                    <option value="Form 5">Form 5</option>
+                    <option value="Lower Sixth">Lower Sixth</option>
+                    <option value="Upper Sixth">Upper Sixth</option>
+                  </optgroup>
                 </select>
               </div>
 
               <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
+                <label className="block mb-1 text-sm font-medium text-foreground">
                   Sexe
                 </label>
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                   value={filter.gender}
                   onChange={(e) => {
                     goToPage(1);
@@ -443,11 +509,11 @@ export default function StudentManagement() {
               </div>
 
               <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
+                <label className="block mb-1 text-sm font-medium text-foreground">
                   Statut
                 </label>
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                   value={filter.status}
                   onChange={(e) => {
                     goToPage(1);
@@ -466,69 +532,70 @@ export default function StudentManagement() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center p-8">
-            <Loader2 className="animate-spin h-8 w-8 text-gray-400" />
+          <div className="flex flex-col justify-center items-center p-12 space-y-4">
+            <Loader2 className="animate-spin h-12 w-12 text-primary" />
+            <p className="text-muted-foreground text-lg">Chargement des étudiants...</p>
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg shadow border border-gray-200">
-              <Table className="min-w-full divide-y divide-gray-200">
-                <TableHeader className="bg-gray-50">
+            <div className="overflow-x-auto rounded-lg shadow border border-border">
+              <Table className="min-w-full divide-y divide-border">
+                <TableHeader className="bg-muted">
                   <TableRow>
-                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Matricule
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Nom complet
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Classe
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Niveau
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Sexe
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Statut
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <TableHead className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Actions
                     </TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody className="bg-white divide-y divide-gray-200">
+                <TableBody className="bg-background divide-y divide-border">
                   {currentData.length > 0 ? (
                     currentData.map((student) => (
                       <TableRow
                         key={student._id}
-                        className="hover:bg-gray-50 transition"
+                        className="hover:bg-muted/50 transition"
                       >
-                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                           {student.matricule}
                         </TableCell>
-                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                           {student.fullName ||
                             `${student.firstName} ${student.lastName}`}
                         </TableCell>
-                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                           {student?.classInfo?.classesName || "N/A"}
                         </TableCell>
-                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                           {student.level}
                         </TableCell>
-                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 capitalize">
+                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground capitalize">
                           {student.gender}
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap text-sm">
                           <span
                             className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${
                               student.status === "active"
-                                ? "bg-green-100 text-green-800"
+                                ? "bg-primary/10 text-primary"
                                 : student.status === "suspended"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
+                                ? "bg-destructive/10 text-destructive"
+                                : "bg-destructive/20 text-destructive"
                             }`}
                           >
                             {student.status}
@@ -540,31 +607,31 @@ export default function StudentManagement() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                                className="text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring rounded"
                               >
                                 <MoreHorizontal className="w-5 h-5" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
                               align="end"
-                              className="shadow-lg rounded-md border border-gray-200"
+                              className="shadow-lg rounded-md border border-border"
                             >
                               <DropdownMenuItem
                                 onClick={() => openModal("view", student)}
-                                className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-primary/10 cursor-pointer"
                               >
-                                <Eye className="w-4 h-4 text-blue-600" /> Voir
+                                <Eye className="w-4 h-4 text-primary" /> Voir
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleOpenModal(student)}
-                                className="flex items-center gap-2 px-4 py-2 hover:bg-yellow-50 cursor-pointer"
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-secondary/10 cursor-pointer"
                               >
-                                <Pencil className="w-4 h-4 text-yellow-600" />{" "}
+                                <Pencil className="w-4 h-4 text-secondary" />{" "}
                                 Modifier
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleDelete(student._id)}
-                                className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 cursor-pointer text-red-600"
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-destructive/10 cursor-pointer text-destructive"
                               >
                                 <Trash className="w-4 h-4" /> Supprimer
                               </DropdownMenuItem>
@@ -575,11 +642,27 @@ export default function StudentManagement() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="px-6 py-4 text-center text-sm text-gray-500"
-                      >
-                        Aucun étudiant trouvé.
+                      <TableCell colSpan={7} className="px-6 py-12">
+                        <div className="flex flex-col items-center justify-center space-y-4">
+                          <GraduationCap className="h-16 w-16 text-muted-foreground/50" />
+                          <div className="text-center space-y-2">
+                            <h3 className="text-lg font-medium text-foreground">Aucun étudiant trouvé</h3>
+                            <p className="text-sm text-muted-foreground max-w-sm">
+                              {searchTerm || filter.level || filter.gender || filter.status 
+                                ? "Aucun étudiant ne correspond à vos critères de recherche."
+                                : "Commencez par ajouter votre premier étudiant."}
+                            </p>
+                          </div>
+                          {!searchTerm && !filter.level && !filter.gender && !filter.status && (
+                            <Button 
+                              onClick={() => handleOpenModal()}
+                              className="flex items-center gap-2"
+                            >
+                              <FilePlus className="h-4 w-4" />
+                              Ajouter un étudiant
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   )}
@@ -589,13 +672,13 @@ export default function StudentManagement() {
 
             {/* Pagination */}
             <nav
-              className="flex items-center justify-between mt-6 px-4 py-3 bg-white border border-gray-200 rounded-md shadow-sm"
+              className="flex items-center justify-between mt-6 px-4 py-3 bg-background border border-border rounded-md shadow-sm"
               aria-label="Pagination"
             >
               <button
                 onClick={goToPreviousPage}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-foreground bg-background border border-border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Précédent
               </button>
@@ -605,10 +688,10 @@ export default function StudentManagement() {
                   <button
                     key={index + 1}
                     onClick={() => goToPage(index + 1)}
-                    className={`relative inline-flex items-center px-3 py-1 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${
+                    className={`relative inline-flex items-center px-3 py-1 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-ring ${
                       currentPage === index + 1
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-100"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-foreground hover:bg-muted"
                     }`}
                   >
                     {index + 1}
@@ -619,7 +702,7 @@ export default function StudentManagement() {
               <button
                 onClick={goToNextPage}
                 disabled={currentPage === totalPages}
-                className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-foreground bg-background border border-border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Suivant
               </button>
@@ -628,8 +711,8 @@ export default function StudentManagement() {
         )}
 
         {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 overflow-y-auto">
-            <div className="bg-white rounded-lg w-full max-w-3xl mx-4 my-8 shadow-lg max-h-screen overflow-hidden">
+          <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 overflow-y-auto">
+            <div className="bg-background rounded-lg w-full max-w-3xl mx-4 my-8 shadow-lg max-h-screen overflow-hidden">
               <div className="p-6">
                 <h3 className="text-xl font-semibold mb-4">
                   {editingId ? "Modifier l'étudiant" : "Ajouter un étudiant"}
@@ -644,7 +727,7 @@ export default function StudentManagement() {
                     <label className="block mb-1 font-medium">Matricule</label>
                     <input
                       type="text"
-                      className="w-full border p-2 rounded"
+                      className="w-full border-border p-2 rounded"
                       value={form.matricule}
                       onChange={(e) =>
                         setForm({ ...form, matricule: e.target.value })
@@ -657,7 +740,7 @@ export default function StudentManagement() {
                     <label className="block mb-1 font-medium">Prénom</label>
                     <input
                       type="text"
-                      className="w-full border p-2 rounded"
+                      className="w-full border-border p-2 rounded"
                       value={form.firstName}
                       onChange={(e) =>
                         setForm({ ...form, firstName: e.target.value })
@@ -670,7 +753,7 @@ export default function StudentManagement() {
                     <label className="block mb-1 font-medium">Nom</label>
                     <input
                       type="text"
-                      className="w-full border p-2 rounded"
+                      className="w-full border-border p-2 rounded"
                       value={form.lastName}
                       onChange={(e) =>
                         setForm({ ...form, lastName: e.target.value })
@@ -683,7 +766,7 @@ export default function StudentManagement() {
                     <label className="block mb-1 font-medium">Email</label>
                     <input
                       type="email"
-                      className="w-full border p-2 rounded"
+                      className="w-full border-border p-2 rounded"
                       value={form.email}
                       onChange={(e) =>
                         setForm({ ...form, email: e.target.value })
@@ -695,7 +778,7 @@ export default function StudentManagement() {
                     <label className="block mb-1 font-medium">Téléphone</label>
                     <input
                       type="tel"
-                      className="w-full border p-2 rounded"
+                      className="w-full border-border p-2 rounded"
                       value={form.phoneNumber}
                       onChange={(e) =>
                         setForm({ ...form, phoneNumber: e.target.value })
@@ -704,9 +787,24 @@ export default function StudentManagement() {
                   </div>
 
                   <div>
+                    <label className="block mb-1 font-medium">Système Éducatif</label>
+                    <select
+                      className="w-full border-border p-2 rounded"
+                      value={educationSystem}
+                      onChange={(e) => {
+                        setEducationSystem(e.target.value as 'francophone' | 'anglophone');
+                        setForm({ ...form, level: "" }); // Reset level when changing system
+                      }}
+                    >
+                      <option value="francophone">🇫🇷 Système Francophone</option>
+                      <option value="anglophone">🇬🇧 Système Anglophone</option>
+                    </select>
+                  </div>
+
+                  <div>
                     <label className="block mb-1 font-medium">Niveau</label>
                     <select
-                      className="w-full border p-2 rounded"
+                      className="w-full border-border p-2 rounded"
                       value={form.level}
                       onChange={(e) =>
                         setForm({ ...form, level: e.target.value })
@@ -714,13 +812,27 @@ export default function StudentManagement() {
                       required
                     >
                       <option value="">Sélectionnez un niveau</option>
-                      <option value="Form 1">Form 1</option>
-                      <option value="Form 2">Form 2</option>
-                      <option value="Form 3">Form 3</option>
-                      <option value="Form 4">Form 4</option>
-                      <option value="Form 5">Form 5</option>
-                      <option value="Lower Sixth">Lower Sixth</option>
-                      <option value="Upper Sixth">Upper Sixth</option>
+                      {educationSystem === 'francophone' ? (
+                        <>
+                          <option value="6e">6e (Sixième)</option>
+                          <option value="5e">5e (Cinquième)</option>
+                          <option value="4e">4e (Quatrième)</option>
+                          <option value="3e">3e (Troisième)</option>
+                          <option value="2nde">2nde (Seconde)</option>
+                          <option value="1ère">1ère (Première)</option>
+                          <option value="Terminale">Terminale</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="Form 1">Form 1</option>
+                          <option value="Form 2">Form 2</option>
+                          <option value="Form 3">Form 3</option>
+                          <option value="Form 4">Form 4</option>
+                          <option value="Form 5">Form 5</option>
+                          <option value="Lower Sixth">Lower Sixth</option>
+                          <option value="Upper Sixth">Upper Sixth</option>
+                        </>
+                      )}
                     </select>
                   </div>
 
@@ -730,7 +842,7 @@ export default function StudentManagement() {
                     </label>
                     <input
                       type="date"
-                      className="w-full border p-2 rounded"
+                      className="w-full border-border p-2 rounded"
                       value={form.dateOfBirth}
                       onChange={(e) =>
                         setForm({ ...form, dateOfBirth: e.target.value })
@@ -759,7 +871,7 @@ export default function StudentManagement() {
                   <input
                     type="text"
                     placeholder="Rue"
-                    className="border p-2 rounded"
+                    className="border-border p-2 rounded"
                     value={form.address?.street || ""}
                     onChange={(e) =>
                       setForm({
@@ -771,7 +883,7 @@ export default function StudentManagement() {
                   <input
                     type="text"
                     placeholder="Ville"
-                    className="border p-2 rounded"
+                    className="border-border p-2 rounded"
                     value={form.address?.city || ""}
                     onChange={(e) =>
                       setForm({
@@ -783,7 +895,7 @@ export default function StudentManagement() {
                   <input
                     type="text"
                     placeholder="Région/État"
-                    className="border p-2 rounded"
+                    className="border-border p-2 rounded"
                     value={form.address?.state || ""}
                     onChange={(e) =>
                       setForm({
@@ -795,7 +907,7 @@ export default function StudentManagement() {
                   <input
                     type="text"
                     placeholder="Pays"
-                    className="border p-2 rounded"
+                    className="border-border p-2 rounded"
                     value={form.address?.country || ""}
                     onChange={(e) =>
                       setForm({
@@ -812,7 +924,7 @@ export default function StudentManagement() {
                   <input
                     type="text"
                     placeholder="Nom"
-                    className="border p-2 rounded"
+                    className="border-border p-2 rounded"
                     value={form.emergencyContact?.name || ""}
                     onChange={(e) =>
                       setForm({
@@ -827,7 +939,7 @@ export default function StudentManagement() {
                   <input
                     type="text"
                     placeholder="Relation"
-                    className="border p-2 rounded"
+                    className="border-border p-2 rounded"
                     value={form.emergencyContact?.relationship || ""}
                     onChange={(e) =>
                       setForm({
@@ -842,7 +954,7 @@ export default function StudentManagement() {
                   <input
                     type="text"
                     placeholder="Téléphone"
-                    className="border p-2 rounded col-span-2"
+                    className="border-border p-2 rounded col-span-2"
                     value={form.emergencyContact?.phone || ""}
                     onChange={(e) =>
                       setForm({
@@ -859,7 +971,7 @@ export default function StudentManagement() {
                   <div className="col-span-2">
                     <label className="block mb-1 font-medium">Statut</label>
                     <select
-                      className="w-full border p-2 rounded"
+                      className="w-full border-border p-2 rounded"
                       value={form.status}
                       onChange={(e) =>
                         setForm({ ...form, status: e.target.value })
@@ -873,20 +985,37 @@ export default function StudentManagement() {
                     </select>
                   </div>
 
+                  {/* Affichage des erreurs dans le modal */}
+                  {error && (
+                    <div className="col-span-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>{error}</span>
+                    </div>
+                  )}
+
                   {/* Actions */}
                   <div className="col-span-2 flex justify-end gap-2 pt-6">
                     <button
                       type="button"
-                      onClick={() => setShowModal(false)}
-                      className="px-4 py-2 bg-gray-300 rounded"
+                      onClick={() => {
+                        setShowModal(false);
+                        setError(null);
+                      }}
+                      disabled={submitting}
+                      className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Annuler
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded"
+                      disabled={submitting}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                      {editingId ? "Mettre à jour" : "Ajouter"}
+                      {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {submitting 
+                        ? (editingId ? "Mise à jour..." : "Ajout...") 
+                        : (editingId ? "Mettre à jour" : "Ajouter")
+                      }
                     </button>
                   </div>
                 </form>
@@ -895,13 +1024,13 @@ export default function StudentManagement() {
           </div>
         )}
         {isModalOpen && modalMode === "view" && selectedStudent && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 overflow-y-auto px-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl my-10 overflow-hidden">
+          <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 overflow-y-auto px-4">
+            <div className="bg-background rounded-2xl shadow-2xl w-full max-w-3xl my-10 overflow-hidden">
               {/* Sticky Header */}
-              <div className="flex items-center justify-between bg-blue-50 px-6 py-4 border-b sticky top-0 z-10">
+              <div className="flex items-center justify-between bg-primary/10 px-6 py-4 border-b sticky top-0 z-10">
                 <div className="flex items-center">
-                  <Info className="text-blue-600 w-5 h-5 mr-2" />
-                  <h3 className="text-lg font-bold text-gray-800">
+                  <Info className="text-primary w-5 h-5 mr-2" />
+                  <h3 className="text-lg font-bold text-foreground">
                     Détails de l'étudiant
                   </h3>
                 </div>
@@ -911,46 +1040,46 @@ export default function StudentManagement() {
               </div>
 
               {/* Scrollable Content */}
-              <div className="px-6 py-5 max-h-[70vh] overflow-y-auto text-sm text-gray-700 space-y-6">
+              <div className="px-6 py-5 max-h-[70vh] overflow-y-auto text-sm text-foreground space-y-6">
                 {/* Basic Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-start">
-                    <BadgeCheck className="w-4 h-4 mt-1 mr-2 text-indigo-500" />
+                    <BadgeCheck className="w-4 h-4 mt-1 mr-2 text-primary" />
                     <div>
                       <span className="font-medium">Matricule:</span>{" "}
                       {selectedStudent.matricule}
                     </div>
                   </div>
                   <div className="flex items-start">
-                    <User className="w-4 h-4 mt-1 mr-2 text-blue-500" />
+                    <User className="w-4 h-4 mt-1 mr-2 text-primary" />
                     <div>
                       <span className="font-medium">Nom complet:</span>{" "}
                       {selectedStudent.firstName} {selectedStudent.lastName}
                     </div>
                   </div>
                   <div className="flex items-start">
-                    <Mail className="w-4 h-4 mt-1 mr-2 text-emerald-500" />
+                    <Mail className="w-4 h-4 mt-1 mr-2 text-primary" />
                     <div>
                       <span className="font-medium">Email:</span>{" "}
                       {selectedStudent.email || "N/A"}
                     </div>
                   </div>
                   <div className="flex items-start">
-                    <Phone className="w-4 h-4 mt-1 mr-2 text-pink-500" />
+                    <Phone className="w-4 h-4 mt-1 mr-2 text-secondary" />
                     <div>
                       <span className="font-medium">Téléphone:</span>{" "}
                       {selectedStudent.phoneNumber || "N/A"}
                     </div>
                   </div>
                   <div className="flex items-start">
-                    <Smile className="w-4 h-4 mt-1 mr-2 text-yellow-500" />
+                    <Smile className="w-4 h-4 mt-1 mr-2 text-secondary" />
                     <div>
                       <span className="font-medium">Genre:</span>{" "}
                       {selectedStudent.gender || "N/A"}
                     </div>
                   </div>
                   <div className="flex items-start">
-                    <Calendar className="w-4 h-4 mt-1 mr-2 text-cyan-600" />
+                    <Calendar className="w-4 h-4 mt-1 mr-2 text-primary" />
                     <div>
                       <span className="font-medium">Date de naissance:</span>{" "}
                       {new Date(
@@ -959,7 +1088,7 @@ export default function StudentManagement() {
                     </div>
                   </div>
                   <div className="flex items-start">
-                    <GraduationCap className="w-4 h-4 mt-1 mr-2 text-purple-500" />
+                    <GraduationCap className="w-4 h-4 mt-1 mr-2 text-primary" />
                     <div>
                       <span className="font-medium">Niveau:</span>{" "}
                       {selectedStudent.level}
@@ -967,21 +1096,21 @@ export default function StudentManagement() {
                   </div>
                   <div className="flex items-start">
                     {selectedStudent.status === "active" ? (
-                      <CheckCircle className="w-4 h-4 mt-1 mr-2 text-green-600" />
-                    ) : selectedStudent.status === "suspended" ? (
-                      <AlertCircle className="w-4 h-4 mt-1 mr-2 text-yellow-600" />
-                    ) : (
-                      <XCircle className="w-4 h-4 mt-1 mr-2 text-red-600" />
-                    )}
+              <CheckCircle className="w-4 h-4 mt-1 mr-2 text-primary" />
+            ) : selectedStudent.status === "suspended" ? (
+              <AlertCircle className="w-4 h-4 mt-1 mr-2 text-destructive" />
+            ) : (
+              <XCircle className="w-4 h-4 mt-1 mr-2 text-destructive" />
+            )}
                     <div>
                       <span className="font-medium">Statut:</span>{" "}
                       <span
                         className={`font-semibold ${
                           selectedStudent.status === "active"
-                            ? "text-green-600"
+                            ? "text-primary"
                             : selectedStudent.status === "suspended"
-                            ? "text-yellow-600"
-                            : "text-red-600"
+                            ? "text-destructive"
+                            : "text-destructive"
                         }`}
                       >
                         {selectedStudent.status}
@@ -992,7 +1121,7 @@ export default function StudentManagement() {
 
                 {/* Address */}
                 <div>
-                  <h4 className="text-base font-semibold text-gray-800 mb-2">
+                  <h4 className="text-base font-semibold text-foreground mb-2">
                     Adresse
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
@@ -1007,7 +1136,7 @@ export default function StudentManagement() {
 
                 {/* Emergency Contact */}
                 <div>
-                  <h4 className="text-base font-semibold text-gray-800 mb-2">
+                  <h4 className="text-base font-semibold text-foreground mb-2">
                     Contact d'urgence
                   </h4>
                   <div className="grid grid-cols-2 gap-4">

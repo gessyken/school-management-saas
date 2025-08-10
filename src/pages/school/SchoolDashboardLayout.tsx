@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import Header from "@/components/header/Header";
 import {
@@ -38,12 +38,12 @@ import {
 
 const sidebarTabs: SidebarItem[] = [
   {
-    label: "Overview",
+    label: "Vue d'ensemble",
     path: "/school-dashboard",
     icon: LayoutDashboard, // More intuitive for dashboard
   },
   {
-    label: "Academic",
+    label: "Académique",
     children: [
       {
         label: "Classes",
@@ -51,12 +51,12 @@ const sidebarTabs: SidebarItem[] = [
         icon: School,
       },
       {
-        label: "Subject",
+        label: "Matières",
         path: "/school-dashboard/academic/subjects",
         icon: BookMarked,
       },
       {
-        label: "Result",
+        label: "Résultats",
         path: "/school-dashboard/academic/results",
         icon: ScrollText, // represents a paper or result
       },
@@ -66,12 +66,12 @@ const sidebarTabs: SidebarItem[] = [
         icon: Users,
       },
       {
-        label: "Classes List",
+        label: "Liste des classes",
         path: "/school-dashboard/academic/classes-list",
         icon: ListOrdered,
       },
       {
-        label: "Settings",
+        label: "Paramètres",
         path: "/school-dashboard/academic/settings",
         icon: Settings,
       },
@@ -93,32 +93,32 @@ const sidebarTabs: SidebarItem[] = [
     ],
   },
   {
-    label: "Settings",
+    label: "Paramètres",
     children: [
       {
-        label: "Edit School",
+        label: "Modifier l'école",
         path: "/school-dashboard/edit",
         icon: Building2,
       },
       {
-        label: "Join Requests",
+        label: "Demandes d'adhésion",
         path: "/school-dashboard/join-requests",
         icon: UserCheck,
       },
       {
-        label: "Members",
+        label: "Membres",
         path: "/school-dashboard/members",
         icon: UserCog,
       },
       {
-        label: "Billing",
+        label: "Facturation",
         path: "/school-dashboard/billing",
         icon: CreditCard,
       },
     ],
   },
   {
-    label: "Logs",
+    label: "Journaux",
     path: "/school-dashboard/logs",
     icon: FileClock, // log with a time symbol
   },
@@ -134,7 +134,7 @@ const SidebarMenuItem = ({ item }: { item: SidebarItem }) => {
       {isExpandable ? (
         <button
           onClick={() => setOpen((prev) => !prev)}
-          className="w-full text-left px-4 py-2 flex items-center justify-between rounded-md hover:bg-[#334155] transition"
+          className="w-full text-left px-4 py-2 flex items-center justify-between rounded-md hover:bg-primary/10 hover:text-primary transition"
         >
           <span className="font-medium">{item.label}</span>
           {open ? (
@@ -148,7 +148,7 @@ const SidebarMenuItem = ({ item }: { item: SidebarItem }) => {
           to={item.path!}
           className={({ isActive }) =>
             `flex items-center gap-2 px-4 py-2 rounded-md transition ${
-              isActive ? "bg-white text-[#1e293b]" : "hover:bg-[#334155]"
+              isActive ? "bg-primary text-white" : "hover:bg-primary/10 text-primary"
             }`
           }
         >
@@ -165,7 +165,7 @@ const SidebarMenuItem = ({ item }: { item: SidebarItem }) => {
               to={child.path!}
               className={({ isActive }) =>
                 `flex items-center gap-2 px-4 py-1.5 text-sm rounded-md transition ${
-                  isActive ? "bg-white text-[#1e293b]" : "hover:bg-[#334155]"
+                  isActive ? "bg-primary text-white" : "hover:bg-primary/10 text-primary"
                 }`
               }
             >
@@ -181,12 +181,12 @@ const SidebarMenuItem = ({ item }: { item: SidebarItem }) => {
 
 const SchoolDashboardLayout = () => {
   return (
-    <div className="flex h-screen bg-gray-100 text-gray-800">
+    <div className="flex h-screen bg-muted text-foreground">
       {/* Sidebar */}
-      <aside className="w-[250px] bg-[#1e293b] text-white flex flex-col">
-        <div className="p-6 text-xl font-bold border-b border-gray-700">
-          🎓 School Admin
-        </div>
+      <aside className="w-[250px] bg-background border-r border-primary/20 text-foreground flex flex-col shadow-lg">
+        <div className="p-6 text-xl font-bold border-b border-primary/30 text-primary">
+           🎓 Administration Scolaire
+         </div>
 
         <nav className="flex-1 p-4 space-y-3 text-sm">
           {sidebarTabs.map((tab) => (
@@ -194,9 +194,9 @@ const SchoolDashboardLayout = () => {
           ))}
         </nav>
 
-        <div className="p-4 text-xs text-center border-t border-gray-700">
-          &copy; 2025 School Management
-        </div>
+        <div className="p-4 text-xs text-center border-t border-primary/30 text-muted-foreground">
+           &copy; 2025 Gestion Scolaire
+         </div>
       </aside>
 
       {/* Main Content Area */}
@@ -205,7 +205,7 @@ const SchoolDashboardLayout = () => {
         <Header />
 
         {/* Main Page Content */}
-        <main className="flex-1 p-6 overflow-y-auto bg-gray-50">
+        <main className="flex-1 p-6 overflow-y-auto bg-background">
           <Outlet />
         </main>
       </div>

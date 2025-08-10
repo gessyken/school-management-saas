@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { studentService, Student } from "@/lib/services/studentService";
 import { Card } from "@/components/ui/card";
@@ -340,7 +340,7 @@ export default function ClassesList() {
   };
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold">Class List Management</h1>
+      <h1 className="text-2xl font-bold">Gestion de la liste des classes</h1>
       <Card className="p-4">
         <div className="space-y-6">
           {/* Top Bar: Search + Actions */}
@@ -377,14 +377,14 @@ export default function ClassesList() {
                 handleTabChange(activeTab === "" ? "assign-student" : "")
               }
             >
-              {activeTab === "" ? "Assign Student" : "view list"}
+              {activeTab === "" ? "Assigner un élève" : "Voir la liste"}
             </Button>
           </div>
 
           {/* Filter Section */}
-          <div className="bg-white p-6 rounded-xl shadow border">
+          <div className="bg-background p-6 rounded-xl shadow border-border">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Filtres</h2>
+              <h2 className="text-lg font-semibold text-foreground">Filtres</h2>
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -398,7 +398,7 @@ export default function ClassesList() {
                   });
                   setSelectedStudents([]);
                 }}
-                className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                className="text-sm text-primary hover:text-primary/80 flex items-center gap-1"
               >
                 <svg
                   className="w-4 h-4"
@@ -419,11 +419,11 @@ export default function ClassesList() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
+                <label className="block mb-1 text-sm font-medium text-foreground">
                   Niveau
                 </label>
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                   value={filter.level}
                   onChange={(e) => {
                     goToPage(1);
@@ -433,21 +433,21 @@ export default function ClassesList() {
                   }}
                 >
                   <option value="">Tous</option>
-                  <option value="Form 1">Form 1</option>
-                  <option value="Form 2">Form 2</option>
-                  <option value="Form 3">Form 3</option>
-                  <option value="Form 4">Form 4</option>
-                  <option value="Form 5">Form 5</option>
-                  <option value="Lower Sixth">Lower Sixth</option>
-                  <option value="Upper Sixth">Upper Sixth</option>
+                  <option value="6ème">6ème</option>
+                  <option value="5ème">5ème</option>
+                  <option value="4ème">4ème</option>
+                  <option value="3ème">3ème</option>
+                  <option value="2nde">2nde</option>
+                  <option value="1ère">1ère</option>
+                  <option value="Terminale">Terminale</option>
                 </select>
               </div>
               <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
+                <label className="block mb-1 text-sm font-medium text-foreground">
                   Classes
                 </label>
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                   value={filter.classes}
                   onChange={(e) => {
@@ -464,7 +464,7 @@ export default function ClassesList() {
                 </select>
               </div>
               <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
+                <label className="block mb-1 text-sm font-medium text-foreground">
                   Academic Year
                 </label>
                 <select
@@ -474,7 +474,7 @@ export default function ClassesList() {
                     const yearId = e.target.value;
                     setFilter({ ...filter, academicYear: yearId });
                   }}
-                  className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full sm:w-auto border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="" disabled>
                     Select Academic Year
@@ -493,7 +493,7 @@ export default function ClassesList() {
           <>
             {loading ? (
               <div className="flex justify-center items-center p-8">
-                <Loader2 className="animate-spin h-6 w-6 text-gray-500" />
+                <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
               </div>
             ) : (
               <>
@@ -525,7 +525,7 @@ export default function ClassesList() {
                           <TableCell>
                             <button
                               onClick={() => handleOpenPaymentForm(academic)} // Replace row._id with the academic year or student ID
-                              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded"
+                              className="bg-primary hover:bg-primary/80 text-white px-4 py-1 rounded"
                             >
                               Add Payment
                             </button>
@@ -546,7 +546,7 @@ export default function ClassesList() {
                 </Table>
                 <div className="flex justify-between items-center mt-4">
                   <button
-                    className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                    className="px-4 py-2 bg-secondary text-secondary-foreground rounded disabled:opacity-50"
                     onClick={goToPreviousPage}
                     disabled={currentPage === 1}
                   >
@@ -559,8 +559,8 @@ export default function ClassesList() {
                         key={index + 1}
                         className={`px-3 py-1 rounded ${
                           currentPage === index + 1
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-100 text-gray-800"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground"
                         }`}
                         onClick={() => goToPage(index + 1)}
                       >
@@ -570,7 +570,7 @@ export default function ClassesList() {
                   </div>
 
                   <button
-                    className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                    className="px-4 py-2 bg-secondary text-secondary-foreground rounded disabled:opacity-50"
                     onClick={goToNextPage}
                     disabled={currentPage === totalPages}
                   >

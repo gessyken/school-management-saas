@@ -209,7 +209,7 @@ export default function GradesManagement() {
                       mod.modifiedBy?.name
                     }: ${mod.preMark} → ${mod.modMark}`;
                   })
-                  .join(" | ") || "No Modifications";
+                  .join(" | ") || "Aucune modification";
 
               formattedData.push({
                 "Année Académique": year,
@@ -308,7 +308,7 @@ export default function GradesManagement() {
 
   const FilterBlock = ({ label, children }) => (
     <div>
-      <label className="block mb-1 text-sm font-medium text-gray-700">
+      <label className="block mb-1 text-sm font-medium text-foreground">
         {label}
       </label>
       {children}
@@ -455,7 +455,7 @@ export default function GradesManagement() {
 
   return (
     <div className="p-4 space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800">📘 Grade Management</h1>
+      <h1 className="text-3xl font-bold text-foreground">📘 Grade Management</h1>
 
       <Card className="p-6 space-y-6 shadow-sm">
         {/* 🔍 Search + Export */}
@@ -488,11 +488,11 @@ export default function GradesManagement() {
             <Input readOnly value={filter.academicYear} />
           </FilterBlock>
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
+            <label className="block mb-1 text-sm font-medium text-foreground">
               Classes
             </label>
             <select
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
               required
               value={filter.classes}
               onChange={(e) => {
@@ -516,11 +516,11 @@ export default function GradesManagement() {
             </select>
           </div>
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
+            <label className="block mb-1 text-sm font-medium text-foreground">
               Subject
             </label>
             <select
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
               required
               value={filter.subject}
               onChange={(e) => {
@@ -542,11 +542,11 @@ export default function GradesManagement() {
             </select>
           </div>
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
+            <label className="block mb-1 text-sm font-medium text-foreground">
               Term
             </label>
             <select
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
               required
               value={filter.term}
               onChange={(e) => {
@@ -566,11 +566,11 @@ export default function GradesManagement() {
 
         {/* 📌 Subject Details */}
         {filter.subject && (
-          <div className="border rounded-lg p-4 bg-gray-50 mt-4 shadow-sm">
+          <div className="border rounded-lg p-4 bg-muted mt-4 shadow-sm">
             {filter.subject === "absences" ? (
               <>
-                <div className="text-sm text-gray-700 space-y-2">
-                  <p className="font-semibold text-red-600">
+                <div className="text-sm text-foreground space-y-2">
+                  <p className="font-semibold text-destructive">
                     ⚠️ Absences sélectionnées
                   </p>
                   <p>
@@ -595,7 +595,7 @@ export default function GradesManagement() {
                 );
                 return (
                   selected && (
-                    <div className="text-sm text-gray-700 space-y-2">
+                    <div className="text-sm text-foreground space-y-2">
                       <p>
                         <strong>📘 Nom:</strong>{" "}
                         {selected.subjectInfo.subjectName}
@@ -637,7 +637,7 @@ export default function GradesManagement() {
         {/* 📊 Grades Table */}
         {loading ? (
           <div className="flex justify-center items-center p-8">
-            <Loader2 className="animate-spin h-6 w-6 text-gray-500" />
+            <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
           </div>
         ) : (
           <>
@@ -671,8 +671,8 @@ export default function GradesManagement() {
                             <Button
                               size="sm"
                               className="tooltip-button"
-                              title="Calculate rank"
-                              aria-label={`Calculate rank for ${seq.name}`}
+                              title="Calculer le rang"
+                              aria-label={`Calculer le rang pour ${seq.name}`}
                               onClick={() => {
                                 /* Add your calculate rank handler here */
                                 calculateRank(
@@ -686,7 +686,7 @@ export default function GradesManagement() {
                             >
                               <Calculator size={16} />
                               <span className="tooltip-text">
-                                Calculate rank
+                                Calculer le rang
                               </span>
                             </Button>
                           )}
@@ -725,13 +725,13 @@ export default function GradesManagement() {
                     <TableRow
                       key={record._id}
                       className={`${
-                        rowIndex % 2 === 0 ? "bg-gray-50" : "bg-white"
-                      } hover:bg-gray-100 transition-colors`}
+                        rowIndex % 2 === 0 ? "bg-muted/50" : "bg-background"
+                      } hover:bg-muted transition-colors`}
                     >
-                      <TableCell className="py-2 px-3 font-medium text-gray-700">
+                      <TableCell className="py-2 px-3 font-medium text-foreground">
                         {record?.student?.matricule}
                       </TableCell>
-                      <TableCell className="py-2 px-3 font-medium text-gray-700">
+                      <TableCell className="py-2 px-3 font-medium text-foreground">
                         {record?.student?.fullName ||
                           `${record.student.firstName} ${record.student.lastName}`}
                       </TableCell>
@@ -766,7 +766,7 @@ export default function GradesManagement() {
                                         }
                                         return str;
                                       })()}
-                                      className="w-[10ch] text-center text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      className="w-[10ch] text-center text-sm border border-border rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-ring"
                                       onChange={(e) => {
                                         handleStudentMarkChange(
                                           record._id,
@@ -796,7 +796,7 @@ export default function GradesManagement() {
                                           `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
                                         ]?.rank ?? ""
                                       }
-                                      className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
+                                      className="w-[10ch] text-center text-sm border border-border bg-muted rounded-md px-2 py-1"
                                     />
                                   </TableCell>
                                   <TableCell className="py-2 px-3">
@@ -808,7 +808,7 @@ export default function GradesManagement() {
                                           `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
                                         ]?.discipline ?? ""
                                       }
-                                      className="w-[10ch] text-center text-sm border border-gray-200 bg-gray-100 rounded-md px-2 py-1"
+                                      className="w-[10ch] text-center text-sm border border-border bg-muted rounded-md px-2 py-1"
                                     />
                                   </TableCell>
                                 </>
@@ -825,7 +825,7 @@ export default function GradesManagement() {
                                           `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
                                         ] ?? 0
                                       }
-                                      className="w-[10ch] text-center text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      className="w-[10ch] text-center text-sm border border-border rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-ring"
                                       onChange={(e) => {
                                         handleStudentMarkChange(
                                           record._id,
@@ -856,7 +856,7 @@ export default function GradesManagement() {
                   <TableRow>
                     <TableCell
                       colSpan={sequences.length * 2 + 2}
-                      className="text-center text-gray-400 italic py-4"
+                      className="text-center text-muted-foreground italic py-4"
                     >
                       Aucun étudiant trouvé.
                     </TableCell>
@@ -870,7 +870,7 @@ export default function GradesManagement() {
               <Button
                 onClick={goToPreviousPage}
                 disabled={currentPage === 1}
-                className="bg-gray-100"
+                className="bg-secondary"
               >
                 Précédent
               </Button>
@@ -890,7 +890,7 @@ export default function GradesManagement() {
               <Button
                 onClick={goToNextPage}
                 disabled={currentPage === totalPages}
-                className="bg-gray-100"
+                className="bg-secondary"
               >
                 Suivant
               </Button>

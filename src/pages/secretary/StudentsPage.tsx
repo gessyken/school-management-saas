@@ -161,10 +161,10 @@ const StudentsPage = () => {
                             variant="outline"
                             className={
                               student.paymentStatus === 'Complet' 
-                                ? "bg-green-50 text-green-600 border-green-200" 
+                                ? "bg-skyblue/10 text-skyblue border-skyblue/30" 
                                 : student.paymentStatus === 'Partiel'
-                                  ? "bg-amber-50 text-amber-600 border-amber-200"
-                                  : "bg-red-50 text-red-600 border-red-200"
+                                  ? "bg-mustard/10 text-mustard border-mustard/30"
+                                  : "bg-mustard/20 text-mustard border-mustard/30"
                             }
                           >
                             {student.paymentStatus}
@@ -184,7 +184,7 @@ const StudentsPage = () => {
                               <DropdownMenuItem className="flex items-center gap-2">
                                 <Pencil className="h-4 w-4" /> Modifier
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="flex items-center gap-2 text-red-500">
+                              <DropdownMenuItem className="flex items-center gap-2 text-mustard">
                                 <Trash2 className="h-4 w-4" /> Supprimer
                               </DropdownMenuItem>
                             </DropdownMenuContent>

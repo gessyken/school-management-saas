@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Eye, Trash2 } from "lucide-react"; // icons for buttons
+import { Edit2, Eye, Trash2, AlertCircle, XCircle, Loader2, Receipt, FilePlus } from "lucide-react"; // icons for buttons
 import PaymentForm from "./setting/PaymentForm";
 import {
   Dialog,
@@ -64,12 +64,17 @@ export default function FeesManagement() {
     classes: "",
     academicYear: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fetchFees = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const data = await academicService.getAll();
-      setAcademicStudents(data.students);
+      setAcademicStudents(data.students || []);
       console.log(data.students[0]);
-      const allFees = data.students.flatMap((student: any) =>
+      const allFees = (data.students || []).flatMap((student: any) =>
         (student.fees || []).map((fee: any) => ({
           ...fee,
           studentId: student._id,
@@ -84,32 +89,52 @@ export default function FeesManagement() {
       );
       setFees(allFees);
     } catch (error) {
+      console.error("Failed to fetch fees:", error);
+      setError("Erreur lors du chargement des frais. Veuillez réessayer.");
+      setFees([]);
+      setAcademicStudents([]);
       toast({
         title: "Erreur",
-        description: "Failed to load fees",
+        description: "Impossible de charger les frais",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  const loadAcademicYearDetail = async () => {
+    try {
+      const data = await settingService.getAcademicYears();
+      setAcademicYears(data || []);
+      if (data && data.length > 0 && filter.academicYear === "") {
+        setFilter({
+          ...filter,
+          academicYear: data.find((opt) => opt.isCurrent)?.name,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch academic years:", error);
+      setAcademicYears([]);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les années académiques",
         variant: "destructive",
       });
     }
   };
-  const loadAcademicYearDetail = async () => {
-    const data = await settingService.getAcademicYears();
-    setAcademicYears(data);
-    if (data.length > 0 && filter.academicYear === "") {
-      setFilter({
-        ...filter,
-        academicYear: data.find((opt) => opt.isCurrent)?.name,
-      });
-    }
-  };
+  
   const fetchClasses = async () => {
     try {
       const res = await classService.getAll({});
       console.log(res.data);
-      setClasses(res.data.classes);
-    } catch {
+      setClasses(res.data?.classes || []);
+    } catch (error) {
+      console.error("Failed to fetch classes:", error);
+      setClasses([]);
       toast({
         title: "Erreur",
         description: "Impossible de charger les classes",
+        variant: "destructive",
       });
     }
   };
@@ -148,20 +173,26 @@ export default function FeesManagement() {
   const handleDeleteFee = async (fee: any) => {
     console.log(fee);
     if (!fee.billID || !fee.studentId) return;
-    if (confirm(`Are you sure you want to delete the payment ${fee.billID}?`)) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le paiement ${fee.billID} ?`)) {
+      setLoading(true);
+      setError(null);
       try {
         await academicService.deleteFee(fee.studentId, fee.billID);
         toast({
           title: "Succès",
-          description: "Frais supprimés avec succès",
+          description: "Frais supprimé avec succès",
         });
         fetchFees();
       } catch (error) {
+        console.error("Failed to delete fee:", error);
+        setError("Erreur lors de la suppression des frais. Veuillez réessayer.");
         toast({
           title: "Erreur",
           description: "Échec de la suppression des frais",
           variant: "destructive",
         });
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -183,22 +214,28 @@ export default function FeesManagement() {
   };
 
   const handlePaymentSubmit = async (student: any, fee: AcademicFee) => {
+    setSubmitting(true);
+    setError(null);
     try {
       // await academicService.addFee(student._id, fee);
       console.log(student, fee);
       await academicService.updateFee(student.studentId, fee.billID, fee);
       toast({
         title: "Succès",
-        description: "Frais ajoutés avec succès",
+        description: "Frais mis à jour avec succès",
       });
       setOpenPaymentForm(false);
       fetchFees();
     } catch (error) {
+      console.error("Failed to update fee:", error);
+      setError("Erreur lors de la mise à jour des frais. Veuillez réessayer.");
       toast({
         title: "Erreur",
-        description: "Échec de l'ajout des frais",
+        description: "Échec de la mise à jour des frais",
         variant: "destructive",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -254,31 +291,50 @@ export default function FeesManagement() {
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-lg max-w-7xl mx-auto">
-      <h2 className="text-3xl font-semibold mb-8 text-gray-800">
+    <div className="p-6 bg-background rounded-lg shadow-lg max-w-7xl mx-auto">
+      <h2 className="text-3xl font-semibold mb-8 text-foreground">
         Gestion des Frais Académiques
       </h2>
+      
+      {/* Error Display */}
+      {error && (
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-destructive" />
+            <span className="text-destructive font-medium">{error}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setError(null)}
+            className="text-destructive hover:text-destructive/80"
+          >
+            <XCircle className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      
       <div className="flex justify-end gap-4 mb-4">
         <Button
           variant="outline"
           onClick={() => exportToExcel(filteredFees)}
-          className="text-green-600 border-green-600 hover:bg-green-50"
+          className="text-primary border-primary hover:bg-primary/10"
         >
           📄 Exporter Excel
         </Button>
         <Button
           variant="outline"
           onClick={() => exportToPDF(filteredFees)}
-          className="text-red-600 border-red-600 hover:bg-red-50"
+          className="text-secondary border-secondary hover:bg-secondary/10"
         >
           🧾 Exporter PDF
         </Button>
       </div>
 
       {/* Filter Section */}
-      <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
+      <div className="bg-background p-6 rounded-2xl shadow-md border border-border">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">🎯 Filtres</h2>
+          <h2 className="text-xl font-semibold text-foreground">🎯 Filtres</h2>
           <Button
             variant="ghost"
             onClick={() => {
@@ -290,7 +346,7 @@ export default function FeesManagement() {
                 classes: "",
               });
             }}
-            className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            className="text-sm text-primary hover:text-primary/80 flex items-center gap-1"
           >
             <svg
               className="w-4 h-4"
@@ -312,7 +368,7 @@ export default function FeesManagement() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
           {/* Search */}
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
+            <label className="block mb-1 text-sm font-medium text-foreground">
               Rechercher une Étudiant
             </label>
             <Input
@@ -325,11 +381,11 @@ export default function FeesManagement() {
 
           {/* Level */}
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
+            <label className="block mb-1 text-sm font-medium text-foreground">
               Niveau
             </label>
             <select
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               value={filter.level}
               onChange={(e) => {
                 goToPage(1);
@@ -337,29 +393,46 @@ export default function FeesManagement() {
               }}
             >
               <option value="">Tous</option>
-              {[
-                "Form 1",
-                "Form 2",
-                "Form 3",
-                "Form 4",
-                "Form 5",
-                "Lower Sixth",
-                "Upper Sixth",
-              ].map((level) => (
-                <option key={level} value={level}>
-                  {level}
-                </option>
-              ))}
+              <optgroup label="🇫🇷 Système Francophone">
+                {[
+                  { value: "6e", label: "6e (Sixième)" },
+                  { value: "5e", label: "5e (Cinquième)" },
+                  { value: "4e", label: "4e (Quatrième)" },
+                  { value: "3e", label: "3e (Troisième)" },
+                  { value: "2nde", label: "2nde (Seconde)" },
+                  { value: "1ère", label: "1ère (Première)" },
+                  { value: "Terminale", label: "Terminale" },
+                ].map((level) => (
+                  <option key={level.value} value={level.value}>
+                    {level.label}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="🇬🇧 Système Anglophone">
+                {[
+                  "Form 1",
+                  "Form 2",
+                  "Form 3",
+                  "Form 4",
+                  "Form 5",
+                  "Lower Sixth",
+                  "Upper Sixth",
+                ].map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
 
           {/* Classes */}
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
+            <label className="block mb-1 text-sm font-medium text-foreground">
               Classes
             </label>
             <select
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               value={filter.classes}
               onChange={(e) => {
                 const classId = e.target.value;
@@ -377,11 +450,11 @@ export default function FeesManagement() {
 
           {/* Academic Year */}
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
+            <label className="block mb-1 text-sm font-medium text-foreground">
               Année académique
             </label>
             <select
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               value={filter.academicYear}
               onChange={(e) => {
                 const yearId = e.target.value;
@@ -399,32 +472,54 @@ export default function FeesManagement() {
         </div>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Bill ID</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Montant (FCFA)</TableHead>
-            <TableHead>Date de Paiement</TableHead>
-            <TableHead className="text-center">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {currentData.length === 0 && (
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span className="text-lg text-muted-foreground">Chargement des frais...</span>
+          </div>
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                Aucun frais disponible.
-              </TableCell>
+              <TableHead>Bill ID</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Montant (FCFA)</TableHead>
+              <TableHead>Date de Paiement</TableHead>
+              <TableHead className="text-center">Actions</TableHead>
             </TableRow>
-          )}
+          </TableHeader>
+          <TableBody>
+            {currentData.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-12">
+                  <div className="flex flex-col items-center gap-4">
+                    <Receipt className="h-12 w-12 text-muted-foreground/50" />
+                    <div className="text-center">
+                      <p className="text-lg font-medium text-muted-foreground">
+                        {searchTerm || filter.level || filter.classes || filter.academicYear
+                          ? "Aucun frais trouvé"
+                          : "Aucun frais disponible"}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {searchTerm || filter.level || filter.classes || filter.academicYear
+                          ? "Essayez de modifier vos critères de recherche"
+                          : "Les frais apparaîtront ici une fois ajoutés"}
+                      </p>
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
           {currentData.map((fee, idx) => (
             <TableRow
               key={fee.billID || idx}
-              className="hover:bg-indigo-50 transition"
+              className="hover:bg-muted/50 transition"
             >
               <TableCell>{fee.billID}</TableCell>
               <TableCell>{fee.type}</TableCell>
-              <TableCell className="text-right font-semibold text-indigo-600">
+              <TableCell className="text-right font-semibold text-primary">
                 {fee.amount.toLocaleString()}
               </TableCell>
               <TableCell className="text-center">
@@ -462,107 +557,111 @@ export default function FeesManagement() {
           ))}
         </TableBody>
       </Table>
+      )}
+      
       {/* Pagination */}
-      <div className="flex justify-between items-center mt-6">
-        <div className="text-sm text-gray-500">
-          Page {currentPage} sur {totalPages}
+      {!loading && currentData.length > 0 && (
+        <div className="flex justify-between items-center mt-6">
+          <div className="text-sm text-muted-foreground">
+            Page {currentPage} sur {totalPages}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+            >
+              Précédent
+            </Button>
+            <Button
+              variant="outline"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+            >
+              Suivant
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={goToPreviousPage}
-            disabled={currentPage === 1}
-          >
-            Précédent
-          </Button>
-          <Button
-            variant="outline"
-            onClick={goToNextPage}
-            disabled={currentPage === totalPages}
-          >
-            Suivant
-          </Button>
-        </div>
-      </div>
+      )}
       {/* Detail Modal */}
       <Dialog open={!!selectedFee} onOpenChange={closeModal}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-gray-800">
+            <DialogTitle className="text-lg font-bold text-foreground">
               🧾 Détails du frais
             </DialogTitle>
-            <DialogDescription className="text-sm text-gray-500">
+            <DialogDescription className="text-sm text-muted-foreground">
               Informations complètes sur le frais sélectionné.
             </DialogDescription>
           </DialogHeader>
 
           {selectedFee && (
-            <div className="mt-4 space-y-6 text-sm text-gray-700">
+            <div className="mt-4 space-y-6 text-sm text-foreground">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <span className="font-medium text-gray-600">📌 Bill ID:</span>
-                  <div className="text-gray-800">{selectedFee.billID}</div>
+                  <span className="font-medium text-muted-foreground">📌 Bill ID:</span>
+                  <div className="text-foreground">{selectedFee.billID}</div>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">💳 Type:</span>
-                  <div className="text-gray-800">{selectedFee.type}</div>
+                  <span className="font-medium text-muted-foreground">💳 Type:</span>
+                  <div className="text-foreground">{selectedFee.type}</div>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">💰 Montant:</span>
-                  <div className="text-gray-800">
+                  <span className="font-medium text-muted-foreground">💰 Montant:</span>
+                  <div className="text-foreground">
                     {selectedFee.amount.toLocaleString()} FCFA
                   </div>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">
+                  <span className="font-medium text-muted-foreground">
                     📅 Date de paiement:
                   </span>
-                  <div className="text-gray-800">
+                  <div className="text-foreground">
                     {new Date(selectedFee.paymentDate).toLocaleDateString()}
                   </div>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">
+                  <span className="font-medium text-muted-foreground">
                     🏦 Mode de paiement:
                   </span>
-                  <div className="text-gray-800">
+                  <div className="text-foreground">
                     {selectedFee.paymentMethod}
                   </div>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">
+                  <span className="font-medium text-muted-foreground">
                     🎓 Étudiant:
                   </span>
-                  <div className="text-gray-800">{selectedFee.studentName}</div>
+                  <div className="text-foreground">{selectedFee.studentName}</div>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">🏫 Classe:</span>
-                  <div className="text-gray-800">
+                  <span className="font-medium text-muted-foreground">🏫 Classe:</span>
+                  <div className="text-foreground">
                     {selectedFee.studentClass}
                   </div>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">
+                  <span className="font-medium text-muted-foreground">
                     📚 Année académique:
                   </span>
-                  <div className="text-gray-800">{selectedFee.year}</div>
+                  <div className="text-foreground">{selectedFee.year}</div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
                 <div>
-                  <span className="font-medium text-gray-600">
+                  <span className="font-medium text-muted-foreground">
                     ✅ Total payé:
                   </span>
-                  <div className="text-green-700 font-semibold">
+                  <div className="text-primary font-semibold">
                     {selectedFee.totalFeesPaid.toLocaleString()} FCFA
                   </div>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">
+                  <span className="font-medium text-muted-foreground">
                     📉 Reste à payer:
                   </span>
-                  <div className="text-red-600 font-semibold">
+                  <div className="text-destructive font-semibold">
                     {(
                       selectedFee.amountToPaid - selectedFee.totalFeesPaid
                     ).toLocaleString()}{" "}
@@ -583,7 +682,7 @@ export default function FeesManagement() {
 
       {openPaymentForm && selectedStudent && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4"
+          className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) setOpenPaymentForm(false);
           }}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -99,14 +99,14 @@ const JoinRequestsPage = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-48">
-        <Loader2 className="animate-spin h-8 w-8 text-skyblue" />
+        <Loader2 className="animate-spin h-8 w-8 text-primary" />
       </div>
     );
   }
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6 text-skyblue">
+      <h2 className="text-2xl font-bold mb-6 text-primary">
         Demandes d'adhésion en attente
       </h2>
       {requests.length === 0 ? (
@@ -130,7 +130,7 @@ const JoinRequestsPage = () => {
                     size="sm"
                     onClick={() => rejectRequest(request._id)}
                     disabled={actionLoadingId === request._id}
-                    className="text-red-600 border-red-600 hover:bg-red-100"
+                    className="text-secondary border-secondary hover:bg-secondary/10"
                   >
                     {actionLoadingId === request._id ? (
                       <Loader2 className="animate-spin h-4 w-4" />
@@ -142,7 +142,7 @@ const JoinRequestsPage = () => {
                     size="sm"
                     onClick={() => approveRequest(request._id)}
                     disabled={actionLoadingId === request._id}
-                    className="bg-skyblue hover:bg-skyblue/90 text-white"
+                    className="bg-primary hover:bg-primary/90 text-white"
                   >
                     {actionLoadingId === request._id ? (
                       <Loader2 className="animate-spin h-4 w-4" />

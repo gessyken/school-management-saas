@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,16 +129,16 @@ const SchoolSelectPage = () => {
     : [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-skyblue/10 to-white p-6">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 to-background p-6">
       <Header />
 
       <div className="w-full max-w-6xl mx-auto space-y-10 mt-6">
         {loading && (
           <div>
-            <p className="text-skyblue font-medium mb-2">
+            <p className="text-primary font-medium mb-2">
               Chargement des écoles...
             </p>
-            <Progress value={progress} className="h-2 bg-gray-200" />
+            <Progress value={progress} className="h-2 bg-muted" />
           </div>
         )}
 
@@ -146,7 +146,7 @@ const SchoolSelectPage = () => {
           <>
             {/* Top: Search + Add Button */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <h2 className="text-2xl font-bold text-skyblue">
+              <h2 className="text-2xl font-bold text-primary">
                 Sélectionnez une école
               </h2>
               <div className="flex gap-2 w-full md:w-auto">
@@ -168,7 +168,7 @@ const SchoolSelectPage = () => {
             {/* Member Schools */}
             {memberSchools.length > 0 && (
               <section>
-                <h3 className="text-xl font-semibold text-skyblue mb-4">
+                <h3 className="text-xl font-semibold text-primary mb-4">
                   Vos écoles
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -213,7 +213,7 @@ const SchoolSelectPage = () => {
             {/* Joinable Schools */}
             {joinableSchools.length > 0 && (
               <section>
-                <h3 className="text-xl font-semibold text-skyblue mb-4">
+                <h3 className="text-xl font-semibold text-primary mb-4">
                   Écoles disponibles (ouvertes)
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">

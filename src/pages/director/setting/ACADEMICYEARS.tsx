@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogTrigger } from "@radix-ui/react-dialog";
 import { DialogContent, DialogHeader } from "@/components/ui/dialog";
-import { Pencil, Trash, Plus } from "lucide-react";
+import { Pencil, Trash, Plus, AlertCircle, XCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
 
@@ -16,6 +16,7 @@ const AcademicYearManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<AcademicYear | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     startDate: "",
@@ -25,11 +26,14 @@ const AcademicYearManagement = () => {
 
   // Fetch all academic years
   const fetchAcademicYears = async () => {
+    setError(null);
     try {
       const data = await settingService.getAcademicYears();
       console.log(data);
       setAcademicYears(data);
-    } catch {
+    } catch (error) {
+      console.error('Error fetching academic years:', error);
+      setError('Échec du chargement des années académiques');
       toast({
         variant: "destructive",
         description: "Failed to fetch academic years.",
@@ -47,36 +51,42 @@ const AcademicYearManagement = () => {
   };
 
   const handleSubmit = async () => {
+    setError(null);
     try {
       if (editItem && editItem._id) {
         await settingService.updateAcademicYear(editItem._id, form);
-        toast({ description: "Academic year updated successfully." });
+        toast({ description: "Année académique mise à jour avec succès.", variant: "default" });
       } else {
         await settingService.createAcademicYear(form);
-        toast({ description: "Academic year created successfully." });
+        toast({ description: "Année académique créée avec succès.", variant: "default" });
       }
       setDialogOpen(false);
       resetForm();
       fetchAcademicYears();
-    } catch {
+    } catch (error) {
+      console.error('Error saving academic year:', error);
+      setError('Échec de l\'enregistrement de l\'année académique');
       toast({
         variant: "destructive",
-        description: "Failed to save academic year.",
+        description: "Échec de l'enregistrement de l'année académique.",
       });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this academic year?"))
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette année académique ?"))
       return;
+    setError(null);
     try {
       await settingService.deleteAcademicYear(id);
-      toast({ description: "Academic year deleted successfully." });
+      toast({ description: "Année académique supprimée avec succès.", variant: "default" });
       fetchAcademicYears();
-    } catch {
+    } catch (error) {
+      console.error('Error deleting academic year:', error);
+      setError('Échec de la suppression de l\'année académique');
       toast({
         variant: "destructive",
-        description: "Failed to delete academic year.",
+        description: "Échec de la suppression de l'année académique.",
       });
     }
   };
@@ -105,17 +115,23 @@ const AcademicYearManagement = () => {
   }
 
   const changeStatus = async (id: string, currentStatus: boolean) => {
+    setError(null);
     const newStatus = currentStatus ? "inactive" : "active";
     try {
       await settingService.updateAcademicYear(id, {
         isCurrent: !currentStatus,
       });
-      toast({ description: `Status changed to ${newStatus}.` });
+      toast({ 
+        variant: "default",
+        description: `Statut changé en ${newStatus === 'active' ? 'actif' : 'inactif'}.` 
+      });
       fetchAcademicYears(); // refresh list
-    } catch {
+    } catch (error) {
+      console.error('Error updating academic year status:', error);
+      setError('Échec de la mise à jour du statut de l\'année académique');
       toast({
         variant: "destructive",
-        description: "Failed to update status.",
+        description: "Échec de la mise à jour du statut.",
       });
     }
   };
@@ -123,11 +139,11 @@ const AcademicYearManagement = () => {
   return (
     <Card className="m-4 shadow-lg border">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <CardTitle className="text-xl font-bold">Academic Years</CardTitle>
+        <CardTitle className="text-xl font-bold">Années Académiques</CardTitle>
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <Input
-            placeholder="Search academic years..."
+            placeholder="Rechercher les années académiques..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-xs"
@@ -139,15 +155,32 @@ const AcademicYearManagement = () => {
               setDialogOpen(true);
             }}
           >
-            <Plus className="mr-1 h-4 w-4" /> Add
+            <Plus className="mr-1 h-4 w-4" /> Ajouter
           </Button>
         </div>
       </CardHeader>
 
+      {error && (
+        <div className="mx-6 mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            <span className="text-sm text-destructive">{error}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setError(null)}
+            className="h-6 w-6 p-0 text-destructive hover:text-destructive/80"
+          >
+            <XCircle className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       <CardContent className="grid gap-4">
         {filteredAcademicYears.length === 0 && (
           <p className="text-center text-muted-foreground">
-            No academic years found.
+            Aucune année académique trouvée.
           </p>
         )}
 
@@ -171,10 +204,10 @@ const AcademicYearManagement = () => {
                   checked={item.isCurrent}
                   onChange={() => changeStatus(item._id!, item.isCurrent)}
                 />
-                <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition"></div>
-                <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition"></div>
+                <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition"></div>
+                <div className="absolute left-1 top-1 w-4 h-4 bg-background rounded-full peer-checked:translate-x-5 transition"></div>
                 {/* <span className="ml-3 text-sm font-medium text-gray-900">
-                  {form.isCurrent ? "Active" : "Inactive"}
+                  {form.isCurrent ? "Actif" : "Inactif"}
                 </span> */}
               </Label>
 
@@ -201,7 +234,7 @@ const AcademicYearManagement = () => {
         <DialogContent>
           <DialogHeader>
             <h3 className="text-lg font-semibold">
-              {editItem ? "Edit Academic Year" : "Add Academic Year"}
+              {editItem ? "Modifier l'Année Académique" : "Ajouter une Année Académique"}
             </h3>
           </DialogHeader>
 
@@ -213,13 +246,13 @@ const AcademicYearManagement = () => {
             className="space-y-4"
           >
             <select
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
               required
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             >
               <option value="" disabled>
-                Select Academic Year
+                Sélectionner l'année académique
               </option>
               {years.map((yearRange) => (
                 <option key={yearRange} value={yearRange}>
@@ -236,9 +269,9 @@ const AcademicYearManagement = () => {
                   setForm({ ...form, isCurrent: e.target.checked })
                 }
               />
-              <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition"></div>
-              <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition"></div>
-              <span className="ml-3 text-sm font-medium text-gray-900">
+              <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition"></div>
+              <div className="absolute left-1 top-1 w-4 h-4 bg-background rounded-full peer-checked:translate-x-5 transition"></div>
+              <span className="ml-3 text-sm font-medium text-foreground">
                 {form.isCurrent ? "Active" : "Inactive"}
               </span>
             </Label>
@@ -246,14 +279,14 @@ const AcademicYearManagement = () => {
             <Input
               required
               type="date"
-              placeholder="Start Date"
+              placeholder="Date de début"
               value={form.startDate}
               onChange={(e) => setForm({ ...form, startDate: e.target.value })}
             />
             <Input
               required
               type="date"
-              placeholder="End Date"
+              placeholder="Date de fin"
               value={form.endDate}
               onChange={(e) => setForm({ ...form, endDate: e.target.value })}
             />
@@ -264,9 +297,9 @@ const AcademicYearManagement = () => {
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
               >
-                Cancel
+                Annuler
               </Button>
-              <Button type="submit">{editItem ? "Update" : "Create"}</Button>
+              <Button type="submit">{editItem ? "Modifier" : "Créer"}</Button>
             </div>
           </form>
         </DialogContent>

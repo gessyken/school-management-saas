@@ -27,13 +27,13 @@ const TeacherClasses = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <Card className="bg-skyblue/10">
+          <Card className="bg-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Classes assignées</CardTitle>
               <div className="text-2xl font-bold">{mockClasses.length}</div>
             </CardHeader>
           </Card>
-          <Card className="bg-skyblue/10">
+          <Card className="bg-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total élèves</CardTitle>
               <div className="text-2xl font-bold">
@@ -41,7 +41,7 @@ const TeacherClasses = () => {
               </div>
             </CardHeader>
           </Card>
-          <Card className="bg-skyblue/10">
+          <Card className="bg-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Matières enseignées</CardTitle>
               <div className="text-2xl font-bold">3</div>
@@ -76,7 +76,7 @@ const TeacherClasses = () => {
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
                         {classe.subjects.map((subject) => (
-                          <Badge key={subject} variant="outline" className="bg-skyblue/10">
+                          <Badge key={subject} variant="outline" className="bg-primary/10">
                             {subject}
                           </Badge>
                         ))}

@@ -78,7 +78,12 @@ const classSchema = new mongoose.Schema({
   level: {
     type: String,
     required: true,
-    enum: ['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth', 'Upper Sixth']
+    enum: [
+      // Système anglophone
+      'Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth', 'Upper Sixth',
+      // Système francophone
+      '6e', '5e', '4e', '3e', '2nde', '1ère', 'Terminale'
+    ]
   }
 
 }, {
@@ -86,7 +91,7 @@ const classSchema = new mongoose.Schema({
 });
 
 // Composite index to ensure uniqueness of class within the school and academic year
-classSchema.index({ school: 1, className: 1, year: 1 }, { unique: true });
+classSchema.index({ school: 1, classesName: 1, year: 1 }, { unique: true });
 
 const Classes = mongoose.model('Classes', classSchema);
 export default Classes;

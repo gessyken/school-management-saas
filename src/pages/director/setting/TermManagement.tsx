@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogTrigger } from "@radix-ui/react-dialog";
 import { DialogContent, DialogHeader } from "@/components/ui/dialog";
-import { Pencil, Trash, Plus } from "lucide-react";
+import { Pencil, Trash, Plus, AlertCircle, XCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
 
@@ -21,6 +21,7 @@ const TermManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<Term | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState({
     academicYear: "",
   });
@@ -33,6 +34,7 @@ const TermManagement = () => {
   });
 
   const fetchData = async () => {
+    setError(null);
     try {
       const [termData, yearData] = await Promise.all([
         settingService.getTerms(),
@@ -45,8 +47,10 @@ const TermManagement = () => {
           academicYear: yearData[yearData.length - 1].name,
         });
       }
-    } catch {
-      toast({ variant: "destructive", description: "Failed to fetch data." });
+    } catch (error) {
+      console.error('Error fetching terms and academic years:', error);
+      setError('Échec du chargement des données');
+      toast({ variant: "destructive", description: "Échec du chargement des données." });
     }
   };
 
@@ -66,30 +70,36 @@ const TermManagement = () => {
   };
 
   const handleSubmit = async () => {
+    setError(null);
     try {
       if (editItem && editItem._id) {
         await settingService.updateTerm(editItem._id, form);
-        toast({ description: "Term updated successfully." });
+        toast({ description: "Trimestre mis à jour avec succès.", variant: "default" });
       } else {
         await settingService.createTerm(form);
-        toast({ description: "Term created successfully." });
+        toast({ description: "Trimestre créé avec succès.", variant: "default" });
       }
       setDialogOpen(false);
       resetForm();
       fetchData();
-    } catch {
-      toast({ variant: "destructive", description: "Failed to save term." });
+    } catch (error) {
+      console.error('Error saving term:', error);
+      setError('Échec de l\'enregistrement du trimestre');
+      toast({ variant: "destructive", description: "Échec de l'enregistrement du trimestre." });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this term?")) return;
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce trimestre ?")) return;
+    setError(null);
     try {
       await settingService.deleteTerm(id);
-      toast({ description: "Term deleted successfully." });
+      toast({ description: "Trimestre supprimé avec succès.", variant: "default" });
       fetchData();
-    } catch {
-      toast({ variant: "destructive", description: "Failed to delete term." });
+    } catch (error) {
+      console.error('Error deleting term:', error);
+      setError('Échec de la suppression du trimestre');
+      toast({ variant: "destructive", description: "Échec de la suppression du trimestre." });
     }
   };
 
@@ -114,23 +124,26 @@ const TermManagement = () => {
     );
   const changeStatus = async (id: string, currentStatus: boolean) => {
     const newStatus = currentStatus ? "inactive" : "active";
+    setError(null);
     try {
       await settingService.updateTerm(id, {
         isActive: !currentStatus,
       });
-      toast({ description: `Status changed to ${newStatus}.` });
+      toast({ description: `Statut changé en ${newStatus === 'active' ? 'actif' : 'inactif'}.`, variant: "default" });
       fetchData();
-    } catch {
+    } catch (error) {
+      console.error('Error changing term status:', error);
+      setError('Échec de la mise à jour du statut');
       toast({
         variant: "destructive",
-        description: "Failed to update status.",
+        description: "Échec de la mise à jour du statut.",
       });
     }
   };
   return (
     <Card className="m-4 shadow-lg border">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <CardTitle className="text-xl font-bold">Terms</CardTitle>
+        <CardTitle className="text-xl font-bold">Trimestres</CardTitle>
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <select
@@ -139,7 +152,7 @@ const TermManagement = () => {
             onChange={(e) =>
               setFilter({ ...filter, academicYear: e.target.value })
             }
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
           >
             {academicYears.map((year) => (
               <option key={year._id} value={year.name}>
@@ -148,7 +161,7 @@ const TermManagement = () => {
             ))}
           </select>
           <Input
-            placeholder="Search terms..."
+            placeholder="Rechercher les trimestres..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-xs"
@@ -159,14 +172,28 @@ const TermManagement = () => {
               setDialogOpen(true);
             }}
           >
-            <Plus className="mr-1 h-4 w-4" /> Add
+            <Plus className="mr-1 h-4 w-4" /> Ajouter
           </Button>
         </div>
       </CardHeader>
 
+      {/* Error Display */}
+      {error && (
+        <div className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center">
+          <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+          <span className="text-red-700">{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="ml-auto text-red-500 hover:text-red-700"
+          >
+            <XCircle className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       <CardContent className="grid gap-4">
         {filteredTerms.length === 0 ? (
-          <p className="text-center text-muted-foreground">No terms found.</p>
+          <p className="text-center text-muted-foreground">Aucun trimestre trouvé.</p>
         ) : (
           filteredTerms.map((term) => (
             <div
@@ -179,7 +206,7 @@ const TermManagement = () => {
                   {term.startDate?.slice(0, 10)} - {term.endDate?.slice(0, 10)}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Year: {term.academicYear || "N/A"}
+                  Année: {term.academicYear || "N/A"}
                 </p>
               </div>
               <div className="flex gap-2 items-center">
@@ -190,9 +217,9 @@ const TermManagement = () => {
                     checked={term.isActive}
                     onChange={() => changeStatus(term._id!, term.isActive)}
                   />
-                  <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition"></div>
-                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition"></div>
-                  {/* <span className="ml-3 text-sm font-medium text-gray-900">
+                  <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition"></div>
+                  <div className="absolute left-1 top-1 w-4 h-4 bg-background rounded-full peer-checked:translate-x-5 transition"></div>
+                  {/* <span className="ml-3 text-sm font-medium text-foreground">
                                   {form.isCurrent ? "Active" : "Inactive"}
                                 </span> */}
                 </Label>
@@ -220,7 +247,7 @@ const TermManagement = () => {
         <DialogContent>
           <DialogHeader>
             <h3 className="text-lg font-semibold">
-              {editItem ? "Edit Term" : "Add Term"}
+              {editItem ? "Modifier le Trimestre" : "Ajouter un Trimestre"}
             </h3>
           </DialogHeader>
 
@@ -235,10 +262,10 @@ const TermManagement = () => {
               required
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="" disabled>
-                Select an Term
+                Sélectionner un trimestre
               </option>
               <option value="Term 1">Term 1</option>
               <option value="Term 2">Term 2</option>
@@ -254,23 +281,23 @@ const TermManagement = () => {
                   setForm({ ...form, isActive: e.target.checked })
                 }
               />
-              <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition"></div>
-              <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition"></div>
-              <span className="ml-3 text-sm font-medium text-gray-900">
-                {form.isActive ? "Active" : "Inactive"}
+              <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition"></div>
+              <div className="absolute left-1 top-1 w-4 h-4 bg-background rounded-full peer-checked:translate-x-5 transition"></div>
+              <span className="ml-3 text-sm font-medium text-foreground">
+                {form.isActive ? "Actif" : "Inactif"}
               </span>
             </Label>
             <Input
               required
               type="date"
-              placeholder="Start Date"
+              placeholder="Date de début"
               value={form.startDate}
               onChange={(e) => setForm({ ...form, startDate: e.target.value })}
             />
             <Input
               required
               type="date"
-              placeholder="End Date"
+              placeholder="Date de fin"
               value={form.endDate}
               onChange={(e) => setForm({ ...form, endDate: e.target.value })}
             />
@@ -280,10 +307,10 @@ const TermManagement = () => {
               onChange={(e) =>
                 setForm({ ...form, academicYear: e.target.value })
               }
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="" disabled>
-                Select Academic Year
+                Sélectionner l'année académique
               </option>
               {academicYears.map((year) => (
                 <option key={year._id} value={year.name}>
@@ -298,9 +325,9 @@ const TermManagement = () => {
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
               >
-                Cancel
+                Annuler
               </Button>
-              <Button type="submit">{editItem ? "Update" : "Create"}</Button>
+              <Button type="submit">{editItem ? "Modifier" : "Créer"}</Button>
             </div>
           </form>
         </DialogContent>

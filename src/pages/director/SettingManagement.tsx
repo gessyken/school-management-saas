@@ -19,9 +19,9 @@ import TermManagement from "./setting/TermManagement";
 import SequenceManagement from "./setting/SequenceManagement";
 
 const tabs = [
-  { key: "academic", label: "Academic Years" },
-  { key: "term", label: "Terms" },
-  { key: "sequence", label: "Sequences" },
+  { key: "academic", label: "Années académiques" },
+  { key: "term", label: "Trimestres" },
+  { key: "sequence", label: "Séquences" },
 ];
 
 const SettingManagement = () => {
@@ -59,7 +59,7 @@ const SettingManagement = () => {
   return (
     <Card className="m-4 shadow-lg border">
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <CardTitle className="text-xl font-bold">Settings Management</CardTitle>
+        <CardTitle className="text-xl font-bold">Gestion des paramètres</CardTitle>
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="flex gap-2">
             {tabs.map((tab) => (
