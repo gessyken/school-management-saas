@@ -23,11 +23,11 @@ const server = http.createServer(app);
 app.use(
     cors({
         origin: [
-            "http://localhost:8080",
-            "http://localhost:8081",
-            "http://localhost:3000",
-            "http://localhost:5173",
-            "http://localhost:3002",
+            "http://127.0.0.1:8080",
+            "http://127.0.0.1:8081",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:3002",
         ],
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH"],
         allowedHeaders: ["Content-Type", "Authorization"],
@@ -79,7 +79,7 @@ connection()
         console.log("Connected to MongoDB via Mongoose");
         const port = process.env.PORT || 8000;
         server.listen(port, () => {
-            console.log(`Server listening at http://localhost:${port}`);
+            console.log(`Server listening at http://127.0.0.1:${port}`);
         });
     })
     .catch((err) => {
