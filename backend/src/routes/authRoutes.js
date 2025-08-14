@@ -1,20 +1,23 @@
-import express from 'express';
-import {
-  registerUser,
-  loginUser,
-  getMe
-} from '../controllers/authController.js';
+
 import { protect } from '../middleware/auth.middleware.js';
+import express from 'express';
+import { authController } from '../controllers/authController.js';
 
 const router = express.Router();
 
-// Register a new user (without school)
-router.post('/register', registerUser);
+// Public routes
+router.post('/login', authController.loginUser);
+router.post('/register', authController.registerUser);
+router.post('/forgot-password', authController.forgotPassword);
+router.put('/reset-password/:token', authController.resetPassword);
 
-// Login user with schoolId
-router.post('/login', loginUser);
+// Protected routes
+router.get('/profile', protect, authController.getProfile);
+router.put('/profile', protect, authController.updateProfile);
+router.put('/change-password', protect, authController.changePassword);
 
-// Get current logged-in user info
-router.get('/me', protect, getMe);
+// Admin-only routes
+router.get('/users', protect, authController.getAllUsers);
+router.put('/users/:userId/roles', protect, authController.updateUserRoles);
 
 export default router;

@@ -1,0 +1,145 @@
+{
+  "app": {
+    "name": "MI-TECH School",
+    "description": "Modern school management platform",
+    "copyright": "© 2024 MI-TECH School. All rights reserved."
+  },
+  "login": {
+    "title": "Login",
+    "subtitle": "Access your workspace",
+    "email": "Email address",
+    "emailPlaceholder": "example@email.com",
+    "password": "Password",
+    "button": "Login",
+    "loading": "Logging in...",
+    "noAccount": "Don't have an account?",
+    "createAccount": "Create account",
+    "error": {
+      "title": "Login error",
+      "description": "Incorrect email address or password"
+    },
+    "googleButton": "Continue with Google",
+    "orContinueWith": "OR CONTINUE WITH",
+    "forgotPassword": "Forgot password?",
+    "googleError": {
+      "title": "Google login failed",
+      "description": "There was an error signing in with Google"
+    }
+  },
+  "forgotPassword": {
+    "title": "Reset your password",
+    "heading": "Forgot Password?",
+    "subtitle": "Enter your email and we'll send you a link to reset your password",
+    "button": "Send Reset Link",
+    "loading": "Sending link...",
+    "rememberPassword": "Remember your password?",
+    "loginLink": "Log in here",
+    "success": {
+      "title": "Email sent",
+      "description": "We've sent a password reset link to {email}. Please check your inbox."
+    },
+    "error": {
+      "title": "Error sending email",
+      "description": "Failed to send password reset email. Please try again."
+    }
+  },
+  "register": {
+    "title": "Create an account",
+    "subtitle": "Fill in the information below to join our platform",
+    "firstName": "First Name",
+    "firstNamePlaceholder": "Your first name",
+    "lastName": "Last Name",
+    "lastNamePlaceholder": "Your last name",
+    "email": "Email Address",
+    "emailPlaceholder": "example@email.com",
+    "password": "Password",
+    "phone": "Phone Number",
+    "phonePlaceholder": "+1 234 567 890",
+    "gender": "Gender",
+    "genderOptions": {
+      "male": "Male",
+      "female": "Female",
+      "other": "Other"
+    },
+    "button": "Create Account",
+    "loading": "Creating account...",
+    "googleButton": "Continue with Google",
+    "orContinueWith": "OR CONTINUE WITH",
+    "haveAccount": "Already have an account?",
+    "loginLink": "Log in here",
+    "success": {
+      "title": "Registration successful",
+      "description": "Your account has been created successfully"
+    },
+    "error": {
+      "title": "Registration failed",
+      "description": "An error occurred during registration"
+    },
+    "googleError": {
+      "title": "Google registration failed",
+      "description": "There was an error signing up with Google"
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "editButton": "Edit Profile",
+    "changePasswordButton": "Change Password",
+    "save": "Save Changes",
+    "savePassword": "Save Password",
+    "cancel": "Cancel",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phone": "Phone",
+    "gender": "Gender",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "genderOther": "Other",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "updateSuccess": "Profile updated successfully",
+    "updateError": "Failed to update profile",
+    "updateErrorDesc": "An error occurred while updating your profile",
+    "passwordSuccess": "Password changed successfully",
+    "passwordError": "Failed to change password",
+    "passwordErrorDesc": "An error occurred while changing your password",
+    "avatarSuccess": "Profile picture updated",
+    "avatarError": "Failed to update profile picture"
+  },
+  "header": {
+    "noSchoolSelected": "No school selected",
+    "user": "User",
+    "profile": "My Profile",
+    "settings": "Settings",
+    "changeSchool": "Change School",
+    "help": "Help & Support",
+    "logout": "Logout",
+    "notifications": "Notifications"
+  },
+  "school": {
+    "logoAlt": "School logo",
+    "rolesLabel": "Roles",
+    "statusActive": "Active",
+    "loadErrorTitle": "Error",
+    "loadErrorDescription": "Failed to load schools",
+    "switchErrorTitle": "Error",
+    "switchErrorDescription": "Failed to switch school",
+    "joinRequestSuccessTitle": "Request sent",
+    "joinRequestSuccessDescription": "Your join request has been submitted",
+    "joinRequestErrorTitle": "Error",
+    "joinRequestErrorDescription": "Failed to submit join request",
+    "createSuccessSwitchErrorTitle": "School created",
+    "createSuccessSwitchErrorDescription": "School created but failed to switch",
+    "loadingMessage": "Loading schools...",
+    "selectTitle": "Select a school",
+    "searchPlaceholder": "Search for a school...",
+    "createButton": "New school",
+    "yourSchoolsTitle": "Your schools",
+    "enterButton": "Enter",
+    "joinableSchoolsTitle": "Available schools (open)",
+    "requestJoinButton": "Request to join",
+    "noResultsMessage": "No schools match your search",
+    "noSchoolsMessage": "You don't have access to any schools yet",
+    "createFirstSchoolButton": "Create your first school"
+  }
+}

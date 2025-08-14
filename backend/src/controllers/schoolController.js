@@ -79,9 +79,12 @@ export const switchSchool = async (req, res) => {
   if (!membership) {
     return res.status(403).json({ message: 'User not part of this school' });
   }
+  const school = await School.findById(schoolId)
+    .populate("members", "name email") // Optional: populate basic member info
+    .populate("createdBy", "name email"); // Optional
 
   const token = generateToken(user._id, schoolId);
-  res.status(200).json({ message: 'Switched school', token });
+  res.status(200).json({ message: 'Switched school', token, school });
 };
 
 

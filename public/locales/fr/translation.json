@@ -1,0 +1,145 @@
+{
+  "app": {
+    "name": "MI-TECH École",
+    "description": "Plateforme de gestion scolaire moderne",
+    "copyright": "© 2024 MI-TECH École. Tous droits réservés."
+  },
+  "login": {
+    "title": "Connexion",
+    "subtitle": "Accédez à votre espace de travail",
+    "email": "Adresse email",
+    "emailPlaceholder": "exemple@email.com",
+    "password": "Mot de passe",
+    "button": "Se connecter",
+    "loading": "Connexion en cours...",
+    "noAccount": "Pas encore de compte ?",
+    "createAccount": "Créer un compte",
+    "error": {
+      "title": "Erreur de connexion",
+      "description": "Adresse e-mail ou mot de passe incorrect"
+    },
+    "googleButton": "Continuer avec Google",
+    "orContinueWith": "OU CONTINUER AVEC",
+    "forgotPassword": "Mot de passe oublié ?",
+    "googleError": {
+      "title": "Échec de la connexion Google",
+      "description": "Une erreur s'est produite lors de la connexion avec Google"
+    }
+  },
+  "forgotPassword": {
+    "title": "Réinitialiser votre mot de passe",
+    "heading": "Mot de passe oublié ?",
+    "subtitle": "Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe",
+    "button": "Envoyer le lien",
+    "loading": "Envoi du lien...",
+    "rememberPassword": "Vous vous souvenez de votre mot de passe ?",
+    "loginLink": "Connectez-vous ici",
+    "success": {
+      "title": "Email envoyé",
+      "description": "Nous avons envoyé un lien de réinitialisation à {email}. Veuillez vérifier votre boîte de réception."
+    },
+    "error": {
+      "title": "Erreur d'envoi",
+      "description": "Échec de l'envoi de l'email de réinitialisation. Veuillez réessayer."
+    }
+  },
+  "register": {
+    "title": "Créer un compte",
+    "subtitle": "Remplissez les informations ci-dessous pour rejoindre notre plateforme",
+    "firstName": "Prénom",
+    "firstNamePlaceholder": "Votre prénom",
+    "lastName": "Nom",
+    "lastNamePlaceholder": "Votre nom",
+    "email": "Adresse email",
+    "emailPlaceholder": "exemple@email.com",
+    "password": "Mot de passe",
+    "phone": "Numéro de téléphone",
+    "phonePlaceholder": "+33 6 12 34 56 78",
+    "gender": "Genre",
+    "genderOptions": {
+      "male": "Homme",
+      "female": "Femme",
+      "other": "Autre"
+    },
+    "button": "Créer un compte",
+    "loading": "Création du compte...",
+    "googleButton": "Continuer avec Google",
+    "orContinueWith": "OU CONTINUER AVEC",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "loginLink": "Connectez-vous ici",
+    "success": {
+      "title": "Inscription réussie",
+      "description": "Votre compte a été créé avec succès"
+    },
+    "error": {
+      "title": "Échec de l'inscription",
+      "description": "Une erreur s'est produite lors de l'inscription"
+    },
+    "googleError": {
+      "title": "Échec de l'inscription Google",
+      "description": "Une erreur s'est produite lors de l'inscription avec Google"
+    }
+  },
+  "profile": {
+    "title": "Mon Profil",
+    "editButton": "Modifier le Profil",
+    "changePasswordButton": "Changer le Mot de Passe",
+    "save": "Enregistrer",
+    "savePassword": "Enregistrer le Mot de Passe",
+    "cancel": "Annuler",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "email": "Email",
+    "phone": "Téléphone",
+    "gender": "Genre",
+    "genderMale": "Homme",
+    "genderFemale": "Femme",
+    "genderOther": "Autre",
+    "currentPassword": "Mot de Passe Actuel",
+    "newPassword": "Nouveau Mot de Passe",
+    "updateSuccess": "Profil mis à jour avec succès",
+    "updateError": "Échec de la mise à jour du profil",
+    "updateErrorDesc": "Une erreur s'est produite lors de la mise à jour de votre profil",
+    "passwordSuccess": "Mot de passe changé avec succès",
+    "passwordError": "Échec du changement de mot de passe",
+    "passwordErrorDesc": "Une erreur s'est produite lors du changement de votre mot de passe",
+    "avatarSuccess": "Photo de profil mise à jour",
+    "avatarError": "Échec de la mise à jour de la photo de profil"
+  },
+  "header": {
+    "noSchoolSelected": "Aucune école sélectionnée",
+    "user": "Utilisateur",
+    "profile": "Mon Profil",
+    "settings": "Paramètres",
+    "changeSchool": "Changer d'école",
+    "help": "Aide & Support",
+    "logout": "Déconnexion",
+    "notifications": "Notifications"
+  },
+  "school": {
+    "logoAlt": "Logo de l'école",
+    "rolesLabel": "Rôles",
+    "statusActive": "Actif",
+    "loadErrorTitle": "Erreur",
+    "loadErrorDescription": "Impossible de charger les écoles",
+    "switchErrorTitle": "Erreur",
+    "switchErrorDescription": "Impossible de changer d'école",
+    "joinRequestSuccessTitle": "Demande envoyée",
+    "joinRequestSuccessDescription": "Votre demande d'adhésion a été soumise",
+    "joinRequestErrorTitle": "Erreur",
+    "joinRequestErrorDescription": "Impossible de soumettre la demande",
+    "createSuccessSwitchErrorTitle": "École créée",
+    "createSuccessSwitchErrorDescription": "École créée mais impossible de basculer",
+    "loadingMessage": "Chargement des écoles...",
+    "selectTitle": "Sélectionnez une école",
+    "searchPlaceholder": "Rechercher une école...",
+    "createButton": "Nouvelle école",
+    "yourSchoolsTitle": "Vos écoles",
+    "enterButton": "Entrer",
+    "joinableSchoolsTitle": "Écoles disponibles (ouvertes)",
+    "requestJoinButton": "Demander à rejoindre",
+    "noResultsMessage": "Aucune école ne correspond à votre recherche",
+    "noSchoolsMessage": "Vous n'avez accès à aucune école pour le moment",
+    "createFirstSchoolButton": "Créer votre première école"
+  }
+}

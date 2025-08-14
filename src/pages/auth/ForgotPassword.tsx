@@ -1,4 +1,3 @@
-// LoginPage.tsx
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -11,37 +10,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Eye, EyeOff, School, GraduationCap, Users } from "lucide-react";
-import api from "@/lib/api";
-import { TOKEN_KEY, USER_KEY } from "@/lib/key";
+import { Loader2, Mail } from "lucide-react";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "@/context/AuthContext";
 
-const LoginPage = () => {
+const ForgotPasswordPage = () => {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { forgotPassword } = useAuth();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
     try {
-      const res = await api.post("/auth/login", { email, password });
-      const { token } = res.data;
-      const { user } = res.data;
-      console.log(user)
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-      navigate("/schools-select");
+      await forgotPassword(email);
+      toast({
+        title: t('forgotPassword.success.title'),
+        description: t('forgotPassword.success.description', { email }),
+        variant: "default",
+      });
+      navigate("/login");
     } catch (error) {
       toast({
-        title: "Erreur de connexion",
-        description: "Adresse e-mail ou mot de passe incorrect",
+        title: t('forgotPassword.error.title'),
+        description: t('forgotPassword.error.description'),
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -54,50 +54,49 @@ const LoginPage = () => {
       </div>
 
       <div className="relative w-full max-w-md space-y-8">
+        {/* Language switcher */}
+        <div className="absolute top-4 right-4">
+          <LanguageSwitcher />
+        </div>
+
         {/* Header */}
         <div className="text-center space-y-4">
-          <div className="flex justify-center space-x-2">
+          <div className="flex justify-center">
             <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
-              <School className="h-8 w-8 text-white" />
-            </div>
-            <div className="p-3 bg-gradient-to-br from-secondary to-secondary/80 rounded-xl shadow-lg">
-              <GraduationCap className="h-8 w-8 text-white" />
-            </div>
-            <div className="p-3 bg-gradient-to-br from-primary/80 to-secondary/80 rounded-xl shadow-lg">
-              <Users className="h-8 w-8 text-white" />
+              <Mail className="h-8 w-8 text-white" />
             </div>
           </div>
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              MI-TECH École
+              {t('app.name')}
             </h1>
-            <p className="text-muted-foreground mt-2">Plateforme de gestion scolaire moderne</p>
+            <p className="text-muted-foreground mt-2">{t('forgotPassword.title')}</p>
           </div>
         </div>
 
-        {/* Login Card */}
+        {/* Forgot Password Card */}
         <Card className="backdrop-blur-sm bg-background/80 border-0 shadow-2xl">
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleSubmit}>
             <CardHeader className="space-y-4 pb-6">
               <div className="text-center">
                 <h2 className="text-2xl font-bold text-foreground">
-                  Connexion
+                  {t('forgotPassword.heading')}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Accédez à votre espace de travail
+                  {t('forgotPassword.subtitle')}
                 </p>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium text-foreground">
-                  Adresse email
+                  {t('login.email')}
                 </Label>
                 <div className="relative">
                   <Input
                     id="email"
                     type="email"
-                    placeholder="exemple@email.com"
+                    placeholder={t('login.emailPlaceholder')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -105,57 +104,31 @@ const LoginPage = () => {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-foreground">
-                  Mot de passe
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="h-12 px-4 pr-12 border-border focus:border-primary focus:ring-primary transition-all duration-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4 pt-6">
               <Button
                 type="submit"
                 className="w-full h-12 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                disabled={loading}
+                disabled={isLoading}
               >
-                {loading ? (
+                {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Connexion en cours...
+                    {t('forgotPassword.loading')}
                   </>
                 ) : (
-                  "Se connecter"
+                  t('forgotPassword.button')
                 )}
               </Button>
+              
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">
-                  Pas encore de compte ?{' '}
+                  {t('forgotPassword.rememberPassword')}{' '}
                   <Link 
-                    to="/register" 
+                    to="/login" 
                     className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
                   >
-                    Créer un compte
+                    {t('forgotPassword.loginLink')}
                   </Link>
                 </p>
               </div>
@@ -166,7 +139,7 @@ const LoginPage = () => {
         {/* Footer */}
         <div className="text-center">
           <p className="text-xs text-muted-foreground">
-            © 2024 MI-TECH École. Tous droits réservés.
+            {t('app.copyright')}
           </p>
         </div>
       </div>
@@ -174,6 +147,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
-
-
+export default ForgotPasswordPage;

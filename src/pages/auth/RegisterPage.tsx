@@ -1,27 +1,38 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { RegisterData, useAuth } from "@/context/AuthContext";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Eye, EyeOff, School, GraduationCap, Users, UserPlus } from "lucide-react";
-import api from "@/lib/api";
+import { Loader2, Eye, EyeOff, School, Users, UserPlus } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 const RegisterPage = () => {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<RegisterData>({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
     phoneNumber: "",
-    gender: "homme",
+    gender: "male",
   });
 
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { register, socialLogin } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -32,22 +43,50 @@ const RegisterPage = () => {
     setLoading(true);
 
     try {
-      const res = await api.post("/auth/register", form);
-        setTimeout(() => {
-            navigate("/login");
-        }, 1000);
+      // console.log(form)
+      await register(form);
+      toast({
+        title: t('register.success.title'),
+        description: t('register.success.description'),
+        variant: "default",
+      });
+      navigate("/login");
     } catch (error) {
       toast({
-        title: "Erreur lors de l'inscription",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Une erreur est survenue",
+        title: t('register.error.title'),
+        description: error instanceof Error ? error.message : t('register.error.description'),
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleRegister = async () => {
+    setGoogleLoading(true);
+    try {
+      // Mock Google auth - replace with your actual implementation
+      const googleEmail = await initiateGoogleAuth();
+      await socialLogin(googleEmail);
+      navigate("/schools-select");
+    } catch (error) {
+      toast({
+        title: t('register.googleError.title'),
+        description: t('register.googleError.description'),
+        variant: "destructive",
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  // Mock function for Google auth - replace with your actual implementation
+  const initiateGoogleAuth = async (): Promise<string> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve("user@gmail.com"); // Mock email
+      }, 1000);
+    });
   };
 
   return (
@@ -59,6 +98,11 @@ const RegisterPage = () => {
       </div>
 
       <div className="relative w-full max-w-md space-y-8">
+        {/* Language switcher */}
+        <div className="absolute top-4 right-4">
+          <LanguageSwitcher />
+        </div>
+
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex justify-center space-x-2">
@@ -74,9 +118,9 @@ const RegisterPage = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              MI-TECH École
+              {t('app.name')}
             </h1>
-            <p className="text-muted-foreground mt-2">Rejoignez notre plateforme de gestion scolaire</p>
+            <p className="text-muted-foreground mt-2">{t('app.description')}</p>
           </div>
         </div>
 
@@ -86,21 +130,23 @@ const RegisterPage = () => {
             <CardHeader className="space-y-4 pb-6">
               <div className="text-center">
                 <h2 className="text-2xl font-bold text-foreground">
-                  Créer un compte
+                  {t('register.title')}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Remplissez les informations ci-dessous pour rejoindre notre plateforme
+                  {t('register.subtitle')}
                 </p>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName" className="text-sm font-medium text-foreground">Prénom</Label>
+                  <Label htmlFor="firstName" className="text-sm font-medium text-foreground">
+                    {t('register.firstName')}
+                  </Label>
                   <Input
                     id="firstName"
                     name="firstName"
-                    placeholder="Votre prénom"
+                    placeholder={t('register.firstNamePlaceholder')}
                     value={form.firstName}
                     onChange={handleChange}
                     required
@@ -108,11 +154,13 @@ const RegisterPage = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName" className="text-sm font-medium text-foreground">Nom</Label>
+                  <Label htmlFor="lastName" className="text-sm font-medium text-foreground">
+                    {t('register.lastName')}
+                  </Label>
                   <Input
                     id="lastName"
                     name="lastName"
-                    placeholder="Votre nom"
+                    placeholder={t('register.lastNamePlaceholder')}
                     value={form.lastName}
                     onChange={handleChange}
                     required
@@ -121,12 +169,14 @@ const RegisterPage = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-foreground">Adresse email</Label>
+                <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                  {t('register.email')}
+                </Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="exemple@email.com"
+                  placeholder={t('register.emailPlaceholder')}
                   value={form.email}
                   onChange={handleChange}
                   required
@@ -134,7 +184,9 @@ const RegisterPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-foreground">Mot de passe</Label>
+                <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                  {t('register.password')}
+                </Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -161,18 +213,22 @@ const RegisterPage = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="phoneNumber" className="text-sm font-medium text-foreground">Téléphone</Label>
+                  <Label htmlFor="phoneNumber" className="text-sm font-medium text-foreground">
+                    {t('register.phone')}
+                  </Label>
                   <Input
                     id="phoneNumber"
                     name="phoneNumber"
-                    placeholder="+33 6 12 34 56 78"
+                    placeholder={t('register.phonePlaceholder')}
                     value={form.phoneNumber}
                     onChange={handleChange}
                     className="h-12 px-4 border-border focus:border-primary focus:ring-primary transition-all duration-200"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="gender" className="text-sm font-medium text-foreground">Genre</Label>
+                  <Label htmlFor="gender" className="text-sm font-medium text-foreground">
+                    {t('register.gender')}
+                  </Label>
                   <select
                     name="gender"
                     id="gender"
@@ -180,9 +236,9 @@ const RegisterPage = () => {
                     onChange={handleChange}
                     className="h-12 w-full rounded-md border border-border px-4 bg-background focus:border-primary focus:ring-primary transition-all duration-200"
                   >
-                    <option value="homme">Homme</option>
-                    <option value="femme">Femme</option>
-                    <option value="autre">Autre</option>
+                    <option value="male">{t('register.genderOptions.male')}</option>
+                    <option value="female">{t('register.genderOptions.female')}</option>
+                    <option value="other">{t('register.genderOptions.other')}</option>
                   </select>
                 </div>
               </div>
@@ -196,20 +252,50 @@ const RegisterPage = () => {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Création en cours...
+                    {t('register.loading')}
                   </>
                 ) : (
-                  "Créer un compte"
+                  t('register.button')
                 )}
               </Button>
+
+              {/* Google Register Button */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 flex items-center justify-center gap-2 border-border hover:bg-background/90 transition-colors"
+                onClick={handleGoogleRegister}
+                disabled={googleLoading}
+              >
+                {googleLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    <FcGoogle className="h-5 w-5" />
+                    {t('register.googleButton')}
+                  </>
+                )}
+              </Button>
+
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    {t('register.orContinueWith')}
+                  </span>
+                </div>
+              </div>
+
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">
-                  Vous avez déjà un compte ?{' '}
-                  <Link 
-                    to="/login" 
+                  {t('register.haveAccount')}{' '}
+                  <Link
+                    to="/login"
                     className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
                   >
-                    Se connecter
+                    {t('register.loginLink')}
                   </Link>
                 </p>
               </div>
@@ -220,7 +306,7 @@ const RegisterPage = () => {
         {/* Footer */}
         <div className="text-center">
           <p className="text-xs text-muted-foreground">
-            © 2024 MI-TECH École. Tous droits réservés.
+            {t('app.copyright')}
           </p>
         </div>
       </div>
