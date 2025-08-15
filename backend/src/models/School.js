@@ -1,101 +1,131 @@
 import mongoose from 'mongoose';
 
 const schoolSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-        trim: true
-    },
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
 
-    email: {
-        type: String,
-        required: true,
-        lowercase: true,
-        trim: true,
-        match: [/^\S+@\S+\.\S+$/, 'Invalid email format']
-    },
+  email: {
+    type: String,
+    required: true,
+    lowercase: true,
+    trim: true,
+    match: [/^\S+@\S+\.\S+$/, 'Invalid email format']
+  },
 
-    phone: {
-        type: String,
-        trim: true
-    },
+  phone: {
+    type: String,
+    trim: true
+  },
 
-    address: {
-        type: String,
-        trim: true
-    },
+  address: {
+    type: String,
+    trim: true
+  },
 
-    logoUrl: {
-        type: String,
-        trim: true
-    },
+  logoUrl: {
+    type: String,
+    trim: true
+  },
+  documents: {
+    type: [String],
+    trim: true
+  },
+  subdomain: {
+    type: String,
+    lowercase: true,
+    unique: true,
+    sparse: true
+  },
+  members: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
+  plan: {
+    type: String,
+    enum: ['FREE', 'BASIC', 'PRO'],
+    default: 'FREE'
+  },
 
-    subdomain: {
-        type: String,
-        lowercase: true,
-        unique: true,
-        sparse: true
+  billing: {
+    currentInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: "Invoice" },
+    nextInvoiceDue: { type: Date },
+    lastPaymentDate: { type: Date },
+    status: {
+      type: String,
+      enum: ["active", "trialing", "past_due", "canceled", "unpaid"],
+      default: "trialing",
     },
-    members: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-    }],
-    plan: {
-        type: String,
-        enum: ['FREE', 'BASIC', 'PRO'],
-        default: 'FREE'
-    },
+    trialEndsAt: { type: Date },
+  },
 
-    billing: {
-        currentInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: "Invoice" },
-        nextInvoiceDue: { type: Date },
-        lastPaymentDate: { type: Date },
-        status: {
-            type: String,
-            enum: ["active", "trialing", "past_due", "canceled", "unpaid"],
-            default: "trialing",
-        },
-        trialEndsAt: { type: Date },
-    },
+  // Billing configuration
+  billingRules: {
+    baseMonthlyFee: { type: Number, default: 10000 },
+    perStudentFee: { type: Number, default: 5 },
+    perStaffFee: { type: Number, default: 200 },
+    perClassFee: { type: Number, default: 150 },
+    // storageLimitMB: { type: Number, default: 1000 },
+  },
+  usage: {
+    studentsCount: { type: Number, default: 1000 },
+    staffCount: { type: Number, default: 10 },
+    classCount: { type: Number, default: 14 },
+    // storageUsedMB: { type: Number, default: 0 },
+    lastUsageCalculated: { type: Date },
+  },
 
-    // Billing configuration
-    billingRules: {
-        baseMonthlyFee: { type: Number, default: 10000 },
-        perStudentFee: { type: Number, default: 5 },
-        perStaffFee: { type: Number, default: 200 },
-        perClassFee: { type: Number, default: 150 },
-        // storageLimitMB: { type: Number, default: 1000 },
-    },
-    usage: {
-        studentsCount: { type: Number, default: 1000 },
-        staffCount: { type: Number, default: 10 },
-        classCount: { type: Number, default: 14 },
-        // storageUsedMB: { type: Number, default: 0 },
-        lastUsageCalculated: { type: Date },
-    },
-
-    accessStatus: {
-        type: String,
-        enum: ['active', 'suspended', 'blocked'],
-        default: 'active'
-    },
-    joinRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    memberShipAccessStatus: {
-        type: Boolean,
-        default: true
-    },
-    blockReason: {
-        type: String,
-        default: ''
-    },
-
-    createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }
+  accessStatus: {
+    type: String,
+    enum: ['pending_verification', 'active', 'suspended', 'blocked'],
+    default: 'pending_verification'
+  },
+  joinRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  memberShipAccessStatus: {
+    type: Boolean,
+    default: true
+  },
+  blockReason: {
+    type: String,
+    default: ''
+  },
+  verificationStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  verificationDetails: {
+    verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    verifiedAt: { type: Date },
+    rejectionReason: { type: String }
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
 }, {
-    timestamps: true
+  timestamps: true
 });
+
+// Method: Update verification status (to be called by admin)
+schoolSchema.methods.updateVerification = async function (status, adminId, rejectionReason = '') {
+  this.verificationStatus = status;
+  this.verificationDetails.verifiedBy = adminId;
+  this.verificationDetails.verifiedAt = new Date();
+
+  if (status === 'rejected') {
+    this.verificationDetails.rejectionReason = rejectionReason;
+    this.accessStatus = 'blocked';
+    this.blockReason = `Rejected during verification: ${rejectionReason}`;
+  } else if (status === 'approved') {
+    // Only evaluate billing if approved
+    await this.evaluateAccess();
+  }
+
+  return this.save();
+};
 
 // Method: Compute total bill based on usage
 schoolSchema.methods.calculateMonthlyBill = function () {

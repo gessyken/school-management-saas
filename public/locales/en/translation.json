@@ -117,6 +117,10 @@
     "notifications": "Notifications"
   },
   "school": {
+    "pendingValidationTitle": "Pending Validation",
+    "statusPending": "Pending Admin Approval",
+    "statusRejected": "Rejected - Needs Update",
+    "awaitingApprovalButton": "Awaiting Approval",
     "logoAlt": "School logo",
     "rolesLabel": "Roles",
     "statusActive": "Active",
@@ -160,5 +164,62 @@
   "logs": "Logs",
   "schoolAdministration": "School Administration",
   "schoolManagement": "School Management",
-  "changeLanguage": "Switch to French"
+  "changeLanguage": "Switch to French",
+  "create_school": {
+    "title": "Create a New School"
+  },
+  "fields": {
+    "name": "School Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "subdomain": "Subdomain",
+    "plan": "Plan",
+    "logo": "School Logo",
+    "documents": "School Documents",
+    "pdf_files": "PDF files"
+  },
+  "placeholders": {
+    "name": "Full school name",
+    "email": "contact@school.com",
+    "phone": "+1 (555) 123-4567",
+    "address": "123 School Street, City",
+    "subdomain": "your-school"
+  },
+  "plans": {
+    "free": "Free",
+    "basic": "Basic",
+    "pro": "Pro"
+  },
+  "upload": {
+    "click_to_upload_logo": "Click to upload logo",
+    "logo_requirements": "Formats: JPG, PNG (max 5MB)",
+    "click_to_upload_documents": "Click to upload documents",
+    "pdf_requirements": "Formats: PDF (1-3 files, max 10MB each)"
+  },
+  "buttons": {
+    "cancel": "Cancel",
+    "create_school": "Create School",
+    "creating": "Creating..."
+  },
+  "errors": {
+    "invalid_format": "Invalid format",
+    "logo_format": "Please select an image for the logo",
+    "pdf_only": "Only PDF files are accepted",
+    "file_too_large": "File too large",
+    "logo_size": "Logo must be less than 5MB",
+    "pdf_size": "PDFs must be less than 10MB each",
+    "required_fields": "Required fields",
+    "name_email_required": "School name and email are required",
+    "required_documents": "Documents required",
+    "min_one_pdf": "Please upload at least one PDF document",
+    "create_error": "Error",
+    "generic_error": "Creation error"
+  },
+  "success": {
+    "create_success": "School created successfully"
+  },
+  "alt_texts": {
+    "logo_preview": "Logo preview"
+  }
 }

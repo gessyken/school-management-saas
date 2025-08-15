@@ -1,26 +1,99 @@
 import School from '../models/School.js';
 import User from '../models/User.js';
 import { generateToken } from '../utils/jwtUtils.js';
+import multer from 'multer';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
-// Register a new school
+// Configure multer storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/schools/');
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${uuidv4()}${ext}`);
+  }
+});
+
+// File filter for uploads
+const fileFilter = (req, file, cb) => {
+  if (
+    file.mimetype.startsWith('image/') ||
+    file.mimetype === 'application/pdf'
+  ) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only images and PDFs are allowed.'), false);
+  }
+};
+
+// Configure multer upload middleware
+export const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max per file
+    files: 4 // Logo + 3 PDFs
+  }
+}).fields([
+  { name: 'logo', maxCount: 1 },
+  { name: 'documents', maxCount: 3 }
+]);
+
 export const registerSchool = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
-    if (!user) return res.status(403).json({ message: 'Invalid user' });
+    if (!user) {
+      return res.status(403).json({ message: 'Invalid user' });
+    }
 
-    const { name, email, phone, address, subdomain } = req.body;
+    const { name, email, phone, address, subdomain, plan = 'FREE' } = req.body;
+    console.log(req.body)
+    console.log(req.file)
+    // Validate required fields 
+    if (!name || !email) {
+      return res.status(400).json({ message: 'School name and email are required' });
+    }
 
+    // Check if school with this email already exists
     // const existingSchool = await School.findOne({ email });
-    // if (existingSchool) return res.status(400).json({ message: 'School already exists' });
+    // if (existingSchool) {
+    //   return res.status(400).json({ message: 'School with this email already exists' });
+    // }
 
+    // Check if subdomain is unique if provided
+    // if (subdomain) {
+    //   const existingSubdomain = await School.findOne({ subdomain });
+    //   if (existingSubdomain) {
+    //     return res.status(400).json({ message: 'This subdomain is already taken' });
+    //   }
+    // }
+
+    // Process file uploads
+    const logoUrl = req.files['logo'] ? `/uploads/schools/${req.files['logo'][0].filename}` : null;
+    const documents = req.files['documents'] ?
+      req.files['documents'].map(file => `/uploads/schools/${file.filename}`) : [];
+
+    // Validate at least one PDF document was uploaded
+    if (documents.length === 0) {
+      return res.status(400).json({ message: 'At least one PDF document is required' });
+    }
+
+    // Create new school
     const school = await School.create({
       name,
       email,
       phone,
       address,
       subdomain,
+      plan,
+      logoUrl,
+      documents,
       members: [user._id],
-      createdBy: user._id
+      createdBy: user._id,
+      verificationStatus: 'pending',
+      accessStatus: 'pending_verification'
     });
 
     // Add school membership to user
@@ -29,14 +102,53 @@ export const registerSchool = async (req, res) => {
       roles: ['ADMIN', 'DIRECTOR'],
       status: 'active'
     });
-    console.log(user.memberships)
     await user.save();
 
-    const token = generateToken(user._id, school._id); // now user is tied to school
-    res.status(201).json({ token, user, school });
+    // Generate token with school context
+    // const token = generateToken(user._id, school._id);
+
+    res.status(201).json({
+      // token, 
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        memberships: user.memberships
+      },
+      school: {
+        _id: school._id,
+        name: school.name,
+        email: school.email,
+        subdomain: school.subdomain,
+        logoUrl: school.logoUrl,
+        verificationStatus: school.verificationStatus
+      }
+    });
+
   } catch (err) {
-    console.log(err)
-    res.status(500).json({ message: 'Failed to create school', error: err.message });
+    console.error('School registration error:', err);
+
+    // Handle file upload errors specifically
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        message: 'File too large. Maximum size is 10MB per file.'
+      });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        message: 'Too many files. Maximum 4 files allowed (1 logo + 3 documents).'
+      });
+    }
+    if (err.message.includes('Invalid file type')) {
+      return res.status(400).json({
+        message: 'Invalid file type. Only images (for logo) and PDFs (for documents) are allowed.'
+      });
+    }
+
+    res.status(500).json({
+      message: 'Failed to create school',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 };
 
@@ -82,7 +194,9 @@ export const switchSchool = async (req, res) => {
   const school = await School.findById(schoolId)
     .populate("members", "name email") // Optional: populate basic member info
     .populate("createdBy", "name email"); // Optional
-
+  // if (school.verificationStatus !== 'approved' || school.accessStatus !== 'active') {
+  //   return res.status(401).json({ message: 'school not approved' });
+  // }
   const token = generateToken(user._id, schoolId);
   res.status(200).json({ message: 'Switched school', token, school });
 };

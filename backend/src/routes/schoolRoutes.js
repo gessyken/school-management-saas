@@ -12,13 +12,14 @@ import {
   updateSchool,
   getSchoolMembers,
   updateMemberRoles,
+  upload,
 } from '../controllers/schoolController.js';
 import { getUserRolesForSchool, protect } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
 // Create a new school (logged-in user becomes admin)
-router.post('/register', protect, registerSchool);
+router.post('/register', protect,upload, registerSchool);
 
 // Get list of all schools (admin panel)
 router.get('/', protect, getAllSchools);

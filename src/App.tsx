@@ -42,6 +42,12 @@ import SchoolLogsPage from "./pages/school/LogPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPassword";
 import ProfilePage from "./pages/auth/ProfilePage";
 import { SchoolProvider } from "./context/SchoolContext";
+import AdminDashboardLayout from "./pages/admin/DashboardLayout";
+import AdminDashboard from "./pages/admin/DashboardPage";
+import ManageUsers from "./pages/admin/ManageUsers";
+import ManageSchools from "./pages/admin/ManageSchools";
+import SchoolDetail from "./pages/admin/SchoolDetail";
+import SchoolBillingPage from "./pages/school/SchoolBillingPage";
 
 const queryClient = new QueryClient();
 
@@ -58,32 +64,40 @@ const App = () => (
               <Route path="/login" element={<LoginPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/register" element={<RegisterPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
+              <Route element={<ProtectedRoute />}>
+                <Route path="/profile" element={<ProfilePage />} />
+              </Route>
               <Route path="/schools-select" element={<SchoolSelectPage />} />
+
               <Route path="/school-dashboard" element={<SchoolDashboardLayout />}>
-                <Route element={<ProtectedRoute requireSchool schoolRoles={['TEACHER']} />}>
-                  <Route path="academic" element={<Outlet />}>
-                    <Route element={<ProtectedRoute requireSchool schoolRoles={['SECRETARY']} />}>
-                      <Route path="classes" element={<ClassesManagement />} />
-                    </Route>
-                    <Route path="subjects" element={<SubjectManagement />} />
-                    <Route path="results" element={<ResultManagement />} />
-                    <Route path="students" element={<DirectorStudents />} />
-                    <Route path="classes-list" element={<ClassesList />} />
-                    <Route path="settings" element={<SettingManagement />} />
-                    <Route path="payments" element={<FeesManagement />} />
-                    <Route path="grades" element={<GradesManagement />} />
-                    <Route path="statistics" element={<DirectorStatistics />} />
+                <Route path="academic" element={<Outlet />}>
+                  <Route element={<ProtectedRoute requireSchool schoolRoles={['SECRETARY']} />}>
+                    <Route path="classes" element={<ClassesManagement />} />
                   </Route>
+                  <Route path="subjects" element={<SubjectManagement />} />
+                  <Route path="results" element={<ResultManagement />} />
+                  <Route path="students" element={<DirectorStudents />} />
+                  <Route path="classes-list" element={<ClassesList />} />
+                  <Route path="settings" element={<SettingManagement />} />
+                  <Route path="payments" element={<FeesManagement />} />
+                  <Route path="grades" element={<GradesManagement />} />
+                  <Route path="statistics" element={<DirectorStatistics />} />
                 </Route>
                 {/* <Route path="overview" element={<OverviewPage />} /> */}
                 <Route path="edit" element={<EditSchoolPage />} />
                 <Route path="join-requests" element={<JoinRequestsPage />} />
                 <Route path="members" element={<ManageMembersPage />} />
-                <Route path="billing" element={<h1>Billing Logic</h1>} />
+                <Route path="billing" element={<SchoolBillingPage/>} />
                 <Route path="logs" element={<SchoolLogsPage />} />
               </Route>
-
+              <Route path="/admin-dashboard" element={<AdminDashboardLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="manage-users" element={<ManageUsers />} />
+                <Route path="manage-schools" element={<Outlet />}>
+                  <Route index element={<ManageSchools />} />
+                  <Route path=":id" element={<SchoolDetail />} />
+                </Route>
+              </Route>
               {/* Redirect from root to login */}
               <Route path="/" element={<Navigate to="/login" replace />} />
 

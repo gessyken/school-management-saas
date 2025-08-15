@@ -15,9 +15,11 @@ export interface School {
     };
     accessStatus: 'active' | 'suspended' | 'blocked';
     memberShipAccessStatus: boolean;
+    verificationStatus: string;
     createdAt: Date;
     updatedAt: Date;
     members: any;
+    verificationDetails: any;
 }
 
 export interface SchoolMember {

@@ -168,21 +168,28 @@ const SchoolSelectPage = () => {
   const filteredSchools = schools.filter((s) =>
     s.name.toLowerCase().includes(search.toLowerCase())
   );
-  console.log("filteredSchools",filteredSchools)
+  console.log("filteredSchools", filteredSchools)
   const memberSchools = user
     ? filteredSchools.filter((s) =>
-        s.members?.some((m) => m._id === user._id)
-      )
+      s.members?.some((m) => m._id === user._id)
+    )
     : [];
 
   const joinableSchools = user
     ? filteredSchools.filter(
-        (s) =>
-          !s.members?.some((m) => m._id === user._id) &&
-          s.memberShipAccessStatus
-      )
+      (s) =>
+        !s.members?.some((m) => m._id === user._id) &&
+        s.memberShipAccessStatus &&
+        s.verificationStatus === 'approved'
+    )
     : [];
-
+  const pendingValidationSchools = user
+    ? filteredSchools.filter(
+      (s) =>
+        s.members?.some((m) => m._id === user._id) &&
+        s.verificationStatus !== 'approved'
+    )
+    : [];
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 to-background p-6">
       <Header />
@@ -215,11 +222,55 @@ const SchoolSelectPage = () => {
                   onClick={() => setShowCreateModal(true)}
                   variant="outline"
                 >
-                  <PlusCircle className="w-5 h-5 mr-1" /> 
+                  <PlusCircle className="w-5 h-5 mr-1" />
                   {t('school.createButton')}
                 </Button>
               </div>
             </div>
+
+            {pendingValidationSchools.length > 0 && (
+              <section>
+                <h3 className="text-xl font-semibold text-primary mb-4">
+                  {t('school.pendingValidationTitle')}
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {pendingValidationSchools.map((school) => (
+                    <Card key={school._id} className="border-yellow-400 bg-yellow-50 hover:shadow-lg transition duration-300 h-full flex flex-col">
+                      <CardHeader className="flex flex-col items-center text-center space-y-2 flex-grow">
+                        <img
+                          src={school.logoUrl || "/default-school-logo.png"}
+                          alt={t('school.logoAlt')}
+                          className="h-16 w-16 object-cover rounded-full border"
+                        />
+                        <h4 className="text-lg font-semibold">{school.name}</h4>
+                        {school.email && (
+                          <p className="text-xs text-muted-foreground">{school.email}</p>
+                        )}
+                        <span className="text-xs text-yellow-600">
+                          {school.verificationStatus === 'pending'
+                            ? t('school.statusPending')
+                            : t('school.statusRejected')}
+                        </span>
+                        {school.verificationStatus === 'rejected' && school.verificationDetails?.rejectionReason && (
+                          <p className="text-xs text-red-500">
+                            {school.verificationDetails.rejectionReason}
+                          </p>
+                        )}
+                      </CardHeader>
+                      <CardContent>
+                        <Button
+                          variant="outline"
+                          className="w-full border-yellow-400 text-yellow-600 hover:bg-yellow-100"
+                          disabled
+                        >
+                          {t('school.awaitingApprovalButton')}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Member Schools */}
             {memberSchools.length > 0 && (
