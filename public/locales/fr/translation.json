@@ -141,5 +141,24 @@
     "noResultsMessage": "Aucune école ne correspond à votre recherche",
     "noSchoolsMessage": "Vous n'avez accès à aucune école pour le moment",
     "createFirstSchoolButton": "Créer votre première école"
-  }
+  },
+  "overview": "Vue d'ensemble",
+  "academic": "Académique",
+  "classes": "Classes",
+  "subjects": "Matières",
+  "results": "Résultats",
+  "students": "Élèves",
+  "classesList": "Liste des classes",
+  "settings": "Paramètres",
+  "payments": "Paiements",
+  "grades": "Notes",
+  "statistics": "Statistiques",
+  "editSchool": "Modifier l'école",
+  "joinRequests": "Demandes d'adhésion",
+  "members": "Membres",
+  "billing": "Facturation",
+  "logs": "Journaux",
+  "schoolAdministration": "Administration Scolaire",
+  "schoolManagement": "Gestion Scolaire",
+  "changeLanguage": "Passer en Anglais"
 }

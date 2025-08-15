@@ -141,5 +141,24 @@
     "noResultsMessage": "No schools match your search",
     "noSchoolsMessage": "You don't have access to any schools yet",
     "createFirstSchoolButton": "Create your first school"
-  }
+  },
+  "overview": "Overview",
+  "academic": "Academic",
+  "classes": "Classes",
+  "subjects": "Subjects",
+  "results": "Results",
+  "students": "Students",
+  "classesList": "Classes List",
+  "settings": "Settings",
+  "payments": "Payments",
+  "grades": "Grades",
+  "statistics": "Statistics",
+  "editSchool": "Edit School",
+  "joinRequests": "Join Requests",
+  "members": "Members",
+  "billing": "Billing",
+  "logs": "Logs",
+  "schoolAdministration": "School Administration",
+  "schoolManagement": "School Management",
+  "changeLanguage": "Switch to French"
 }

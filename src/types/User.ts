@@ -18,9 +18,9 @@ export interface User {
     firstName: string;
     lastName: string;
     gender: string;
-    currentSchoolId:string;
+    currentSchoolId: string;
     phoneNumber: string;
-    role: 'admin' | 'vendor' | 'customer' | 'delivery';
+    roles: string[] | 'admin' | 'vendor' | 'customer' | 'delivery';
     avatar?: string;
     createdAt: string;
     updatedAt: string;

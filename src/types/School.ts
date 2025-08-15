@@ -63,6 +63,7 @@ export interface PaginatedResponse<T> {
 
 export interface SchoolContextType {
     currentSchool: School | null;
+    setCurrentSchool;
     schools: School[];
     members: SchoolMember[];
     joinRequests: JoinRequest[];
@@ -77,4 +78,5 @@ export interface SchoolContextType {
     approveJoinRequest: (schoolId: string, userId: string) => Promise<void>;
     rejectJoinRequest: (schoolId: string, userId: string) => Promise<void>;
     refresh: () => Promise<void>;
+    hasRoleSchool;
 }

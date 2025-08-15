@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Header from "@/components/header/Header";
 import {
   ChevronDown,
@@ -13,6 +14,7 @@ import {
   LogOut,
   Newspaper,
   Logs,
+  Languages,
 } from "lucide-react";
 
 interface SidebarItem {
@@ -34,96 +36,95 @@ import {
   UserCog,
   FileClock,
   BookMarked
-} from "lucide-react"; // assuming you're using lucide-react
+} from "lucide-react";
 
-const sidebarTabs: SidebarItem[] = [
+const getSidebarTabs = (t: (key: string) => string): SidebarItem[] => [
   {
-    label: "Vue d'ensemble",
+    label: t("overview"),
     path: "/school-dashboard",
-    icon: LayoutDashboard, // More intuitive for dashboard
+    icon: LayoutDashboard,
   },
   {
-    label: "Académique",
+    label: t("academic"),
     children: [
       {
-        label: "Classes",
+        label: t("classes"),
         path: "/school-dashboard/academic/classes",
         icon: School,
       },
       {
-        label: "Matières",
+        label: t("subjects"),
         path: "/school-dashboard/academic/subjects",
         icon: BookMarked,
       },
       {
-        label: "Résultats",
+        label: t("results"),
         path: "/school-dashboard/academic/results",
-        icon: ScrollText, // represents a paper or result
+        icon: ScrollText,
       },
       {
-        label: "Élèves",
+        label: t("students"),
         path: "/school-dashboard/academic/students",
         icon: Users,
       },
       {
-        label: "Liste des classes",
+        label: t("classesList"),
         path: "/school-dashboard/academic/classes-list",
         icon: ListOrdered,
       },
       {
-        label: "Paramètres",
+        label: t("settings"),
         path: "/school-dashboard/academic/settings",
         icon: Settings,
       },
       {
-        label: "Paiements",
+        label: t("payments"),
         path: "/school-dashboard/academic/payments",
         icon: CreditCard,
       },
       {
-        label: "Notes",
+        label: t("grades"),
         path: "/school-dashboard/academic/grades",
         icon: GraduationCap,
       },
       {
-        label: "Statistiques",
+        label: t("statistics"),
         path: "/school-dashboard/academic/statistics",
         icon: BarChart3,
       },
     ],
   },
   {
-    label: "Paramètres",
+    label: t("settings"),
     children: [
       {
-        label: "Modifier l'école",
+        label: t("editSchool"),
         path: "/school-dashboard/edit",
         icon: Building2,
       },
       {
-        label: "Demandes d'adhésion",
+        label: t("joinRequests"),
         path: "/school-dashboard/join-requests",
         icon: UserCheck,
       },
       {
-        label: "Membres",
+        label: t("members"),
         path: "/school-dashboard/members",
         icon: UserCog,
       },
       {
-        label: "Facturation",
+        label: t("billing"),
         path: "/school-dashboard/billing",
         icon: CreditCard,
       },
     ],
   },
   {
-    label: "Journaux",
+    label: t("logs"),
     path: "/school-dashboard/logs",
-    icon: FileClock, // log with a time symbol
+    icon: FileClock,
   },
 ];
-
 
 const SidebarMenuItem = ({ item }: { item: SidebarItem }) => {
   const [open, setOpen] = useState(false);
@@ -180,23 +181,42 @@ const SidebarMenuItem = ({ item }: { item: SidebarItem }) => {
 };
 
 const SchoolDashboardLayout = () => {
+  const { t, i18n } = useTranslation();
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
+
+  const changeLanguage = () => {
+    const newLanguage = currentLanguage === 'en' ? 'fr' : 'en';
+    i18n.changeLanguage(newLanguage);
+    setCurrentLanguage(newLanguage);
+  };
+
   return (
     <div className="flex h-screen bg-muted text-foreground">
       {/* Sidebar */}
       <aside className="w-[250px] bg-background border-r border-primary/20 text-foreground flex flex-col shadow-lg">
         <div className="p-6 text-xl font-bold border-b border-primary/30 text-primary">
-           🎓 Administration Scolaire
-         </div>
+          🎓 {t("schoolAdministration")}
+        </div>
 
         <nav className="flex-1 p-4 space-y-3 text-sm">
-          {sidebarTabs.map((tab) => (
+          {getSidebarTabs(t).map((tab) => (
             <SidebarMenuItem key={tab.label} item={tab} />
           ))}
         </nav>
 
+        <div className="p-4 border-t border-primary/30">
+          <button
+            onClick={changeLanguage}
+            className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-primary/10 text-primary w-full"
+          >
+            <Languages className="w-4 h-4" />
+            <span>{t("changeLanguage")}</span>
+          </button>
+        </div>
+
         <div className="p-4 text-xs text-center border-t border-primary/30 text-muted-foreground">
-           &copy; 2025 Gestion Scolaire
-         </div>
+          &copy; {new Date().getFullYear()} {t("schoolManagement")}
+        </div>
       </aside>
 
       {/* Main Content Area */}

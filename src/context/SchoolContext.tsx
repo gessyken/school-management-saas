@@ -2,9 +2,10 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { schoolService } from '@/services/schoolService';
 import { useAuth } from './AuthContext';
 import { School, SchoolMember, JoinRequest, SchoolContextType, CreateSchoolDto, UpdateSchoolDto } from '@/types/School';
-import { TOKEN_KEY } from '@/lib/key';
+import { SCHOOL_KEY, TOKEN_KEY } from '@/lib/key';
 
 const SchoolContext = createContext<SchoolContextType>({} as SchoolContextType);
+type MemberSchoolRole = 'USER' | 'ADMIN' | 'STUDENT';
 
 export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
@@ -21,8 +22,8 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         try {
             setLoading(true);
             const response = await schoolService.getAll();
-            console.log("response.items",response)
-            console.log("response.items",response.items)
+            console.log("response.items", response)
+            console.log("response.items", response.items)
             setSchools(response);
 
             // Set current school if user has membership
@@ -65,7 +66,8 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setLoading(true);
             const { token, school } = await schoolService.switch(schoolId);
             localStorage.setItem(TOKEN_KEY, token);
-            console.log("token, school",token, school)
+            localStorage.setItem(SCHOOL_KEY, JSON.stringify(school));
+            console.log("token, school", token, school)
             setCurrentSchool(school);
             await fetchMembers(schoolId);
         } catch (err) {
@@ -149,6 +151,8 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     useEffect(() => {
+        const storedSchool = localStorage.getItem(SCHOOL_KEY);
+
         if (user) {
             fetchSchools();
         } else {
@@ -157,12 +161,32 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setMembers([]);
             setJoinRequests([]);
         }
+        if (storedSchool) {
+            setCurrentSchool(JSON.parse(storedSchool));
+        }
     }, [user, fetchSchools]);
+
+    const hasRoleSchool = (role: MemberSchoolRole | MemberSchoolRole[]) => {
+        const userMembership = currentSchool.members?.find(
+            (m) => m._id === user?._id
+        );
+        const roles = userMembership?.memberships?.find(
+            (m) => m.school === currentSchool._id
+        )?.roles;
+
+        if (!roles) return false;
+
+        if (Array.isArray(role)) {
+            return role.some(r => roles.includes(r));
+        }
+        return roles.includes(role);
+    };
 
     return (
         <SchoolContext.Provider
             value={{
                 currentSchool,
+                setCurrentSchool,
                 schools,
                 members,
                 joinRequests,
@@ -177,6 +201,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 approveJoinRequest,
                 rejectJoinRequest,
                 refresh: fetchSchools,
+                hasRoleSchool,
             }}
         >
             {children}

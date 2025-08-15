@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '@/services/authService';
 import { User, AuthResponse } from '@/types/User';
-import { TOKEN_KEY, USER_KEY } from "@/lib/key";
+import { SCHOOL_KEY, TOKEN_KEY, USER_KEY } from "@/lib/key";
 import { useTranslation } from 'react-i18next';
 
 interface AuthContextType {
@@ -135,6 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAuthenticated(false);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(SCHOOL_KEY);
   };
 
   const getProfile = async () => {

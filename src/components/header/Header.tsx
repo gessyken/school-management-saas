@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { USER_KEY, TOKEN_KEY } from "@/lib/key";
+import { USER_KEY, TOKEN_KEY, SCHOOL_KEY } from "@/lib/key";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,7 +21,7 @@ const Header = () => {
   const [notifications, setNotifications] = useState<number>(3); // Mock notifications count
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { currentSchool, schools, switchSchool } = useSchool();
+  const { currentSchool, schools, setCurrentSchool } = useSchool();
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
@@ -30,6 +30,8 @@ const Header = () => {
   };
 
   const handleSchoolChange = () => {
+    localStorage.removeItem(SCHOOL_KEY);
+    setCurrentSchool(null)
     navigate("/schools-select");
   };
 
@@ -71,9 +73,9 @@ const Header = () => {
       {user && (
         <div className="flex items-center gap-4">
           {/* Notifications */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleNotifications}
             className="relative rounded-full hover:bg-skyblue/10"
           >
@@ -105,8 +107,8 @@ const Header = () => {
               </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent 
-              align="end" 
+            <DropdownMenuContent
+              align="end"
               className="w-56 shadow-xl border border-skyblue/20 bg-white/95 backdrop-blur-md"
             >
               <div className="px-3 py-2">
