@@ -144,11 +144,832 @@
     "requestJoinButton": "Request to join",
     "noResultsMessage": "No schools match your search",
     "noSchoolsMessage": "You don't have access to any schools yet",
-    "createFirstSchoolButton": "Create your first school"
+    "createFirstSchoolButton": "Create your first school",
+    "students": {
+      "title": "Student Management",
+      "search_placeholder": "Search for a student...",
+      "add_student": "Add Student",
+      "import": "Import",
+      "export": {
+        "matricule": "Matricule",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "email": "Email",
+        "phone": "Phone",
+        "gender": "Gender",
+        "dob": "Date of Birth",
+        "level": "Level",
+        "status": "Status",
+        "address_street": "Address - Street",
+        "address_city": "Address - City",
+        "address_state": "Address - State",
+        "address_country": "Address - Country",
+        "emergency_name": "Emergency Contact - Name",
+        "emergency_relation": "Emergency Contact - Relationship",
+        "emergency_phone": "Emergency Contact - Phone",
+        "created_at": "Created At",
+        "updated_at": "Updated At",
+        "sheet_name": "Students",
+        "filename": "students",
+        "pdf_title": "Students List",
+        "export_date": "Export Date"
+      },
+      "filters": {
+        "title": "Filters",
+        "reset": "Reset",
+        "all": "All",
+        "level": "Level",
+        "gender": "Gender",
+        "status": "Status",
+        "francophone_system": "🇫🇷 Francophone System",
+        "anglophone_system": "🇬🇧 Anglophone System"
+      },
+      "levels": {
+        "sixth": "Sixth",
+        "fifth": "Fifth",
+        "fourth": "Fourth",
+        "third": "Third",
+        "second": "Second",
+        "first": "First",
+        "terminal": "Terminal"
+      },
+      "gender": {
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+      },
+      "status": {
+        "active": "Active",
+        "suspended": "Suspended",
+        "graduated": "Graduated",
+        "withdrawn": "Withdrawn"
+      },
+      "table": {
+        "matricule": "Matricule",
+        "full_name": "Full Name",
+        "class": "Class",
+        "level": "Level",
+        "gender": "Gender",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "actions": {
+        "view": "View",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "no_students": {
+        "title": "No students found",
+        "filtered": "No students match your search criteria.",
+        "empty": "Start by adding your first student."
+      },
+      "modal": {
+        "create_title": "Add Student",
+        "edit_title": "Edit Student"
+      },
+      "form": {
+        "matricule": "Matricule",
+        "first_name": "First Name",
+        "last_name": "Last Name",
+        "email": "Email",
+        "phone": "Phone",
+        "education_system": "Education System",
+        "francophone_system": "🇫🇷 Francophone System",
+        "anglophone_system": "🇬🇧 Anglophone System",
+        "level": "Level",
+        "select_level": "Select a level",
+        "dob": "Date of Birth",
+        "gender": "Gender",
+        "select_gender": "Select gender",
+        "status": "Status",
+        "select_status": "Select status",
+        "address_section": "Address",
+        "street": "Street",
+        "city": "City",
+        "state": "State/Region",
+        "country": "Country",
+        "emergency_contact": "Emergency Contact",
+        "emergency_name": "Name",
+        "emergency_relation": "Relationship",
+        "emergency_phone": "Phone"
+      },
+      "details": {
+        "title": "Student Details"
+      },
+      "confirm_delete": "Are you sure you want to delete this student?",
+      "loading": "Loading students...",
+      "error": {
+        "loading": "Error loading students. Please try again.",
+        "load_failed": "Failed to load students",
+        "delete_failed": "Failed to delete student",
+        "update_failed": "Error updating student",
+        "create_failed": "Error creating student",
+        "import_failed": "Failed to import students"
+      },
+      "success": {
+        "created": "Student created successfully",
+        "updated": "Student updated successfully",
+        "deleted": "Student deleted successfully",
+        "imported": "Students imported successfully"
+      }
+    },
+    "class_list": {
+      "title": "Class List Management",
+      "search_placeholder": "Search for a student...",
+      "assign_student": "Assign Student",
+      "view_list": "View List",
+      "level": "Level",
+      "classes": "Classes",
+      "academic_year": "Academic Year",
+      "select_year": "Select Academic Year",
+      "matricule": "Matricule",
+      "full_name": "Full Name",
+      "class": "Class",
+      "status": "Status",
+      "add_payment": "Add Payment",
+      "no_students": "No students found.",
+      "payment_success": "Fee added successfully",
+      "no_modifications": "No Modifications",
+      "errors": {
+        "load_classes": "Unable to load classes",
+        "load_students": "Unable to load students",
+        "load_academic_students": "Unable to load academic students",
+        "export_failed": "Export failed",
+        "payment_failed": "Failed to add fee"
+      },
+      "excel": {
+        "academic_year": "Academic Year",
+        "student_name": "Student Name",
+        "class": "Class",
+        "term": "Term",
+        "term_average": "Term Average",
+        "term_rank": "Term Rank",
+        "discipline": "Discipline",
+        "sequence": "Sequence",
+        "sequence_average": "Sequence Average",
+        "sequence_rank": "Sequence Rank",
+        "absences": "Absences",
+        "subject": "Subject",
+        "current_mark": "Current Mark",
+        "mark_modifications": "Mark Modifications",
+        "sheet_name": "Academic Year",
+        "file_name": "academic_years.xlsx"
+      },
+      "pdf": {
+        "title": "Class List",
+        "matricule": "Matricule",
+        "first_name": "First Name",
+        "email": "Email",
+        "level": "Level",
+        "phone": "Phone Number",
+        "dob": "Date of Birth",
+        "gender": "Gender",
+        "file_prefix": "classes"
+      }
+    },
+    "result": {
+      "title": "📘 Result Management",
+      "search_placeholder": "🔎 Search for a student...",
+      "report_card": "Report Card",
+      "results": "Results",
+      "absences": "Absences",
+      "no_students": "No students found.",
+      "calculate_rank_term": "Calculate rank for term {term}",
+      "calculate_rank_sequence": "Calculate rank for sequence {sequence}",
+      "calculate_rank_subject": "Calculate rank for subject {subject}",
+      "filters": {
+        "title": "Filters",
+        "reset": "Reset",
+        "all": "All",
+        "academic_year": "Academic Year",
+        "select_academic_year": "Select Academic Year",
+        "class": "Class",
+        "select_class": "Select a class",
+        "term": "Term",
+        "sequence": "Sequence",
+        "subject": "Subject"
+      },
+      "table": {
+        "matricule": "Matricule",
+        "student_name": "Student Name",
+        "mark": "Mark",
+        "average": "Average",
+        "rank": "Rank",
+        "discipline": "Discipline",
+        "absences": "Absences"
+      },
+      "export": {
+        "academic_year": "Academic Year",
+        "student_name": "Student Name",
+        "class": "Class",
+        "term": "Term",
+        "term_average": "Term Average",
+        "term_rank": "Term Rank",
+        "discipline": "Discipline",
+        "sequence": "Sequence",
+        "sequence_average": "Sequence Average",
+        "sequence_rank": "Sequence Rank",
+        "subject": "Subject",
+        "current_mark": "Current Mark",
+        "mark_modifications": "Mark Modifications",
+        "modification": "{date} by {name}: {before} → {after}",
+        "no_modifications": "No modifications",
+        "created_at": "Created At",
+        "updated_at": "Updated At",
+        "sheet_name": "Academic Year",
+        "filename": "academic_years",
+        "pdf_title": "Academic Results",
+        "export_date": "Export Date",
+        "matricule": "Matricule",
+        "email": "Email",
+        "level": "Level",
+        "phone": "Phone",
+        "dob": "Date of Birth",
+        "gender": "Gender"
+      },
+      "success": {
+        "export_excel": "Excel exported successfully",
+        "export_pdf": "PDF exported successfully",
+        "calculate_rank": "Ranks calculated successfully"
+      },
+      "error": {
+        "load_classes": "Failed to load classes",
+        "load_students": "Failed to load students",
+        "load_terms": "Failed to load terms",
+        "export_excel": "Failed to export Excel",
+        "export_pdf": "Failed to export PDF",
+        "calculate_rank": "Failed to calculate ranks"
+      }
+    },
+    "common": {
+      "error": "Error",
+      "success": "Success",
+      "loading": "Loading...",
+      "na": "N/A",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next"
+      },
+      "name": "Name",
+      "average": "Avg",
+      "rank": "Rank",
+      "discipline": "Discipline",
+      "separator": "|"
+    },
+    "reportcard": {
+      "title": "Report Card",
+      "matricule": "Matricule",
+      "full_name": "Full Name",
+      "subject": "Subject",
+      "export_pdf": "Export as PDF",
+      "export_csv": "Export as CSV",
+      "summary": "Summary",
+      "overall_average": "Overall Average",
+      "pdf_filename": "ReportCard",
+      "csv_filename": "ReportCard"
+    },
+    "grades": {
+      "title": "📘 Grade Management",
+      "search_placeholder": "🔎 Search for a student...",
+      "absences": "Absences",
+      "absences_selected": "⚠️ Selected absences",
+      "absences_description": "Here you can record or view student absences for the {term} term of the academic year {year}.",
+      "no_students": "No students found.",
+      "calculate_rank": "Calculate rank",
+      "filters": {
+        "academic_year": "Academic Year",
+        "class": "Class",
+        "select_class": "Select a class",
+        "subject": "Subject",
+        "select_subject": "Select a subject",
+        "term": "Term",
+        "select_term": "Select a term"
+      },
+      "table": {
+        "matricule": "Matricule",
+        "student_name": "Student Name",
+        "mark": "Mark",
+        "rank": "Rank",
+        "discipline": "Discipline",
+        "absences": "Absences"
+      },
+      "subject": {
+        "name": "Name",
+        "code": "Code",
+        "coefficient": "Coefficient",
+        "term": "Term",
+        "academic_year": "Academic Year"
+      },
+      "export": {
+        "excel": "Excel",
+        "pdf": "PDF",
+        "academic_year": "Academic Year",
+        "student_name": "Student Name",
+        "class": "Class",
+        "term": "Term",
+        "term_average": "Term Average",
+        "term_rank": "Term Rank",
+        "discipline": "Discipline",
+        "sequence": "Sequence",
+        "sequence_average": "Sequence Average",
+        "sequence_rank": "Sequence Rank",
+        "absences": "Absences",
+        "subject": "Subject",
+        "current_mark": "Current Mark",
+        "mark_modifications": "Mark Modifications",
+        "modification": "{date} by {name}: {before} → {after}",
+        "no_modifications": "No modifications",
+        "created_at": "Created At",
+        "updated_at": "Updated At",
+        "sheet_name": "Academic Year",
+        "filename": "academic_years",
+        "pdf_title": "Academic Results",
+        "export_date": "Export Date",
+        "matricule": "Matricule",
+        "email": "Email",
+        "level": "Level",
+        "phone": "Phone",
+        "dob": "Date of Birth",
+        "gender": "Gender"
+      },
+      "success": {
+        "export_excel": "Excel exported successfully",
+        "export_pdf": "PDF exported successfully",
+        "update_mark": "Mark updated successfully",
+        "update_absences": "Absences updated successfully",
+        "calculate_rank": "Ranks calculated successfully"
+      },
+      "error": {
+        "load_sequences": "Failed to load sequences",
+        "load_academic_years": "Failed to load academic years",
+        "load_classes": "Failed to load classes",
+        "load_students": "Failed to load students",
+        "load_terms": "Failed to load terms",
+        "export_excel": "Failed to export Excel",
+        "export_pdf": "Failed to export PDF",
+        "update_mark": "Failed to update mark",
+        "update_absences": "Failed to update absences",
+        "calculate_rank": "Failed to calculate ranks"
+      }
+    },
+    "settings": {
+      "title": "Settings Management",
+      "tabs": {
+        "academic_years": "Academic Years",
+        "terms": "Terms",
+        "sequences": "Sequences"
+      },
+      "error": {
+        "load_data": "Failed to load settings data"
+      },
+      "term": {
+        "title": "Terms",
+        "search": {
+          "placeholder": "Search terms..."
+        },
+        "add": {
+          "button": "Add",
+          "title": "Add a Term"
+        },
+        "edit": {
+          "title": "Edit Term",
+          "aria_label": "Edit term"
+        },
+        "delete": {
+          "aria_label": "Delete term"
+        },
+        "select": {
+          "placeholder": "Select a term",
+          "academic_year": "Select academic year"
+        },
+        "term1": "Term 1",
+        "term2": "Term 2",
+        "term3": "Term 3",
+        "term4": "Term 4",
+        "start_date": "Start date",
+        "end_date": "End date",
+        "academic_year": "Academic year",
+        "active": "Active",
+        "inactive": "Inactive",
+        "na": "N/A",
+        "no_results": "No terms found.",
+        "cancel": "Cancel",
+        "update": "Update",
+        "create": "Create",
+        "confirm": {
+          "delete": "Are you sure you want to delete this term?"
+        },
+        "success": {
+          "create": "Term created successfully.",
+          "update": "Term updated successfully.",
+          "delete": "Term deleted successfully."
+        },
+        "status": {
+          "active": "Status changed to active.",
+          "inactive": "Status changed to inactive."
+        },
+        "error": {
+          "loading": "Failed to load data.",
+          "save": "Failed to save term.",
+          "delete": "Failed to delete term.",
+          "status": "Failed to update status."
+        }
+      },
+      "year": {
+        "title": "Academic Years",
+        "search": "Search academic years...",
+        "add": "Add",
+        "empty": "No academic years found.",
+        "error": {
+          "load": "Failed to load academic years",
+          "save": "Failed to save academic year",
+          "delete": "Failed to delete academic year",
+          "status": "Failed to update status"
+        },
+        "success": {
+          "create": "Academic year created successfully",
+          "update": "Academic year updated successfully",
+          "delete": "Academic year deleted successfully"
+        },
+        "confirm": {
+          "delete": "Are you sure you want to delete this academic year?"
+        },
+        "status": {
+          "active": "Active",
+          "inactive": "Inactive"
+        },
+        "edit": "Edit Academic Year",
+        "create": "Add Academic Year",
+        "select": "Select academic year",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "cancel": "Cancel",
+        "update": "Update"
+      },
+      "seq": {
+        "title": "Sequence Management",
+        "search": "Search sequences...",
+        "add": "Add Sequence",
+        "empty": "No sequences found",
+        "name": "Name",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "term": "Term",
+        "actions": "Actions",
+        "selectYear": "Select academic year",
+        "allTerms": "All terms",
+        "selectSeq": "Select sequence",
+        "seq1": "Sequence 1",
+        "seq2": "Sequence 2",
+        "seq3": "Sequence 3",
+        "seq4": "Sequence 4",
+        "academicYear": "Academic Year",
+        "selectTerm": "Select term",
+        "edit": "Edit Sequence",
+        "new": "New Sequence",
+        "update": "Update Sequence",
+        "create": "Create Sequence",
+        "error": {
+          "title": "Error",
+          "general": "An error occurred",
+          "load": "Failed to load sequences",
+          "loadYear": "Failed to load academic years",
+          "loadTerm": "Failed to load terms",
+          "save": "Failed to save sequence",
+          "delete": "Failed to delete sequence",
+          "status": "Failed to update status"
+        },
+        "success": {
+          "create": "Sequence created successfully",
+          "update": "Sequence updated successfully",
+          "delete": "Sequence deleted successfully"
+        },
+        "confirm": {
+          "delete": "Are you sure you want to delete this sequence?"
+        },
+        "status": {
+          "active": "Status changed to active",
+          "inactive": "Status changed to inactive"
+        }
+      }
+    },
+    "fee": {
+      "title": "Fees Management",
+      "loading": "Loading fees...",
+      "no_results": "No fees available",
+      "no_results_filtered": "No fees found",
+      "add_fees_message": "Fees will appear here once added",
+      "adjust_filters": "Try adjusting your search criteria",
+      "bill_id": "Bill ID",
+      "type": "Type",
+      "amount": "Amount (FCFA)",
+      "payment_date": "Payment Date",
+      "payment_method": "Payment Method",
+      "student_name": "Student Name",
+      "class": "Class",
+      "level": "Level",
+      "academic_year": "Academic Year",
+      "student": "Student",
+      "total_paid": "Total Paid",
+      "remaining": "Remaining",
+      "currency": "FCFA",
+      "actions": "Actions",
+      "detail": {
+        "title": "Fee Details",
+        "description": "Complete information about the selected fee."
+      },
+      "filters": {
+        "title": "Filters",
+        "reset": "Reset",
+        "search": "Search Student",
+        "search_placeholder": "Ex: Student",
+        "all": "All",
+        "french_system": "🇫🇷 French System",
+        "english_system": "🇬🇧 English System"
+      },
+      "levels": {
+        "sixth": "6e (Sixth)",
+        "fifth": "5e (Fifth)",
+        "fourth": "4e (Fourth)",
+        "third": "3e (Third)",
+        "second": "2nde (Second)",
+        "first": "1ère (First)",
+        "terminal": "Terminale"
+      },
+      "export": {
+        "excel": "Export Excel",
+        "pdf": "Export PDF",
+        "sheet_name": "Fees"
+      },
+      "pagination": {
+        "page": "Page {current} of {total}",
+        "previous": "Previous",
+        "next": "Next"
+      },
+      "close": "Close",
+      "view_aria": "View fee {billID}",
+      "edit_aria": "Edit fee {billID}",
+      "delete_aria": "Delete fee {billID}",
+      "success": {
+        "title": "Success",
+        "delete": "Fee deleted successfully",
+        "update": "Fee updated successfully"
+      },
+      "error": {
+        "title": "Error",
+        "load": "Failed to load fees. Please try again.",
+        "load_academic_years": "Failed to load academic years",
+        "load_classes": "Failed to load classes",
+        "delete": "Failed to delete fee. Please try again.",
+        "update": "Failed to update fee. Please try again."
+      },
+      "confirm": {
+        "delete": "Are you sure you want to delete fee {billID}?"
+      }
+    },
+    "payment_form": {
+      "student_info": "Student Information",
+      "name": "Name",
+      "class": "Class",
+      "academic_year": "Academic Year",
+      "na": "N/A",
+      "bill_id": "Fee Bill",
+      "fee_type": "Fee Type",
+      "amount": "Amount",
+      "payment_date": "Payment Date",
+      "payment_method": "Payment Method",
+      "cancel": "Cancel",
+      "update_button": "Update Fee",
+      "add_button": "Add Fee",
+      "placeholders": {
+        "bill_id": "Enter fee bill ID",
+        "fee_type": "Enter fee type",
+        "amount": "Enter amount",
+        "payment_method": "Enter payment method"
+      },
+      "errors": {
+        "bill_id_required": "Bill ID is required",
+        "type_required": "Fee type is required",
+        "amount_invalid": "Amount must be greater than zero",
+        "date_required": "Payment date is required",
+        "method_required": "Payment method is required",
+        "student_missing": "Student information is missing."
+      }
+    },
+    "assign_class": {
+      "title": "Assign Students to Class",
+      "studentList": "Student List",
+      "notAssigned": "Not assigned",
+      "noStudents": "No students found",
+      "assignButton": "Assign",
+      "status": {
+        "active": "Active",
+        "suspended": "Suspended",
+        "inactive": "Inactive"
+      },
+      "success": {
+        "title": "Success",
+        "description": "Created: {{created}}, Updated: {{updated}}, Failed: {{failed}}"
+      },
+      "error": {
+        "title": "Error",
+        "required": "Required field",
+        "selectRequirements": "Please select a class, year, and at least one student",
+        "general": "Error during assignment"
+      }
+    },
+    "members": {
+      "title": "School Members",
+      "loading": "Loading members...",
+      "empty": "No members found",
+      "search": {
+        "placeholder": "Search members...",
+        "noResults": "No members match your search"
+      },
+      "roles": {
+        "label": "Roles",
+        "admin": "Administrator",
+        "director": "Director",
+        "secretary": "Secretary",
+        "teacher": "Teacher"
+      },
+      "updateButton": "Update Roles",
+      "success": {
+        "update": {
+          "title": "Success",
+          "description": "Roles updated successfully"
+        }
+      },
+      "error": {
+        "loading": {
+          "title": "Error",
+          "description": "Failed to load members"
+        },
+        "update": {
+          "title": "Error",
+          "description": "Failed to update roles"
+        }
+      }
+    },
+    "billing": {
+      "title": "School Billing",
+      "saveUsage": "Save Usage",
+      "students": "Students",
+      "staff": "Staff",
+      "classes": "Classes",
+      "generateInvoice": "Generate Invoice",
+      "generating": "Generating...",
+      "adminTitle": "School Billing Management (Admin)",
+      "rulesTitle": "Billing Rules",
+      "rules": {
+        "baseFee": "Base Monthly Fee",
+        "perStudent": "Cost per Student",
+        "perStaff": "Cost per Staff",
+        "perClass": "Cost per Class"
+      },
+      "usageTitle": "Current Usage",
+      "usage": {
+        "students": "Students",
+        "staff": "Staff",
+        "classes": "Classes",
+        "lastCalculation": "Last Calculated"
+      }
+    },
+    "manage_members": {
+      "title": "Manage Members",
+      "loading": "Loading members...",
+      "empty": "No members found",
+      "search": {
+        "placeholder": "Search members...",
+        "no_results": "No members match your search"
+      },
+      "roles": {
+        "label": "Roles"
+      },
+      "update_button": "Update Roles",
+      "success": {
+        "update": {
+          "title": "Roles updated",
+          "description": "Member roles have been successfully updated"
+        }
+      },
+      "error": {
+        "loading": {
+          "title": "Error loading members",
+          "description": "Failed to load members. Please try again."
+        },
+        "update": {
+          "title": "Update failed",
+          "description": "Failed to update member roles. Please try again."
+        }
+      }
+    },
+    "edit_school": {
+      "title": "Edit School",
+      "name": "School Name",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address",
+      "subdomain": "Subdomain",
+      "subdomain_placeholder": "your-school",
+      "plan": "Plan",
+      "select_plan": "Select plan",
+      "plan_free": "Free",
+      "plan_basic": "Basic",
+      "plan_pro": "Pro",
+      "access_status": "Access Status",
+      "select_status": "Select status",
+      "status_pending": "Pending Verification",
+      "status_active": "Active",
+      "status_suspended": "Suspended",
+      "status_blocked": "Blocked",
+      "block_reason": "Block Reason",
+      "logo": "School Logo",
+      "logo_alt": "School logo",
+      "change_logo": "Change Logo",
+      "upload_logo": "Upload Logo",
+      "documents": "School Documents",
+      "document": "Document",
+      "add_document": "Add Document",
+      "membership_access": "Allow Membership Access",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "save_changes": "Save Changes",
+      "success": {
+        "title": "Success",
+        "school_updated": "School details updated successfully",
+        "logo_uploaded": "Logo uploaded successfully",
+        "document_uploaded": "Document uploaded successfully"
+      },
+      "error": {
+        "title": "Error",
+        "load_failed": "Failed to load school details",
+        "update_failed": "Failed to update school",
+        "logo_upload_failed": "Failed to upload logo",
+        "document_upload_failed": "Failed to upload document"
+      },
+      "validation": {
+        "title": "Validation Error",
+        "name_required": "School name is required",
+        "email_required": "Email is required",
+        "email_invalid": "Invalid email format",
+        "subdomain_invalid": "Subdomain can only contain lowercase letters, numbers and hyphens"
+      }
+    },
+    "join_requests": {
+      "title": "Join Requests",
+      "empty": "No pending join requests",
+      "invite_button": "Invite User",
+      "approve_button": "Approve",
+      "reject_button": "Reject",
+      "invite_modal": {
+        "title": "Invite User to Join",
+        "search_placeholder": "Search by email...",
+        "results": "Search Results",
+        "no_results": "No users found",
+        "send_button": "Send Invite"
+      },
+      "success": {
+        "approved": {
+          "title": "Request Approved",
+          "description": "User has been added to the school."
+        },
+        "rejected": {
+          "title": "Request Rejected",
+          "description": "Join request has been declined."
+        },
+        "invite_sent": {
+          "title": "Invitation Sent",
+          "description": "Join request has been sent to the user."
+        }
+      },
+      "error": {
+        "loading": {
+          "title": "Error Loading Requests",
+          "description": "Failed to load join requests. Please try again."
+        },
+        "search": {
+          "title": "Search Failed",
+          "description": "Failed to search for users. Please try again."
+        },
+        "invite": {
+          "title": "Invitation Failed",
+          "description": "Failed to send join request. Please try again."
+        },
+        "approve": {
+          "title": "Approval Failed",
+          "description": "Failed to approve request. Please try again."
+        },
+        "reject": {
+          "title": "Rejection Failed",
+          "description": "Failed to reject request. Please try again."
+        }
+      }
+    }
   },
   "overview": "Overview",
   "academic": "Academic",
-  "classes": "Classes",
+  "class": "Classes",
   "subjects": "Subjects",
   "results": "Results",
   "students": "Students",
@@ -221,5 +1042,441 @@
   },
   "alt_texts": {
     "logo_preview": "Logo preview"
+  },
+  "subject": {
+    "management_title": "Subject Management",
+    "total_subjects": "Total Subjects",
+    "active_subjects": "Active Subjects",
+    "inactive_subjects": "Inactive Subjects",
+    "search_placeholder": "Search a subject...",
+    "add_button": "Add",
+    "export_excel": "Excel",
+    "export_pdf": "PDF",
+    "import_button": "Import",
+    "loading_message": "Loading...",
+    "table_name": "Name",
+    "table_code": "Code",
+    "table_status": "Status",
+    "table_actions": "Actions",
+    "view_action": "View",
+    "edit_action": "Edit",
+    "deactivate_action": "Deactivate",
+    "activate_action": "Activate",
+    "delete_action": "Delete",
+    "previous_button": "Previous",
+    "next_button": "Next",
+    "page_info": "Page {{current}} of {{total}}",
+    "add_modal_title": "Add a subject",
+    "edit_modal_title": "Edit subject",
+    "view_modal_title": "Subject details",
+    "name_label": "Name",
+    "code_label": "Code",
+    "description_label": "Description",
+    "active_label": "Active",
+    "cancel_button": "Cancel",
+    "save_button": "Save",
+    "status_label": "Status",
+    "active_status": "Active",
+    "inactive_status": "Inactive",
+    "close_button": "Close",
+    "delete_confirmation": "Are you sure you want to delete the subject \"{{name}}\"?"
+  },
+  "classes": {
+    "title": "Class Management",
+    "search_placeholder": "Search a class...",
+    "add_button": "Add",
+    "quick_create": "Quick Create",
+    "export_excel": "Excel",
+    "export_pdf": "PDF",
+    "import_button": "Import",
+    "loading": "Loading classes...",
+    "no_results": "No results found",
+    "no_classes": "No classes available",
+    "add_first": "Add first class",
+    "edit_title": "Edit Class",
+    "create_title": "Create Class",
+    "quick_create_title": "Quick Class Creation",
+    "create_count": "Create {{count}} class(es)",
+    "updating": "Updating...",
+    "creating": "Creating...",
+    "confirm_delete": "Are you sure you want to delete this class?",
+    "subject": "Subject",
+    "coefficient": "Coefficient",
+    "class_of": "Class of",
+    "section": "Section",
+    "form": {
+      "name": "Name",
+      "description": "Description",
+      "status": "Status",
+      "select_status": "Select status",
+      "capacity": "Capacity",
+      "fee": "Fee Amount",
+      "education_system": "Education System",
+      "select_system": "Select system",
+      "level": "Level",
+      "select_level": "Select level",
+      "academic_year": "Academic Year",
+      "year_placeholder": "e.g. 2024-2025",
+      "main_teacher": "Main Teacher",
+      "select_teacher": "Select teacher",
+      "subjects": "Subjects",
+      "add_subject": "Add subject",
+      "subject": "Subject",
+      "teacher": "Teacher",
+      "no_subjects": "No subjects added",
+      "sections": "Sections",
+      "add_section": "Add section",
+      "add_default_subjects": "Add default subjects",
+      "subjects_to_add": "Subjects that will be added"
+    },
+    "status": {
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "system": {
+      "francophone": "Francophone System",
+      "anglophone": "Anglophone System"
+    },
+    "levels": {
+      "sixth": "Sixth",
+      "fifth": "Fifth",
+      "fourth": "Fourth",
+      "third": "Third",
+      "second": "Second",
+      "first_literary": "Literary",
+      "first_science": "Science",
+      "first_experimental": "Experimental Sciences",
+      "first_technical": "Technical",
+      "final_literary": "Final Literary",
+      "final_science": "Final Science",
+      "final_experimental": "Final Experimental Sciences",
+      "final_technical": "Final Technical",
+      "arts": "Arts",
+      "science": "Science",
+      "biology": "Biology",
+      "technical": "Technical"
+    },
+    "table": {
+      "name": "Name",
+      "status": "Status",
+      "capacity": "Capacity",
+      "year": "Year"
+    },
+    "export": {
+      "title": "Classes List",
+      "date": "Export Date"
+    },
+    "success": {
+      "create": "Class created successfully",
+      "update": "Class updated successfully",
+      "delete": "Class deleted successfully",
+      "import": "Import successful",
+      "quick_create": "{{count}} classes created successfully"
+    },
+    "errors": {
+      "load_classes": "Error loading classes. Please try again.",
+      "load_subjects": "Error loading subjects. Please try again.",
+      "load_teachers": "Error loading teachers. Please try again.",
+      "class_name_required": "Class name is required",
+      "subject_teacher_required": "Each subject must have a subject and teacher assigned",
+      "update_failed": "Error updating class",
+      "create_failed": "Error creating class",
+      "save_failed": "Error saving class",
+      "delete_failed": "Error deleting class. Please try again.",
+      "toggle_status": "Error changing status",
+      "import_failed": "Error during import",
+      "quick_create_failed": "Error during quick creation",
+      "level_required": "Please select a level",
+      "create_class_failed": "Failed to create class {{className}}"
+    },
+    "french": "French",
+    "math": "Mathematics",
+    "english": "English",
+    "history_geo": "History-Geography",
+    "physics": "Physics",
+    "biology": "Biology",
+    "pe": "Physical Education",
+    "arts": "Arts",
+    "music": "Music",
+    "english_lang": "English Language",
+    "history": "History",
+    "geography": "Geography",
+    "chemistry": "Chemistry"
+  },
+  "common": {
+    "none": "None",
+    "register": "Register",
+    "confirm": "Confirm",
+    "error": "Error",
+    "cancel": "Cancel",
+    "create": "Create",
+    "update": "Update",
+    "delete": "Delete",
+    "success": "Success",
+    "close": "Close",
+    "add": "Add",
+    "updating": "Updating...",
+    "adding": "Adding...",
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "loading": "Loading...",
+    "na": "N/A",
+    "name": "Name",
+    "average": "Avg",
+    "rank": "Rank",
+    "discipline": "Discipline",
+    "separator": "|"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "invoiceHistory": {
+    "generating": "Generating...",
+    "generateInvoice": "Generate Invoice",
+    "status": "Status",
+    "details": "Details",
+    "invoiceDetails": "Invoice Details",
+    "number": "Number",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "discount": "Discount",
+    "dueDate": "Due Date",
+    "paidAt": "Paid At",
+    "notPaid": "Not paid",
+    "downloadPDF": "Download PDF with QR",
+    "markAsPaid": "Mark as Paid",
+    "paymentTitle": "Invoice Payment",
+    "enterPhone": "Enter your phone number to proceed with payment:",
+    "phonePlaceholder": "Phone number (e.g. +237...)",
+    "cancel": "Cancel",
+    "confirmAndMarkPaid": "Confirm and Mark as Paid"
+  },
+  "schoolLogs": {
+    "title": "School Logs",
+    "loading": "Loading logs...",
+    "errorTitle": "Error",
+    "errorDescription": "Unable to load logs",
+    "filterByAction": "Filter by action",
+    "filterByModule": "Filter by module",
+    "search": "Search",
+    "searchPlaceholder": "Search description, module, user...",
+    "noLogs": "No matching logs found.",
+    "actions": {
+      "all": "All",
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete",
+      "login": "Login",
+      "logout": "Logout",
+      "error": "Error",
+      "view": "View",
+      "payment": "Payment"
+    },
+    "modules": {
+      "all": "All",
+      "student": "Student",
+      "teacher": "Teacher",
+      "academicyear": "Academic Year",
+      "fee": "Fee",
+      "classes": "Classes",
+      "sequence": "Sequence",
+      "subject": "Subject",
+      "system": "System",
+      "auth": "Auth"
+    },
+    "module": "Module",
+    "user": "User",
+    "notAvailable": "N/A",
+    "viewMetadata": "View metadata"
+  },
+  "usage": {
+    "studentsCount": "Number of students",
+    "staffCount": "Number of staff",
+    "classCount": "Number of classes"
+  },
+  "admin": {
+    "layout": {
+      "title": "Admin Panel",
+      "dashboard": "Dashboard",
+      "schools": "Schools",
+      "users": "Users",
+      "reports": "Reports",
+      "statistics": "Statistics",
+      "financial": "Financial Reports",
+      "activity_logs": "Activity Logs",
+      "settings": "Settings",
+      "change_language": "Change Language",
+      "copyright": "School Management System"
+    },
+    "manage_schools": {
+      "title": "Manage Schools",
+      "no_schools": "No schools found",
+      "loading": "Loading schools...",
+      "headers": {
+        "school": "School",
+        "email": "Email",
+        "phone": "Phone",
+        "subdomain": "Subdomain",
+        "plan": "Plan",
+        "usage": "Usage",
+        "billingStatus": "Billing Status",
+        "access": "Access",
+        "actions": "Actions"
+      },
+      "plans": {
+        "free": "Free",
+        "basic": "Basic",
+        "pro": "Pro"
+      },
+      "usage": {
+        "students": "Students",
+        "staff": "Staff",
+        "classes": "Classes"
+      },
+      "billingStatus": {
+        "active": "Active",
+        "trialing": "Trialing",
+        "past_due": "Past Due",
+        "canceled": "Canceled",
+        "unpaid": "Unpaid",
+        "inactive": "Inactive"
+      },
+      "accessStatus": {
+        "active": "Active",
+        "suspended": "Suspended",
+        "blocked": "Blocked",
+        "pending_verification": "Pending Verification",
+        "inactive": "Inactive"
+      },
+      "status": {
+        "active": "Active",
+        "suspended": "Suspended",
+        "blocked": "Blocked"
+      },
+      "actions": {
+        "view": "View Details",
+        "toggleAccess": "Toggle Access"
+      },
+      "confirm": {
+        "title": "Change status to {status}?",
+        "text": "Are you sure you want to change this school's access status?",
+        "confirm_button": "Yes, change it",
+        "cancel_button": "Cancel"
+      },
+      "success": {
+        "title": "Success",
+        "status_updated": "School access status updated successfully"
+      },
+      "error": {
+        "title": "Error",
+        "fetch_failed": "Failed to fetch schools",
+        "update_failed": "Failed to update school status"
+      }
+    },
+    "manage_user": {
+      "title": "User Management",
+      "register_new": "Register New User",
+      "register_title": "Register New User",
+      "unknown_school": "Unknown School",
+      "filters": {
+        "all_schools": "All Schools",
+        "all_status": "All Status",
+        "all_roles": "All Roles"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "roles": {
+        "user": "User",
+        "admin": "Administrator"
+      },
+      "school_roles": {
+        "director": "Director",
+        "secretary": "Secretary",
+        "teacher": "Teacher",
+        "admin": "Administrator"
+      },
+      "headers": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "status": "Status",
+        "global_role": "Global Role",
+        "memberships": "School Memberships",
+        "actions": "Actions"
+      },
+      "actions": {
+        "toggle_status": "Toggle Status",
+        "toggle_role": "Toggle Role",
+        "reset_password": "Reset Password"
+      },
+      "form": {
+        "first_name": "First Name",
+        "last_name": "Last Name",
+        "email": "Email",
+        "password": "Password",
+        "phone_number": "Phone Number",
+        "gender": "Gender",
+        "role": "Global Role",
+        "school": "School",
+        "select_school": "Select School",
+        "school_roles": "School Roles"
+      },
+      "genders": {
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+      },
+      "confirm": {
+        "toggle_status": "Are you sure you want to toggle this user's status?",
+        "toggle_role": "Are you sure you want to toggle this user's role?",
+        "reset_password": "Are you sure you want to reset password for {email}?"
+      },
+      "success": {
+        "register": {
+          "title": "Success",
+          "description": "User registered successfully"
+        },
+        "reset_password": {
+          "title": "Success",
+          "description": "Password reset link sent successfully"
+        }
+      },
+      "error": {
+        "loading": {
+          "title": "Error",
+          "description": "Failed to load data"
+        },
+        "register": {
+          "title": "Error",
+          "description": "Failed to register user"
+        }
+      }
+    }
+  },
+  "adminDashboard": {
+    "title": "Admin Dashboard",
+    "stats": {
+      "schools": "Schools",
+      "users": "Users",
+      "students": "Students",
+      "invoices": "Invoices",
+      "paidInvoices": "Paid Invoices",
+      "unpaidInvoices": "Unpaid Invoices",
+      "overdueSchools": "Overdue Schools",
+      "blockedSchools": "Blocked Schools",
+      "subjects": "Subjects",
+      "classes": "Classes",
+      "activeAcademicYears": "Active Academic Years"
+    },
+    "charts": {
+      "monthlyRevenue": "Monthly Revenue",
+      "newSchools": "New Schools Per Month"
+    }
   }
 }

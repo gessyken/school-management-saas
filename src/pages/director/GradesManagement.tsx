@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { studentService, Student } from "@/lib/services/studentService";
 import { Card } from "@/components/ui/card";
@@ -52,19 +53,17 @@ import {
 } from "@/lib/services/academicService";
 import { Tooltip } from "@/components/ui/tooltip";
 import "../../assets/style.css";
+
 const itemsPerPage = 5;
 
 export default function GradesManagement() {
+  const { t } = useTranslation();
   const [students, setStudents] = useState<Student[]>([]);
-  const [academicStudents, setAcademicStudents] = useState<
-    AcademicYearStudent[]
-  >([]);
+  const [academicStudents, setAcademicStudents] = useState<AcademicYearStudent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [showModal, setShowModal] = useState(false);
-
   const [sequences, setSequences] = useState<Sequence[]>([]);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [filter, setFilter] = useState({
@@ -77,7 +76,6 @@ export default function GradesManagement() {
   const [terms, setTerms] = useState<Term[]>([]);
   const [studentsMarks, setStudentsMarks] = useState<any>({});
   const [classesSubjects, setClassesSubjects] = useState<any[]>([]);
-
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const { toast } = useToast();
 
@@ -90,52 +88,84 @@ export default function GradesManagement() {
   }, []);
 
   const loadSequences = async () => {
-    const data = await settingService.getSequences();
-    setSequences(data);
-  };
-  const loadAcademicYearDetail = async () => {
-    const data = await settingService.getAcademicYears();
-    setAcademicYears(data);
-    if (data.length > 0 && filter.academicYear === "") {
-      setFilter({
-        ...filter,
-        academicYear: data.find((opt) => opt.isCurrent)?.name,
+    try {
+      const data = await settingService.getSequences();
+      setSequences(data);
+    } catch (error) {
+      toast({
+        title: t('common.error'),
+        description: t('school.grades.error.load_sequences'),
+        variant: "destructive",
       });
     }
   };
+
+  const loadAcademicYearDetail = async () => {
+    try {
+      const data = await settingService.getAcademicYears();
+      setAcademicYears(data);
+      if (data.length > 0 && filter.academicYear === "") {
+        setFilter({
+          ...filter,
+          academicYear: data.find((opt) => opt.isCurrent)?.name,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: t('common.error'),
+        description: t('school.grades.error.load_academic_years'),
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchClasses = async () => {
     try {
       const res = await classService.getAll({});
-      console.log(res.data);
       setClasses(res.data.classes);
     } catch {
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les classes",
+        title: t('common.error'),
+        description: t('school.grades.error.load_classes'),
+        variant: "destructive",
       });
     }
   };
+
   const fetchAcademicYear = async () => {
     try {
       const data = await academicService.getAll();
-      console.log("fetchAcademicYear", data);
       setAcademicStudents(data.students);
       generateMarksMap(data.students);
     } catch (error) {
       console.error("Failed to fetch students", error);
+      toast({
+        title: t('common.error'),
+        description: t('school.grades.error.load_students'),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
+
   const loadTerms = async () => {
-    const data = await settingService.getTerms({});
-    console.log(data);
-    setTerms(data);
+    try {
+      const data = await settingService.getTerms({});
+      setTerms(data);
+    } catch (error) {
+      toast({
+        title: t('common.error'),
+        description: t('school.grades.error.load_terms'),
+        variant: "destructive",
+      });
+    }
   };
+
   const filteredTerms = terms.filter((term) =>
     filter.academicYear ? term.academicYear === filter.academicYear : true
   );
-  console.log("terms", terms);
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
@@ -143,18 +173,10 @@ export default function GradesManagement() {
   const filteredAcademicStudents = academicStudents
     .filter(
       (academic) =>
-        academic?.student?.fullName
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        academic?.student?.firstName
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        academic?.student?.lastName
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        academic?.student?.matricule
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase())
+        academic?.student?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        academic?.student?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        academic?.student?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        academic?.student?.matricule?.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .filter(
       (academic) =>
@@ -173,7 +195,7 @@ export default function GradesManagement() {
     goToNextPage,
     goToPreviousPage,
     goToPage,
-  } = usePagination(filteredAcademicStudents, itemsPerPage); // subjects is your full data list
+  } = usePagination(filteredAcademicStudents, itemsPerPage);
 
   const exportExcel = () => {
     try {
@@ -184,126 +206,145 @@ export default function GradesManagement() {
         const classInfo = record.classes || {};
         const year = record.year;
 
-        // Flatten each term
         record.terms.forEach((term) => {
-          const termName = term.termInfo?.name || "N/A";
+          const termName = term.termInfo?.name || t('common.na');
           const termAverage = term.average || 0;
-          const termRank = term.rank ?? "N/A";
-          const termDiscipline = term.discipline || "N/A";
+          const termRank = term.rank ?? t('common.na');
+          const termDiscipline = term.discipline || t('common.na');
 
           term.sequences.forEach((sequence) => {
-            const sequenceName = sequence.sequenceInfo?.name || "N/A";
+            const sequenceName = sequence.sequenceInfo?.name || t('common.na');
             const sequenceAverage = sequence.average || 0;
-            const sequenceRank = sequence.rank ?? "N/A";
+            const sequenceRank = sequence.rank ?? t('common.na');
             const absences = sequence.absences || 0;
 
             sequence.subjects.forEach((subject) => {
-              const subjectName = subject.subjectInfo?.name || "N/A";
-              const currentMark = subject.marks?.currentMark ?? "N/A";
+              const subjectName = subject.subjectInfo?.name || t('common.na');
+              const currentMark = subject.marks?.currentMark ?? t('common.na');
 
-              // Handle modifications
               const modifications =
                 (subject.marks?.modified || [])
                   .map((mod) => {
-                    return `${mod.dateModified.toLocaleDateString()} by ${
-                      mod.modifiedBy?.name
-                    }: ${mod.preMark} → ${mod.modMark}`;
+                    return t('school.grades.export.modification', {
+                      date: mod.dateModified.toLocaleDateString(),
+                      name: mod.modifiedBy?.name || t('common.na'),
+                      before: mod.preMark,
+                      after: mod.modMark
+                    });
                   })
-                  .join(" | ") || "Aucune modification";
+                  .join(" | ") || t('school.grades.export.no_modifications');
 
               formattedData.push({
-                "Année Académique": year,
-                "Nom de l'étudiant": `${student.firstName || "N/A"} ${
-                  student.lastName || ""
-                }`,
-                Classe: classInfo.name || "N/A",
-                Terme: termName,
-                "Moyenne Terme": termAverage,
-                "Rang Terme": termRank,
-                Discipline: termDiscipline,
-                Séquence: sequenceName,
-                "Moyenne Séquence": sequenceAverage,
-                "Rang Séquence": sequenceRank,
-                Absences: absences,
-                Matière: subjectName,
-                "Note Actuelle": currentMark,
-                "Modifications de Note": modifications,
-                "Créé le": record.createdAt.toLocaleString(),
-                "Mis à jour le": record.updatedAt.toLocaleString(),
+                [t('school.grades.export.academic_year')]: year,
+                [t('school.grades.export.student_name')]: `${student.firstName || t('common.na')} ${student.lastName || ""}`,
+                [t('school.grades.export.class')]: classInfo.name || t('common.na'),
+                [t('school.grades.export.term')]: termName,
+                [t('school.grades.export.term_average')]: termAverage,
+                [t('school.grades.export.term_rank')]: termRank,
+                [t('school.grades.export.discipline')]: termDiscipline,
+                [t('school.grades.export.sequence')]: sequenceName,
+                [t('school.grades.export.sequence_average')]: sequenceAverage,
+                [t('school.grades.export.sequence_rank')]: sequenceRank,
+                [t('school.grades.export.absences')]: absences,
+                [t('school.grades.export.subject')]: subjectName,
+                [t('school.grades.export.current_mark')]: currentMark,
+                [t('school.grades.export.mark_modifications')]: modifications,
+                [t('school.grades.export.created_at')]: record.createdAt.toLocaleString(),
+                [t('school.grades.export.updated_at')]: record.updatedAt.toLocaleString(),
               });
             });
           });
         });
       });
 
-      // Convert to Excel
       const ws = XLSX.utils.json_to_sheet(formattedData);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Année Académique");
-      XLSX.writeFile(wb, "academic_years.xlsx");
+      XLSX.utils.book_append_sheet(wb, ws, t('school.grades.export.sheet_name'));
+      XLSX.writeFile(wb, `${t('school.grades.export.filename')}.xlsx`);
+
+      toast({
+        title: t('common.success'),
+        description: t('school.grades.success.export_excel'),
+      });
     } catch (error) {
-      console.error(
-        "Erreur lors de l'exportation des années académiques:",
-        error
-      );
+      console.error("Export error:", error);
+      toast({
+        title: t('common.error'),
+        description: t('school.grades.error.export_excel'),
+        variant: "destructive",
+      });
     }
   };
 
   const exportPDF = () => {
-    const doc = new jsPDF();
+    try {
+      const doc = new jsPDF();
 
-    // Title
-    doc.setFontSize(16);
-    doc.text("Liste des Matières", 14, 20);
+      // Title
+      doc.setFontSize(16);
+      doc.text(t('school.grades.export.pdf_title'), 14, 20);
 
-    // Date
-    const date = new Date().toLocaleDateString("fr-FR");
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Date d'exportation : ${date}`, 14, 28);
+      // Date
+      const date = new Date().toLocaleDateString();
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`${t('school.grades.export.export_date')}: ${date}`, 14, 28);
 
-    // Table headers
-    const tableColumn = [
-      "matricule",
-      "firstName",
-      "email",
-      "level",
-      "phoneNumber",
-      "dateOfBirth",
-      "gender",
-    ];
+      // Table headers
+      const tableColumn = [
+        t('school.grades.export.matricule'),
+        t('school.grades.export.student_name'),
+        t('school.grades.export.email'),
+        t('school.grades.export.level'),
+        t('school.grades.export.phone'),
+        t('school.grades.export.dob'),
+        t('school.grades.export.gender'),
+      ];
 
-    // Table rows
-    const tableRows = students.map((s) => [
-      s.matricule,
-      s.firstName,
-      s.email,
-      s.level,
-      s.phoneNumber,
-      new Date(s.dateOfBirth).toLocaleDateString(),
-      s.gender,
-    ]);
+      // Table rows
+      const tableRows = students.map((s) => [
+        s.matricule,
+        s.firstName,
+        s.email,
+        s.level,
+        s.phoneNumber,
+        new Date(s.dateOfBirth).toLocaleDateString(),
+        s.gender ? t(`school.students.gender.${s.gender}`) : t('common.na'),
+      ]);
 
-    // AutoTable
-    autoTable(doc, {
-      startY: 35,
-      head: [tableColumn],
-      body: tableRows,
-      styles: {
-        halign: "center",
-        valign: "middle",
-      },
-      headStyles: {
-        fillColor: [41, 128, 185], // Blue
-        textColor: 255,
-        fontStyle: "bold",
-      },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      margin: { top: 35 },
-    });
+      // AutoTable
+      autoTable(doc, {
+        startY: 35,
+        head: [tableColumn],
+        body: tableRows,
+        styles: {
+          halign: "center",
+          valign: "middle",
+        },
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: "bold",
+        },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { top: 35 },
+      });
 
-    // Save
-    doc.save(`matieres_${date.replace(/\//g, "-")}.pdf`);
+      // Save
+      doc.save(`${t('school.grades.export.filename')}_${date.replace(/\//g, "-")}.pdf`);
+
+      toast({
+        title: t('common.success'),
+        description: t('school.grades.success.export_pdf'),
+      });
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast({
+        title: t('common.error'),
+        description: t('school.grades.error.export_pdf'),
+        variant: "destructive",
+      });
+    }
   };
 
   const FilterBlock = ({ label, children }) => (
@@ -314,7 +355,7 @@ export default function GradesManagement() {
       {children}
     </div>
   );
-  console.log("filter", studentsMarks);
+
   const handleMarkUpdate = async (
     academicInfo,
     termInfo,
@@ -323,7 +364,6 @@ export default function GradesManagement() {
     newMark
   ) => {
     try {
-      console.log(academicInfo, termInfo, sequenceInfo, subjectInfo, newMark);
       let student = await academicService.updateMark(
         academicInfo,
         termInfo,
@@ -337,21 +377,23 @@ export default function GradesManagement() {
       record.terms = student?.academicYear?.terms;
       generateMarksMap(academicStudents);
       toast({
-        title: "Success",
-        description: `Students ${
-          subjectInfo === "absences" ? "absences" : "mark"
-        } update successfully`,
+        title: t('common.success'),
+        description: subjectInfo === "absences"
+          ? t('school.grades.success.update_absences')
+          : t('school.grades.success.update_mark'),
       });
     } catch (error) {
       console.error("Failed to update students", error);
       toast({
-        title: "Erreur",
-        description: `Failed to update students ${
-          subjectInfo === "absences" ? "Absences" : "Mark"
-        }`,
+        title: t('common.error'),
+        description: subjectInfo === "absences"
+          ? t('school.grades.error.update_absences')
+          : t('school.grades.error.update_mark'),
+        variant: "destructive",
       });
     }
   };
+
   const handleStudentMarkChange = (
     academicInfo,
     termInfo,
@@ -364,7 +406,7 @@ export default function GradesManagement() {
         ...studentsMarks,
         [`${academicInfo}-${termInfo}-${sequenceInfo}-${subjectInfo}`]: {
           ...studentsMarks[
-            `${academicInfo}-${termInfo}-${sequenceInfo}-${subjectInfo}`
+          `${academicInfo}-${termInfo}-${sequenceInfo}-${subjectInfo}`
           ],
           marks: {
             ...studentsMarks[
@@ -407,6 +449,7 @@ export default function GradesManagement() {
 
     setStudentsMarks(marksMap);
   };
+
   const calculateRank = async (
     classId,
     year,
@@ -424,41 +467,43 @@ export default function GradesManagement() {
       );
       await fetchAcademicYear();
       toast({
-        title: "Success",
-        description: `Students Ranks calculated successfully`,
+        title: t('common.success'),
+        description: t('school.grades.success.calculate_rank'),
       });
     } catch (error) {
       console.error("Failed to update students", error);
       toast({
-        title: "Erreur",
-        description: `Failed to calculate students Ranks`,
+        title: t('common.error'),
+        description: t('school.grades.error.calculate_rank'),
+        variant: "destructive",
       });
     }
   };
+
   const filteredSeq = sequences
     .filter((seq) => filteredTerms.some((opt) => opt._id === seq.term._id))
     .filter((seq) => (filter.term ? seq.term._id === filter.term : false));
-  // console.log("filteredSeq", filteredSeq);
+
   function formatToMax2Decimals(value) {
     if (typeof value !== "number") return value;
 
     const str = value.toString();
     const decimalPart = str.split(".")[1];
 
-    // If decimal part exists and length > 2, fix to 2 decimals
     if (decimalPart && decimalPart.length > 2) {
       return value.toFixed(2);
     }
-    // else return original string (no change)
     return str;
   }
 
   return (
     <div className="p-4 space-y-6">
-      <h1 className="text-3xl font-bold text-foreground">📘 Grade Management</h1>
+      <h1 className="text-3xl font-bold text-foreground">
+        {t('school.grades.title')}
+      </h1>
 
       <Card className="p-6 space-y-6 shadow-sm">
-        {/* 🔍 Search + Export */}
+        {/* Search + Export */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div></div>
 
@@ -469,7 +514,7 @@ export default function GradesManagement() {
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
-              Excel
+              {t('school.grades.export.excel')}
             </Button>
             <Button
               variant="outline"
@@ -477,19 +522,19 @@ export default function GradesManagement() {
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
-              PDF
+              {t('school.grades.export.pdf')}
             </Button>
           </div>
         </div>
 
-        {/* 📚 Filters */}
+        {/* Filters */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <FilterBlock label="Academic Year">
+          <FilterBlock label={t('school.grades.filters.academic_year')}>
             <Input readOnly value={filter.academicYear} />
           </FilterBlock>
           <div>
             <label className="block mb-1 text-sm font-medium text-foreground">
-              Classes
+              {t('school.grades.filters.class')}
             </label>
             <select
               className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
@@ -498,16 +543,13 @@ export default function GradesManagement() {
               onChange={(e) => {
                 const classId = e.target.value;
                 setFilter({ ...filter, classes: classId, subject: "" });
-                console.log(
-                  filteredClasses.find((c) => c._id === classId).subjects
-                );
                 setClassesSubjects(
-                  filteredClasses.find((c) => c._id === classId).subjects || []
+                  filteredClasses.find((c) => c._id === classId)?.subjects || []
                 );
                 generateMarksMap(academicStudents);
               }}
             >
-              <option value="">Select a classe</option>
+              <option value="">{t('school.grades.filters.select_class')}</option>
               {filteredClasses.map((item) => (
                 <option key={item._id} value={item._id}>
                   {item.classesName}
@@ -517,7 +559,7 @@ export default function GradesManagement() {
           </div>
           <div>
             <label className="block mb-1 text-sm font-medium text-foreground">
-              Subject
+              {t('school.grades.filters.subject')}
             </label>
             <select
               className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
@@ -529,8 +571,8 @@ export default function GradesManagement() {
                 generateMarksMap(academicStudents);
               }}
             >
-              <option value="">Select a Subject</option>
-              <option value="absences">absences</option>
+              <option value="">{t('school.grades.filters.select_subject')}</option>
+              <option value="absences">{t('school.grades.absences')}</option>
               {classesSubjects.map((item) => (
                 <option
                   key={item?.subjectInfo?._id}
@@ -543,7 +585,7 @@ export default function GradesManagement() {
           </div>
           <div>
             <label className="block mb-1 text-sm font-medium text-foreground">
-              Term
+              {t('school.grades.filters.term')}
             </label>
             <select
               className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
@@ -554,7 +596,7 @@ export default function GradesManagement() {
                 generateMarksMap(academicStudents);
               }}
             >
-              <option value="">Select a Term</option>
+              <option value="">{t('school.grades.filters.select_term')}</option>
               {filteredTerms.map((term) => (
                 <option key={term._id} value={term._id}>
                   {term.name}
@@ -564,27 +606,20 @@ export default function GradesManagement() {
           </div>
         </div>
 
-        {/* 📌 Subject Details */}
+        {/* Subject Details */}
         {filter.subject && (
           <div className="border rounded-lg p-4 bg-muted mt-4 shadow-sm">
             {filter.subject === "absences" ? (
               <>
                 <div className="text-sm text-foreground space-y-2">
                   <p className="font-semibold text-destructive">
-                    ⚠️ Absences sélectionnées
+                    {t('school.grades.absences_selected')}
                   </p>
                   <p>
-                    Ici, vous pouvez enregistrer ou afficher les absences des
-                    élèves pour le trimestre{" "}
-                    <strong>
-                      {filteredTerms.find((t) => t._id === filter.term)?.name}
-                    </strong>
-                    de l'année académique <strong>{filter.academicYear}</strong>
-                    .
-                  </p>
-                  <p>
-                    Veuillez utiliser la section de saisie ou de visualisation
-                    d'absences ci-dessous.
+                    {t('school.grades.absences_description', {
+                      term: filteredTerms.find((t) => t._id === filter.term)?.name,
+                      year: filter.academicYear
+                    })}
                   </p>
                 </div>
               </>
@@ -597,22 +632,22 @@ export default function GradesManagement() {
                   selected && (
                     <div className="text-sm text-foreground space-y-2">
                       <p>
-                        <strong>📘 Nom:</strong>{" "}
+                        <strong>{t('school.grades.subject.name')}:</strong>{" "}
                         {selected.subjectInfo.subjectName}
                       </p>
                       <p>
-                        <strong>🔢 Code:</strong>{" "}
+                        <strong>{t('school.grades.subject.code')}:</strong>{" "}
                         {selected.subjectInfo.subjectCode}
                       </p>
                       <p>
-                        <strong>🎯 Coefficient:</strong> {selected.coefficient}
+                        <strong>{t('school.grades.subject.coefficient')}:</strong> {selected.coefficient}
                       </p>
                       <p>
-                        <strong>📅 Trimestre:</strong>{" "}
+                        <strong>{t('school.grades.subject.term')}:</strong>{" "}
                         {filteredTerms.find((t) => t._id === filter.term)?.name}
                       </p>
                       <p>
-                        <strong>🗓️ Année académique:</strong>{" "}
+                        <strong>{t('school.grades.subject.academic_year')}:</strong>{" "}
                         {filter.academicYear}
                       </p>
                     </div>
@@ -623,21 +658,20 @@ export default function GradesManagement() {
           </div>
         )}
 
-        {/* <Card className="p-6 space-y-6 shadow-sm"> */}
-        {/* 🔍 Search + Export */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <Input
-            placeholder="🔎 Rechercher une matière..."
+            placeholder={t('school.grades.search_placeholder')}
             className="md:w-1/3 w-full"
             onChange={handleSearch}
             value={searchTerm}
           />
         </div>
-        {/* </Card> */}
-        {/* 📊 Grades Table */}
+
+        {/* Grades Table */}
         {loading ? (
           <div className="flex justify-center items-center p-8">
             <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
+            <span className="ml-2">{t('common.loading')}</span>
           </div>
         ) : (
           <>
@@ -648,13 +682,13 @@ export default function GradesManagement() {
                     rowSpan={2}
                     style={{ verticalAlign: "middle", textAlign: "center" }}
                   >
-                    Matricule
+                    {t('school.grades.table.matricule')}
                   </TableHead>
                   <TableHead
                     rowSpan={2}
                     style={{ verticalAlign: "middle", textAlign: "center" }}
                   >
-                    Nom complet
+                    {t('school.grades.table.student_name')}
                   </TableHead>
 
                   {filteredSeq
@@ -668,27 +702,23 @@ export default function GradesManagement() {
                         <div className="d-flex align-items-center justify-content-center gap-2">
                           <span>{seq.name}</span>
                           {filter.subject !== "absences" && (
-                            <Button
-                              size="sm"
-                              className="tooltip-button"
-                              title="Calculer le rang"
-                              aria-label={`Calculer le rang pour ${seq.name}`}
-                              onClick={() => {
-                                /* Add your calculate rank handler here */
-                                calculateRank(
-                                  filter.classes,
-                                  filter.academicYear,
-                                  filter.term,
-                                  seq._id,
-                                  filter.subject
-                                );
-                              }}
-                            >
-                              <Calculator size={16} />
-                              <span className="tooltip-text">
-                                Calculer le rang
-                              </span>
-                            </Button>
+                            <Tooltip >
+                              <Button
+                                title={t('school.grades.calculate_rank')}
+                                size="sm"
+                                onClick={() => {
+                                  calculateRank(
+                                    filter.classes,
+                                    filter.academicYear,
+                                    filter.term,
+                                    seq._id,
+                                    filter.subject
+                                  );
+                                }}
+                              >
+                                <Calculator size={16} />
+                              </Button>
+                            </Tooltip>
                           )}
                         </div>
                       </TableHead>
@@ -702,16 +732,20 @@ export default function GradesManagement() {
                       <React.Fragment key={`${seq._id}-su(bheaders`}>
                         {filter.subject !== "absences" ? (
                           <>
-                            <TableHead className="text-center">Mark</TableHead>
-                            <TableHead className="text-center">Rank</TableHead>
                             <TableHead className="text-center">
-                              Discipline
+                              {t('school.grades.table.mark')}
+                            </TableHead>
+                            <TableHead className="text-center">
+                              {t('school.grades.table.rank')}
+                            </TableHead>
+                            <TableHead className="text-center">
+                              {t('school.grades.table.discipline')}
                             </TableHead>
                           </>
                         ) : (
                           <>
                             <TableHead className="text-center">
-                              Absences
+                              {t('school.grades.table.absences')}
                             </TableHead>
                           </>
                         )}
@@ -724,9 +758,8 @@ export default function GradesManagement() {
                   currentData.map((record, rowIndex) => (
                     <TableRow
                       key={record._id}
-                      className={`${
-                        rowIndex % 2 === 0 ? "bg-muted/50" : "bg-background"
-                      } hover:bg-muted transition-colors`}
+                      className={`${rowIndex % 2 === 0 ? "bg-muted/50" : "bg-background"
+                        } hover:bg-muted transition-colors`}
                     >
                       <TableCell className="py-2 px-3 font-medium text-foreground">
                         {record?.student?.matricule}
@@ -822,7 +855,7 @@ export default function GradesManagement() {
                                       step="0.01"
                                       value={
                                         studentsMarks[
-                                          `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
+                                        `${record._id}-${filter.term}-${seq._id}-${filter.subject}`
                                         ] ?? 0
                                       }
                                       className="w-[10ch] text-center text-sm border border-border rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-ring"
@@ -858,21 +891,21 @@ export default function GradesManagement() {
                       colSpan={sequences.length * 2 + 2}
                       className="text-center text-muted-foreground italic py-4"
                     >
-                      Aucun étudiant trouvé.
+                      {t('school.grades.no_students')}
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
 
-            {/* 🔁 Pagination */}
+            {/* Pagination */}
             <div className="flex justify-between items-center mt-4">
               <Button
                 onClick={goToPreviousPage}
                 disabled={currentPage === 1}
                 className="bg-secondary"
               >
-                Précédent
+                {t('common.pagination.previous')}
               </Button>
 
               <div className="space-x-2">
@@ -892,7 +925,7 @@ export default function GradesManagement() {
                 disabled={currentPage === totalPages}
                 className="bg-secondary"
               >
-                Suivant
+                {t('common.pagination.next')}
               </Button>
             </div>
           </>

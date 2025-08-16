@@ -36,6 +36,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import CameroonSubjectsImporter from "@/components/CameroonSubjectsImporter";
+import { useTranslation } from "react-i18next";
 
 // Subject interface/type
 interface Subject {
@@ -60,6 +61,7 @@ const ConfirmationModal = ({
   onConfirm: () => void;
   onCancel: () => void;
 }) => {
+  const { t } = useTranslation();
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 px-4">
@@ -67,10 +69,10 @@ const ConfirmationModal = ({
         <p className="mb-4">{message}</p>
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={onCancel}>
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button variant="destructive" onClick={onConfirm}>
-            Supprimer
+            {t('common.delete')}
           </Button>
         </div>
       </div>
@@ -80,6 +82,7 @@ const ConfirmationModal = ({
 
 const Subjects = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [search, setSearch] = useState("");
@@ -161,8 +164,8 @@ const Subjects = () => {
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json(ws);
         await subjectService.bulkImport(data);
-        toast({ 
-          title: "Import réussi", 
+        toast({
+          title: "Import réussi",
           description: "Matières importées avec succès.",
           variant: "default"
         });
@@ -172,8 +175,8 @@ const Subjects = () => {
     } catch (error) {
       console.error("Failed to import subjects:", error);
       setError("Erreur lors de l'importation des matières. Veuillez réessayer.");
-      toast({ 
-        title: "Erreur", 
+      toast({
+        title: "Erreur",
         description: "L'import a échoué.",
         variant: "destructive"
       });
@@ -257,8 +260,8 @@ const Subjects = () => {
     } catch (error) {
       console.error('Error saving subject:', error);
       setError('Échec de l\'enregistrement de la matière');
-      toast({ 
-        title: "Erreur", 
+      toast({
+        title: "Erreur",
         description: "Échec de l'enregistrement",
         variant: "destructive"
       });
@@ -277,8 +280,8 @@ const Subjects = () => {
     } catch (error) {
       console.error('Error toggling subject status:', error);
       setError('Impossible de changer le statut de la matière');
-      toast({ 
-        title: "Erreur", 
+      toast({
+        title: "Erreur",
         description: "Impossible de changer le statut",
         variant: "destructive"
       });
@@ -305,8 +308,8 @@ const Subjects = () => {
     } catch (error) {
       console.error('Error deleting subject:', error);
       setError('Échec de la suppression de la matière');
-      toast({ 
-        title: "Erreur", 
+      toast({
+        title: "Erreur",
         description: "Échec de la suppression",
         variant: "destructive"
       });
@@ -320,14 +323,14 @@ const Subjects = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gestion des Matières</h1>
+        <h1 className="text-2xl font-bold">{t('subject.management_title')}</h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <Card className="bg-primary/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Nombre total de matières
+              {t('subject.total_subjects')}
             </CardTitle>
             <div className="text-2xl font-bold">{subjects.length}</div>
           </CardHeader>
@@ -336,7 +339,7 @@ const Subjects = () => {
         <Card className="bg-skyblue/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Matières actives
+              {t('subject.active_subjects')}
             </CardTitle>
             <div className="text-2xl font-bold">
               {subjects.filter((s) => s.isActive).length}
@@ -347,7 +350,7 @@ const Subjects = () => {
         <Card className="bg-skyblue/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Matières inactives
+              {t('subject.inactive_subjects')}
             </CardTitle>
             <div className="text-2xl font-bold">
               {subjects.filter((s) => !s.isActive).length}
@@ -356,7 +359,6 @@ const Subjects = () => {
         </Card>
       </div>
 
-      {/* Cameroon Subjects Importer */}
       <div className="mb-6">
         <CameroonSubjectsImporter onImportComplete={fetchSubjects} />
       </div>
@@ -364,7 +366,7 @@ const Subjects = () => {
       <Card className="p-4">
         <div className="flex justify-between items-center mb-4">
           <Input
-            placeholder="Rechercher une matière..."
+            placeholder={t('subject.search_placeholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-64"
@@ -373,19 +375,19 @@ const Subjects = () => {
           <div className="flex gap-2">
             <Button onClick={() => openModal("create")} disabled={loading}>
               <FilePlus className="mr-2 h-4 w-4" />
-              Ajouter
+              {t('subject.add_button')}
             </Button>
             <Button variant="outline" onClick={exportExcel} disabled={loading}>
               <Download className="mr-2 h-4 w-4" />
-              Excel
+              {t('subject.export_excel')}
             </Button>
             <Button variant="outline" onClick={exportPDF} disabled={loading}>
               <Download className="mr-2 h-4 w-4" />
-              PDF
+              {t('subject.export_pdf')}
             </Button>
             <label className="cursor-pointer bg-muted px-3 py-1 rounded">
               <Upload className="inline h-4 w-4 mr-2" />
-              Importer
+              {t('subject.import_button')}
               <input
                 type="file"
                 hidden
@@ -397,7 +399,6 @@ const Subjects = () => {
           </div>
         </div>
 
-        {/* Error Display */}
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center">
             <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
@@ -412,16 +413,16 @@ const Subjects = () => {
         )}
 
         {loading ? (
-          <p>Chargement...</p>
+          <p>{t('subject.loading_message')}</p>
         ) : (
           <>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>{t('subject.table_name')}</TableHead>
+                  <TableHead>{t('subject.table_code')}</TableHead>
+                  <TableHead>{t('subject.table_status')}</TableHead>
+                  <TableHead>{t('subject.table_actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -431,9 +432,8 @@ const Subjects = () => {
                     <TableCell>{subject.subjectCode}</TableCell>
                     <TableCell>
                       <CheckCircle
-                        className={`h-4 w-4 ${
-                          subject.isActive ? "text-primary" : "text-destructive"
-                        }`}
+                        className={`h-4 w-4 ${subject.isActive ? "text-primary" : "text-destructive"
+                          }`}
                       />
                     </TableCell>
                     <TableCell>
@@ -446,22 +446,22 @@ const Subjects = () => {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => openModal("view", subject)}>
                             <Eye className="h-4 w-4 mr-2" />
-                            Voir
+                            {t('subject.view_action')}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openModal("edit", subject)}>
                             <Pencil className="h-4 w-4 mr-2" />
-                            Modifier
+                            {t('subject.edit_action')}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => toggleActive(subject)}>
                             {subject.isActive ? (
                               <>
                                 <XCircle className="h-4 w-4 mr-2" />
-                                Désactiver
+                                {t('subject.deactivate_action')}
                               </>
                             ) : (
                               <>
                                 <CheckCircle className="h-4 w-4 mr-2" />
-                                Activer
+                                {t('subject.activate_action')}
                               </>
                             )}
                           </DropdownMenuItem>
@@ -470,7 +470,7 @@ const Subjects = () => {
                             className="text-destructive"
                           >
                             <Trash className="h-4 w-4 mr-2" />
-                            Supprimer
+                            {t('subject.delete_action')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -480,46 +480,44 @@ const Subjects = () => {
               </TableBody>
             </Table>
 
-            {/* Pagination controls */}
             <div className="flex justify-between items-center mt-4">
               <Button
                 variant="outline"
                 onClick={goToPreviousPage}
                 disabled={currentPage === 1 || loading}
               >
-                Précédent
+                {t('subject.previous_button')}
               </Button>
               <div>
-                Page {currentPage} sur {totalPages}
+                {t('subject.page_info', { current: currentPage, total: totalPages })}
               </div>
               <Button
                 variant="outline"
                 onClick={goToNextPage}
                 disabled={currentPage === totalPages || loading}
               >
-                Suivant
+                {t('subject.next_button')}
               </Button>
             </div>
           </>
         )}
       </Card>
 
-      {/* Modal for create/edit/view */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
           <div className="bg-background rounded-lg max-w-md w-full p-6 relative max-h-[90vh] overflow-auto">
             <h2 className="text-xl font-bold mb-4 capitalize">
               {modalMode === "create"
-                ? "Ajouter une matière"
+                ? t('subject.add_modal_title')
                 : modalMode === "edit"
-                ? "Modifier la matière"
-                : "Détails de la matière"}
+                  ? t('subject.edit_modal_title')
+                  : t('subject.view_modal_title')}
             </h2>
 
             {(modalMode === "create" || modalMode === "edit") && (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block mb-1 font-semibold">Nom</label>
+                  <label className="block mb-1 font-semibold">{t('subject.name_label')}</label>
                   <Input
                     type="text"
                     value={form.subjectName}
@@ -531,7 +529,7 @@ const Subjects = () => {
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 font-semibold">Code</label>
+                  <label className="block mb-1 font-semibold">{t('subject.code_label')}</label>
                   <Input
                     type="text"
                     value={form.subjectCode}
@@ -543,7 +541,7 @@ const Subjects = () => {
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 font-semibold">Description</label>
+                  <label className="block mb-1 font-semibold">{t('subject.description_label')}</label>
                   <textarea
                     className="w-full border-border rounded px-3 py-2"
                     value={form.description}
@@ -564,7 +562,7 @@ const Subjects = () => {
                     }
                     disabled={loading}
                   />
-                  <label htmlFor="isActive">Actif</label>
+                  <label htmlFor="isActive">{t('subject.active_label')}</label>
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button
@@ -573,10 +571,10 @@ const Subjects = () => {
                     onClick={closeModal}
                     disabled={loading}
                   >
-                    Annuler
+                    {t('subject.cancel_button')}
                   </Button>
                   <Button type="submit" disabled={loading}>
-                    Enregistrer
+                    {t('subject.save_button')}
                   </Button>
                 </div>
               </form>
@@ -585,20 +583,20 @@ const Subjects = () => {
             {modalMode === "view" && selectedSubject && (
               <div className="space-y-4">
                 <div>
-                  <strong>Nom:</strong> {selectedSubject.subjectName}
+                  <strong>{t('subject.name_label')}:</strong> {selectedSubject.subjectName}
                 </div>
                 <div>
-                  <strong>Code:</strong> {selectedSubject.subjectCode}
+                  <strong>{t('subject.code_label')}:</strong> {selectedSubject.subjectCode}
                 </div>
                 <div>
-                  <strong>Description:</strong> {selectedSubject.description || "-"}
+                  <strong>{t('subject.description_label')}:</strong> {selectedSubject.description || "-"}
                 </div>
                 <div>
-                  <strong>Statut:</strong>{" "}
-                  {selectedSubject.isActive ? "Actif" : "Inactif"}
+                  <strong>{t('subject.status_label')}:</strong>{" "}
+                  {selectedSubject.isActive ? t('subject.active_status') : t('subject.inactive_status')}
                 </div>
                 <div className="flex justify-end">
-                  <Button onClick={closeModal}>Fermer</Button>
+                  <Button onClick={closeModal}>{t('subject.close_button')}</Button>
                 </div>
               </div>
             )}
@@ -606,12 +604,9 @@ const Subjects = () => {
         </div>
       )}
 
-      {/* Confirmation delete modal */}
       <ConfirmationModal
         isOpen={confirmOpen}
-        message={`Êtes-vous sûr de vouloir supprimer la matière "${
-          subjectToDelete?.subjectName ?? ""
-        }" ?`}
+        message={t('subject.delete_confirmation', { name: subjectToDelete?.subjectName ?? "" })}
         onConfirm={handleDeleteConfirmed}
         onCancel={() => setConfirmOpen(false)}
       />

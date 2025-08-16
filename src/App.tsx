@@ -69,26 +69,27 @@ const App = () => (
               </Route>
               <Route path="/schools-select" element={<SchoolSelectPage />} />
 
-              <Route path="/school-dashboard" element={<SchoolDashboardLayout />}>
-                <Route path="academic" element={<Outlet />}>
-                  <Route element={<ProtectedRoute requireSchool schoolRoles={['SECRETARY']} />}>
+              <Route element={<ProtectedRoute requireSchool />}>
+                <Route path="/school-dashboard" element={<SchoolDashboardLayout />}>
+                  <Route index element={<DirectorStatistics />} />
+                  <Route path="academic" element={<Outlet />}>
                     <Route path="classes" element={<ClassesManagement />} />
+                    <Route path="subjects" element={<SubjectManagement />} />
+                    <Route path="results" element={<ResultManagement />} />
+                    <Route path="students" element={<DirectorStudents />} />
+                    <Route path="classes-list" element={<ClassesList />} />
+                    <Route path="settings" element={<SettingManagement />} />
+                    <Route path="payments" element={<FeesManagement />} />
+                    <Route path="grades" element={<GradesManagement />} />
+                    <Route path="statistics" element={<DirectorStatistics />} />
                   </Route>
-                  <Route path="subjects" element={<SubjectManagement />} />
-                  <Route path="results" element={<ResultManagement />} />
-                  <Route path="students" element={<DirectorStudents />} />
-                  <Route path="classes-list" element={<ClassesList />} />
-                  <Route path="settings" element={<SettingManagement />} />
-                  <Route path="payments" element={<FeesManagement />} />
-                  <Route path="grades" element={<GradesManagement />} />
-                  <Route path="statistics" element={<DirectorStatistics />} />
+                  {/* <Route path="overview" element={<OverviewPage />} /> */}
+                  <Route path="edit" element={<EditSchoolPage />} />
+                  <Route path="join-requests" element={<JoinRequestsPage />} />
+                  <Route path="members" element={<ManageMembersPage />} />
+                  <Route path="billing" element={<SchoolBillingPage />} />
+                  <Route path="logs" element={<SchoolLogsPage />} />
                 </Route>
-                {/* <Route path="overview" element={<OverviewPage />} /> */}
-                <Route path="edit" element={<EditSchoolPage />} />
-                <Route path="join-requests" element={<JoinRequestsPage />} />
-                <Route path="members" element={<ManageMembersPage />} />
-                <Route path="billing" element={<SchoolBillingPage/>} />
-                <Route path="logs" element={<SchoolLogsPage />} />
               </Route>
               <Route path="/admin-dashboard" element={<AdminDashboardLayout />}>
                 <Route index element={<AdminDashboard />} />

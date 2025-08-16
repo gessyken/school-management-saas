@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Download, GraduationCap, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 interface StudentReportCardProps {
   student: AcademicYearStudent;
@@ -42,290 +43,307 @@ const ReportCardManagement: React.FC<StudentReportCardProps> = ({
   subjects,
   studentMarks,
 }) => {
+  const { t } = useTranslation();
   const reportRef = useRef<HTMLDivElement>(null);
 
   // Export PDF
   const exportPDF = async () => {
     if (!reportRef.current) return;
 
-    // Use html2canvas to capture the div as a canvas
-    const canvas = await html2canvas(reportRef.current, {
-      scale: 2, // improve quality
-      useCORS: true,
-    });
-    const imgData = canvas.toDataURL("image/png");
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+      });
+      const imgData = canvas.toDataURL("image/png");
 
-    // Create PDF
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "pt",
-      format: "a4",
-    });
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4",
+      });
 
-    // Calculate width/height for A4 size
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-    pdf.save(
-      `${student.student.fullName || student.student.matricule}_ReportCard.pdf`
-    );
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(
+        `${student.student.fullName || student.student.matricule}_${t(
+          "school.reportcard.pdf_filename"
+        )}.pdf`
+      );
+    } catch (error) {
+      console.error("PDF export error:", error);
+    }
   };
 
   // Export CSV
   const exportCSV = () => {
-    // CSV header row
-    const header = ["Subject"];
-    terms.forEach((term) => {
-      const termSeqs = sequences.filter(
-        (seq) => seq.term._id === term._id && seq.isActive
-      );
-      termSeqs.forEach((seq) => header.push(`${term.name} | ${seq.name}`));
-      header.push(`${term.name} | Avg`);
-    });
-
-    // Rows per subject
-    const rows = subjects.map((subject) => {
-      const row = [subject.subjectInfo.subjectName];
+    try {
+      const header = [t("school.reportcard.subject")];
       terms.forEach((term) => {
         const termSeqs = sequences.filter(
           (seq) => seq.term._id === term._id && seq.isActive
         );
-        let avg = 0;
-        termSeqs.forEach((seq) => {
-          const key = `${student._id}-${term._id}-${seq._id}-${subject.subjectInfo._id}`;
-          const mark = studentMarks[key]?.marks?.currentMark ?? 0;
-          avg += mark;
-          row.push(mark.toFixed(2));
-        });
-        row.push((avg / termSeqs.length || 0).toFixed(2));
+        termSeqs.forEach((seq) =>
+          header.push(`${term.name} ${t("common.separator")} ${seq.name}`)
+        );
+        header.push(`${term.name} ${t("common.separator")} ${t("common.average")}`);
       });
-      return row;
-    });
 
-    // Compose CSV content
-    const csvContent = [header.join(","), ...rows.map((r) => r.join(","))].join(
-      "\n"
-    );
+      const rows = subjects.map((subject) => {
+        const row = [subject.subjectInfo.subjectName];
+        terms.forEach((term) => {
+          const termSeqs = sequences.filter(
+            (seq) => seq.term._id === term._id && seq.isActive
+          );
+          let avg = 0;
+          termSeqs.forEach((seq) => {
+            const key = `${student._id}-${term._id}-${seq._id}-${subject.subjectInfo._id}`;
+            const mark = studentMarks[key]?.marks?.currentMark ?? 0;
+            avg += mark;
+            row.push(mark.toFixed(2));
+          });
+          row.push((avg / termSeqs.length || 0).toFixed(2));
+        });
+        return row;
+      });
 
-    // Create Blob and trigger download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute(
-      "download",
-      `${student.student.fullName || student.student.matricule}_ReportCard.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const csvContent = [header.join(","), ...rows.map((r) => r.join(","))].join(
+        "\n"
+      );
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `${student.student.fullName || student.student.matricule}_${t(
+          "school.reportcard.csv_filename"
+        )}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("CSV export error:", error);
+    }
   };
 
   return (
     <div>
       <div className="flex justify-end gap-3 mb-4">
-        <button
+        <Button
           onClick={exportPDF}
-          className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90 transition"
+          variant="default"
+          className="flex items-center gap-2"
         >
-          Export as PDF
-        </button>
-        <button
+          <Download className="h-4 w-4" />
+          {t("school.reportcard.export_pdf")}
+        </Button>
+        <Button
           onClick={exportCSV}
-          className="bg-secondary text-secondary-foreground px-4 py-2 rounded hover:bg-secondary/90 transition"
+          variant="secondary"
+          className="flex items-center gap-2"
         >
-          Export as CSV
-        </button>
+          <Download className="h-4 w-4" />
+          {t("school.reportcard.export_csv")}
+        </Button>
       </div>
       <div
         ref={reportRef}
         className="max-w-6xl mx-auto bg-background p-6 border border-border rounded-xl shadow print:break-after-page text-sm"
       >
         <h2 className="text-3xl font-bold text-center text-foreground uppercase underline mb-6">
-          Report Card
+          {t("school.reportcard.title")}
         </h2>
 
         <Card className="mb-8 p-6 shadow-lg border border-border rounded-lg">
-  <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 text-muted-foreground">
-    <div className="flex items-center space-x-3">
-      <User className="text-primary" size={24} />
-      <div>
-        <p className="text-sm font-semibold text-foreground">Matricule</p>
-        <p className="text-base">{student.student.matricule}</p>
-      </div>
-    </div>
-    <div className="flex items-center space-x-3">
-      <GraduationCap className="text-secondary" size={24} />
-      <div>
-        <p className="text-sm font-semibold text-foreground">Full Name</p>
-        <p className="text-base">
-          {student.student.fullName ||
-            `${student.student.firstName} ${student.student.lastName}`}
-        </p>
-      </div>
-    </div>
-  </div>
-</Card>
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 text-muted-foreground">
+            <div className="flex items-center space-x-3">
+              <User className="text-primary" size={24} />
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {t("school.reportcard.matricule")}
+                </p>
+                <p className="text-base">{student.student.matricule}</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <GraduationCap className="text-secondary" size={24} />
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {t("school.reportcard.full_name")}
+                </p>
+                <p className="text-base">
+                  {student.student.fullName ||
+                    `${student.student.firstName} ${student.student.lastName}`}
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
 
-{/* Subject-centric Report Table */}
-<Card className="overflow-x-auto p-6 shadow-lg border border-border rounded-lg">
-  <Table className="min-w-full border border-border">
-    <TableHeader className="bg-muted/50">
-      <TableRow>
-        <TableHead
-        className="w-1/6 text-foreground uppercase tracking-wide text-sm font-semibold">
-          Subject
-        </TableHead>
-        {terms.map((term) => (
-          <TableHead
-            key={term._id}
-            colSpan={
-              sequences.filter(
-                (seq) => seq.term._id === term._id && seq.isActive
-              ).length + 1
-            }
-            className="text-center text-foreground uppercase tracking-wide text-sm font-semibold"
-          >
-            {term.name}
-          </TableHead>
-        ))}
-      </TableRow>
-      <TableRow>
-      <TableHead  className="w-1/6 text-foreground uppercase tracking-wide text-sm font-semibold">
-          Name
-        </TableHead>
-      {/* <TableHead  className="w-1/6 text-gray-700 uppercase tracking-wide text-sm font-semibold">
-          Coeff
-        </TableHead> */}
-        <TableHead className="bg-muted" />
-        {terms.map((term) => {
-          const termSeqs = sequences.filter(
-            (seq) => seq.term._id === term._id && seq.isActive
-          );
-          return (
-            <React.Fragment key={term._id}>
-              {termSeqs.map((seq) => (
-                <TableHead
-                  key={seq._id}
-                  className="bg-muted text-center text-muted-foreground text-xs font-medium"
-                >
-                  {seq.name}
+        {/* Subject-centric Report Table */}
+        <Card className="overflow-x-auto p-6 shadow-lg border border-border rounded-lg">
+          <Table className="min-w-full border border-border">
+            <TableHeader className="bg-muted/50">
+              <TableRow>
+                <TableHead className="w-1/6 text-foreground uppercase tracking-wide text-sm font-semibold">
+                  {t("school.reportcard.subject")}
                 </TableHead>
-              ))}
-              <TableHead className="bg-muted/80 text-center font-semibold text-foreground text-xs">
-                Avg
-              </TableHead>
-            </React.Fragment>
-          );
-        })}
-      </TableRow>
-    </TableHeader>
-
-    <TableBody>
-      {subjects.map((subject, idx) => (
-        <TableRow
-          key={subject.subjectInfo._id}
-          className={idx % 2 === 0 ? "bg-background" : "bg-muted/50"}
-          style={{ transition: "background-color 0.3s ease" }}
-          // subtle hover effect
-          onMouseEnter={e =>
-            (e.currentTarget.style.backgroundColor = "hsl(var(--muted))")
-          }
-          onMouseLeave={e =>
-            (e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "hsl(var(--background))" : "hsl(var(--muted) / 0.5)")
-          }
-        >
-          <TableCell className="font-semibold text-foreground">
-            {subject.subjectInfo.subjectName}
-          </TableCell>
-          <TableCell className="font-semibold text-foreground">
-            {subject.coefficient}
-          </TableCell>
-          {terms.map((term) => {
-            const termSeqs = sequences.filter(
-              (seq) => seq.term._id === term._id && seq.isActive
-            );
-            let avg = 0;
-            return (
-              <React.Fragment key={term._id}>
-                {termSeqs.map((seq) => {
-                  const key = `${student._id}-${term._id}-${seq._id}-${subject.subjectInfo._id}`;
-                  const data = studentMarks[key] ?? {};
-                  const mark = Number(
-                    data.marks?.currentMark?.toFixed(2) ?? 0
+                {terms.map((term) => (
+                  <TableHead
+                    key={term._id}
+                    colSpan={
+                      sequences.filter(
+                        (seq) => seq.term._id === term._id && seq.isActive
+                      ).length + 1
+                    }
+                    className="text-center text-foreground uppercase tracking-wide text-sm font-semibold"
+                  >
+                    {term.name}
+                  </TableHead>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableHead className="w-1/6 text-foreground uppercase tracking-wide text-sm font-semibold">
+                  {t("common.name")}
+                </TableHead>
+                {terms.map((term) => {
+                  const termSeqs = sequences.filter(
+                    (seq) => seq.term._id === term._id && seq.isActive
                   );
-                  avg += mark;
                   return (
-                    <TableCell
-                      key={seq._id}
-                      title={`Rank: ${data.rank ?? "-"}, Discipline: ${
-                        data.discipline ?? "-"
-                      }`}
-                      className="text-center text-muted-foreground font-medium"
-                    >
-                      {data.marks?.currentMark?.toFixed(2) ?? "-"}
-                    </TableCell>
+                    <React.Fragment key={term._id}>
+                      {termSeqs.map((seq) => (
+                        <TableHead
+                          key={seq._id}
+                          className="bg-muted text-center text-muted-foreground text-xs font-medium"
+                        >
+                          {seq.name}
+                        </TableHead>
+                      ))}
+                      <TableHead className="bg-muted/80 text-center font-semibold text-foreground text-xs">
+                        {t("common.average")}
+                      </TableHead>
+                    </React.Fragment>
                   );
                 })}
-                <TableCell className="text-center font-semibold text-foreground bg-muted">
-                  {termSeqs.length
-                    ? (avg / termSeqs.length).toFixed(2)
-                    : "-"}
-                </TableCell>
-              </React.Fragment>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {subjects.map((subject, idx) => (
+                <TableRow
+                  key={subject.subjectInfo._id}
+                  className={idx % 2 === 0 ? "bg-background" : "bg-muted/50"}
+                  style={{ transition: "background-color 0.3s ease" }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "hsl(var(--muted))")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor =
+                      idx % 2 === 0
+                        ? "hsl(var(--background))"
+                        : "hsl(var(--muted) / 0.5)")
+                  }
+                >
+                  <TableCell className="font-semibold text-foreground">
+                    {subject.subjectInfo.subjectName}
+                  </TableCell>
+                  <TableCell className="font-semibold text-foreground">
+                    {subject.coefficient}
+                  </TableCell>
+                  {terms.map((term) => {
+                    const termSeqs = sequences.filter(
+                      (seq) => seq.term._id === term._id && seq.isActive
+                    );
+                    let avg = 0;
+                    return (
+                      <React.Fragment key={term._id}>
+                        {termSeqs.map((seq) => {
+                          const key = `${student._id}-${term._id}-${seq._id}-${subject.subjectInfo._id}`;
+                          const data = studentMarks[key] ?? {};
+                          const mark = Number(
+                            data.marks?.currentMark?.toFixed(2) ?? 0
+                          );
+                          avg += mark;
+                          return (
+                            <TableCell
+                              key={seq._id}
+                              title={`${t("common.rank")}: ${
+                                data.rank ?? "-"
+                              }, ${t("common.discipline")}: ${
+                                data.discipline ?? "-"
+                              }`}
+                              className="text-center text-muted-foreground font-medium"
+                            >
+                              {data.marks?.currentMark?.toFixed(2) ?? "-"}
+                            </TableCell>
+                          );
+                        })}
+                        <TableCell className="text-center font-semibold text-foreground bg-muted">
+                          {termSeqs.length
+                            ? (avg / termSeqs.length).toFixed(2)
+                            : "-"}
+                        </TableCell>
+                      </React.Fragment>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+
+        {/* Summary per term */}
+        <div className="mt-10 space-y-8">
+          {terms.map((term) => {
+            const summaryKey =
+              sequences.length === 1
+                ? `${student._id}-${term._id}-${sequences[0]._id}-summary`
+                : `${student._id}-${term._id}-summary`;
+            const termSummary = studentMarks[summaryKey] ?? {};
+            return (
+              <Card
+                key={term._id}
+                className="p-6 shadow-lg border border-border rounded-lg"
+              >
+                <h4 className="text-xl font-bold text-foreground mb-5 border-b border-border pb-2">
+                  {term.name} {t("school.reportcard.summary")}
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-muted-foreground text-sm">
+                  <div>
+                    <p className="text-muted-foreground uppercase tracking-wide font-semibold mb-1">
+                      {t("school.reportcard.overall_average")}
+                    </p>
+                    <p className="text-lg font-semibold text-foreground">
+                      {termSummary.average?.toFixed(2) ?? "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground uppercase tracking-wide font-semibold mb-1">
+                      {t("common.rank")}
+                    </p>
+                    <p className="text-lg font-semibold text-foreground">
+                      {termSummary.rank ?? "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground uppercase tracking-wide font-semibold mb-1">
+                      {t("common.discipline")}
+                    </p>
+                    <p className="text-lg font-semibold text-foreground">
+                      {termSummary.discipline ?? "-"}
+                    </p>
+                  </div>
+                </div>
+              </Card>
             );
           })}
-        </TableRow>
-      ))}
-    </TableBody>
-  </Table>
-</Card>
-
-{/* Summary per term */}
-<div className="mt-10 space-y-8">
-  {terms.map((term) => {
-    const summaryKey = sequences.length===1? `${student._id}-${term._id}-${sequences[0]._id}-summary`: `${student._id}-${term._id}-summary`;
-    const termSummary = studentMarks[summaryKey] ?? {};
-    return (
-      <Card
-        key={term._id}
-        className="p-6 shadow-lg border border-border rounded-lg"
-      >
-        <h4 className="text-xl font-bold text-foreground mb-5 border-b border-border pb-2">
-          {term.name} Summary
-        </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-muted-foreground text-sm">
-          <div>
-            <p className="text-muted-foreground uppercase tracking-wide font-semibold mb-1">
-              Overall Average
-            </p>
-            <p className="text-lg font-semibold text-foreground">
-              {termSummary.average?.toFixed(2) ?? "-"}
-            </p>
-          </div>
-          <div>
-            <p className="text-muted-foreground uppercase tracking-wide font-semibold mb-1">
-              Rank
-            </p>
-            <p className="text-lg font-semibold text-foreground">
-              {termSummary.rank ?? "-"}
-            </p>
-          </div>
-          <div>
-            <p className="text-muted-foreground uppercase tracking-wide font-semibold mb-1">
-              Discipline
-            </p>
-            <p className="text-lg font-semibold text-foreground">
-              {termSummary.discipline ?? "-"}
-            </p>
-          </div>
         </div>
-      </Card>
-    );
-  })}
-</div>
-
       </div>
     </div>
   );

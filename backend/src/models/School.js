@@ -67,13 +67,14 @@ const schoolSchema = new mongoose.Schema({
     perStudentFee: { type: Number, default: 5 },
     perStaffFee: { type: Number, default: 200 },
     perClassFee: { type: Number, default: 150 },
-    // storageLimitMB: { type: Number, default: 1000 },
+    storageLimitMB: { type: Number, default: 1000 },          // <-- add this
+    pricePerExtraStorageMB: { type: Number, default: 2 },
   },
   usage: {
     studentsCount: { type: Number, default: 1000 },
     staffCount: { type: Number, default: 10 },
     classCount: { type: Number, default: 14 },
-    // storageUsedMB: { type: Number, default: 0 },
+    storageUsedMB: { type: Number, default: 0 },
     lastUsageCalculated: { type: Date },
   },
 
@@ -129,21 +130,30 @@ schoolSchema.methods.updateVerification = async function (status, adminId, rejec
 
 // Method: Compute total bill based on usage
 schoolSchema.methods.calculateMonthlyBill = function () {
-  const rules = this.billingRules;
-  const usage = this.usage;
+  const rules = this.billingRules || {};
+  const usage = this.usage || {};
+
+  const baseMonthlyFee = rules.baseMonthlyFee || 0;
+  const perStudentFee = rules.perStudentFee || 0;
+  const perStaffFee = rules.perStaffFee || 0;
+  const perClassFee = rules.perClassFee || 0;
+  const storageLimitMB = rules.storageLimitMB || 0;
+  const pricePerExtraStorageMB = rules.pricePerExtraStorageMB || 0;
+
+  const studentsCount = usage.studentsCount || 0;
+  const staffCount = usage.staffCount || 0;
+  const classCount = usage.classCount || 0;
+  const storageUsedMB = usage.storageUsedMB || 0;
 
   let total =
-    rules.baseMonthlyFee +
-    usage.studentsCount * rules.perStudentFee +
-    usage.staffCount * rules.perStaffFee +
-    usage.classCount * rules.perClassFee;
+    baseMonthlyFee +
+    studentsCount * perStudentFee +
+    staffCount * perStaffFee +
+    classCount * perClassFee;
 
-  const extraStorage =
-    usage.storageUsedMB > rules.storageLimitMB
-      ? usage.storageUsedMB - rules.storageLimitMB
-      : 0;
+  const extraStorage = storageUsedMB > storageLimitMB ? storageUsedMB - storageLimitMB : 0;
 
-  total += extraStorage * rules.pricePerExtraStorageMB;
+  total += extraStorage * pricePerExtraStorageMB;
 
   return total;
 };

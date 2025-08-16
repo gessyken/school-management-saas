@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   Table,
@@ -59,56 +60,54 @@ interface TeacherItem {
   fullName: string;
 }
 interface ClassSubject {
-  subjectInfo: string; // subject _id
+  subjectInfo: string;
   coefficient: number | "";
-  teacherInfo: string; // teacher _id
+  teacherInfo: string;
 }
 
 const itemsPerPage = 5;
 
 const ClassesManagement = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
 
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [search, setSearch] = useState("");
 
-  // Subjects and teachers list from API
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
   const [teachers, setTeachers] = useState<TeacherItem[]>([]);
 
-  // Predefined subjects for quick creation
   const defaultSubjects = {
     francophone: [
-      { name: 'Français', coefficient: 4 },
-      { name: 'Mathématiques', coefficient: 4 },
-      { name: 'Anglais', coefficient: 3 },
-      { name: 'Histoire-Géographie', coefficient: 3 },
-      { name: 'Sciences Physiques', coefficient: 3 },
-      { name: 'Sciences de la Vie et de la Terre', coefficient: 3 },
-      { name: 'Éducation Physique et Sportive', coefficient: 2 },
-      { name: 'Arts Plastiques', coefficient: 2 },
-      { name: 'Musique', coefficient: 2 }
+      { name: t('classes.french'), coefficient: 4 },
+      { name: t('classes.math'), coefficient: 4 },
+      { name: t('classes.english'), coefficient: 3 },
+      { name: t('classes.history_geo'), coefficient: 3 },
+      { name: t('classes.physics'), coefficient: 3 },
+      { name: t('classes.biology'), coefficient: 3 },
+      { name: t('classes.pe'), coefficient: 2 },
+      { name: t('classes.arts'), coefficient: 2 },
+      { name: t('classes.music'), coefficient: 2 }
     ],
     anglophone: [
-      { name: 'English Language', coefficient: 4 },
-      { name: 'Mathematics', coefficient: 4 },
-      { name: 'French', coefficient: 3 },
-      { name: 'History', coefficient: 3 },
-      { name: 'Geography', coefficient: 3 },
-      { name: 'Physics', coefficient: 3 },
-      { name: 'Chemistry', coefficient: 3 },
-      { name: 'Biology', coefficient: 3 },
-      { name: 'Physical Education', coefficient: 2 },
-      { name: 'Arts', coefficient: 2 }
+      { name: t('classes.english_lang'), coefficient: 4 },
+      { name: t('classes.math'), coefficient: 4 },
+      { name: t('classes.french'), coefficient: 3 },
+      { name: t('classes.history'), coefficient: 3 },
+      { name: t('classes.geography'), coefficient: 3 },
+      { name: t('classes.physics'), coefficient: 3 },
+      { name: t('classes.chemistry'), coefficient: 3 },
+      { name: t('classes.biology'), coefficient: 3 },
+      { name: t('classes.pe'), coefficient: 2 },
+      { name: t('classes.arts'), coefficient: 2 }
     ]
   };
 
-  // Form state and editing
   const [form, setForm] = useState<Omit<SchoolClass, "_id"> & { subjects: ClassSubject[] }>({
     classesName: "",
     description: "",
-    status: "Ouvert",
-    capacity: "30", // Capacité par défaut
+    status: "Open",
+    capacity: 30,
     amountFee: "",
     level: "",
     subjects: [],
@@ -122,12 +121,10 @@ const ClassesManagement = () => {
   const [showQuickCreateModal, setShowQuickCreateModal] = useState(false);
   const [expandedLevels, setExpandedLevels] = useState<Record<string, boolean>>({});
 
-  // Loading states
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Quick create state
   const [quickCreateForm, setQuickCreateForm] = useState({
     level: '',
     sections: ['A', 'B', 'C', 'D'],
@@ -137,23 +134,20 @@ const ClassesManagement = () => {
     addDefaultSubjects: true
   });
 
-   // Générer un nom de classe automatique
-   const generateClassName = () => {
-     const levels = educationSystem === 'francophone' 
-       ? ['6e', '5e', '4e', '3e', '2nde', '1ère A', '1ère C', '1ère D', '1ère TI', 'Terminale A', 'Terminale C', 'Terminale D', 'Terminale TI']
-       : ['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth A', 'Lower Sixth C', 'Lower Sixth D', 'Lower Sixth TI', 'Upper Sixth A', 'Upper Sixth C', 'Upper Sixth D', 'Upper Sixth TI'];
-     const randomLevel = levels[Math.floor(Math.random() * levels.length)];
-     const section = String.fromCharCode(65 + Math.floor(Math.random() * 3)); // A, B, or C
-     return `${randomLevel} ${section}`;
-   };
+  const generateClassName = () => {
+    const levels = educationSystem === 'francophone' 
+      ? ['6e', '5e', '4e', '3e', '2nde', '1ère A', '1ère C', '1ère D', '1ère TI', 'Terminale A', 'Terminale C', 'Terminale D', 'Terminale TI']
+      : ['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth A', 'Lower Sixth C', 'Lower Sixth D', 'Lower Sixth TI', 'Upper Sixth A', 'Upper Sixth C', 'Upper Sixth D', 'Upper Sixth TI'];
+    const randomLevel = levels[Math.floor(Math.random() * levels.length)];
+    const section = String.fromCharCode(65 + Math.floor(Math.random() * 3));
+    return `${randomLevel} ${section}`;
+  };
 
-   // Générer une année académique par défaut
-   const generateAcademicYear = () => {
-     const currentYear = new Date().getFullYear();
-     return `${currentYear}-${currentYear + 1}`;
-   };
+  const generateAcademicYear = () => {
+    const currentYear = new Date().getFullYear();
+    return `${currentYear}-${currentYear + 1}`;
+  };
 
-  // Pagination
   const filtered = classes.filter((cls) =>
     `${cls.classesName} ${cls.description ?? ""}`.toLowerCase().includes(search.toLowerCase())
   );
@@ -166,7 +160,6 @@ const ClassesManagement = () => {
     goToPage,
   } = usePagination(filtered, itemsPerPage);
 
-  // Fetch classes once on mount
   const fetchClasses = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -175,19 +168,17 @@ const ClassesManagement = () => {
       setClasses(res.data.classes || []);
     } catch (error) {
       console.error("Failed to fetch classes:", error);
-      setError("Erreur lors du chargement des classes. Veuillez réessayer.");
-      setClasses([]);
+      setError(t('classes.errors.load_classes'));
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les classes",
+        title: t('common.error'),
+        description: t('classes.errors.load_classes'),
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, t]);
 
-  // Fetch subjects
   const fetchSubjects = useCallback(async () => {
     try {
       const res = await subjectService.getAll({});
@@ -196,14 +187,13 @@ const ClassesManagement = () => {
       console.error("Failed to fetch subjects:", error);
       setSubjects([]);
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les matières",
+        title: t('common.error'),
+        description: t('classes.errors.load_subjects'),
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, t]);
 
-  // Fetch teachers
   const fetchTeachers = useCallback(async () => {
     try {
       const res = await userService.getAll({ roles: "TEACHER" });
@@ -212,12 +202,12 @@ const ClassesManagement = () => {
       console.error("Failed to fetch teachers:", error);
       setTeachers([]);
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les enseignants",
+        title: t('common.error'),
+        description: t('classes.errors.load_teachers'),
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, t]);
 
   useEffect(() => {
     fetchClasses();
@@ -225,14 +215,12 @@ const ClassesManagement = () => {
     fetchTeachers();
   }, [fetchClasses, fetchSubjects, fetchTeachers]);
 
-  // Submit handler (create or update)
-  // Reset form function
   const resetForm = () => {
     setForm({
       classesName: generateClassName(),
       description: "",
       status: "Open",
-      capacity: "30",
+      capacity: 30,
       amountFee: "",
       level: "",
       subjects: [],
@@ -249,14 +237,13 @@ const ClassesManagement = () => {
     setSubmitting(true);
     setError(null);
 
-    // Simple validation example
     if (!form.classesName.trim()) {
-      setError("Le nom de la classe est requis");
+      setError(t('classes.errors.class_name_required'));
       setSubmitting(false);
       return;
     }
     if (form.subjects.some((s) => !s.subjectInfo || !s.teacherInfo)) {
-      setError("Chaque matière doit avoir un sujet et un enseignant assignés");
+      setError(t('classes.errors.subject_teacher_required'));
       setSubmitting(false);
       return;
     }
@@ -265,13 +252,13 @@ const ClassesManagement = () => {
       if (editingId) {
         await classService.update(editingId, form);
         toast({ 
-          title: "Classe mise à jour avec succès",
+          title: t('classes.success.update'),
           variant: "default"
         });
       } else {
         await classService.create(form);
         toast({ 
-          title: "Classe créée avec succès",
+          title: t('classes.success.create'),
           variant: "default"
         });
       }
@@ -281,9 +268,10 @@ const ClassesManagement = () => {
       fetchClasses();
     } catch (error) {
       console.error("Failed to save class:", error);
-      setError(editingId ? "Erreur lors de la mise à jour de la classe" : "Erreur lors de la création de la classe");
+      setError(editingId ? t('classes.errors.update_failed') : t('classes.errors.create_failed'));
       toast({ 
-        title: "Erreur lors de l'enregistrement",
+        title: t('common.error'),
+        description: t('classes.errors.save_failed'),
         variant: "destructive"
       });
     } finally {
@@ -291,10 +279,12 @@ const ClassesManagement = () => {
     }
   };
 
-  // Quick create multiple classes with sections
   const handleQuickCreate = async () => {
     if (!quickCreateForm.level) {
-      toast({ title: "Veuillez sélectionner un niveau", variant: "destructive" });
+      toast({ 
+        title: t('classes.errors.level_required'),
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -302,13 +292,11 @@ const ClassesManagement = () => {
     try {
       const educationSystem = ['6e', '5e', '4e', '3e', '2nde', '1ère A', '1ère C', '1ère D', '1ère TI', 'Terminale A', 'Terminale C', 'Terminale D', 'Terminale TI'].includes(quickCreateForm.level) ? 'francophone' : 'anglophone';
       
-      // Create subjects if needed
       let subjectsToAdd: ClassSubject[] = [];
       if (quickCreateForm.addDefaultSubjects) {
         const defaultSubjectsForSystem = defaultSubjects[educationSystem];
         
         for (const defaultSubject of defaultSubjectsForSystem) {
-          // Check if subject exists, if not create it
           let existingSubject = subjects.find(s => s.subjectName === defaultSubject.name);
           
           if (!existingSubject) {
@@ -316,11 +304,10 @@ const ClassesManagement = () => {
               const newSubject = await subjectService.create({
                 subjectName: defaultSubject.name,
                 subjectCode: defaultSubject.name.substring(0, 3).toUpperCase(),
-                description: `Matière ${defaultSubject.name}`,
+                description: `${t('classes.subject')} ${defaultSubject.name}`,
                 isActive: true
               });
               existingSubject = newSubject;
-              // Update subjects list
               setSubjects(prev => [...prev, newSubject]);
             } catch (error) {
               console.warn(`Failed to create subject ${defaultSubject.name}:`, error);
@@ -331,19 +318,17 @@ const ClassesManagement = () => {
           subjectsToAdd.push({
             subjectInfo: existingSubject._id,
             coefficient: defaultSubject.coefficient
-            // teacherInfo will be assigned later
           });
         }
       }
 
-      // Create classes for each section
       const createdClasses = [];
       for (const section of quickCreateForm.sections) {
         const className = `${quickCreateForm.level}${section}`;
         
         const classData = {
           classesName: className,
-          description: `Classe de ${quickCreateForm.level} section ${section}`,
+          description: `${t('classes.class_of')} ${quickCreateForm.level} ${t('classes.section')} ${section}`,
           status: "Open",
           capacity: quickCreateForm.capacity,
           level: quickCreateForm.level,
@@ -351,7 +336,6 @@ const ClassesManagement = () => {
           year: quickCreateForm.year,
           subjects: subjectsToAdd,
           studentList: []
-          // mainTeacherInfo will be assigned later
         };
 
         try {
@@ -360,7 +344,7 @@ const ClassesManagement = () => {
         } catch (error) {
           console.error(`Failed to create class ${className}:`, error);
           toast({ 
-            title: `Erreur lors de la création de la classe ${className}`,
+            title: t('classes.errors.create_class_failed', { className }),
             variant: "destructive"
           });
         }
@@ -368,12 +352,11 @@ const ClassesManagement = () => {
 
       if (createdClasses.length > 0) {
         toast({ 
-          title: `${createdClasses.length} classe(s) créée(s) avec succès`,
+          title: t('classes.success.quick_create', { count: createdClasses.length }),
           variant: "default"
         });
         fetchClasses();
         setShowQuickCreateModal(false);
-        // Reset form
         setQuickCreateForm({
           level: '',
           sections: ['A', 'B', 'C', 'D'],
@@ -386,7 +369,7 @@ const ClassesManagement = () => {
     } catch (error) {
       console.error("Quick create error:", error);
       toast({ 
-        title: "Erreur lors de la création rapide",
+        title: t('classes.errors.quick_create_failed'),
         variant: "destructive"
       });
     } finally {
@@ -394,10 +377,9 @@ const ClassesManagement = () => {
     }
   };
 
-  // Add/remove sections for quick create
   const addSection = () => {
-    const nextSection = String.fromCharCode(65 + quickCreateForm.sections.length); // A, B, C, etc.
-    if (quickCreateForm.sections.length < 10) { // Limit to 10 sections
+    const nextSection = String.fromCharCode(65 + quickCreateForm.sections.length);
+    if (quickCreateForm.sections.length < 10) {
       setQuickCreateForm(prev => ({
         ...prev,
         sections: [...prev.sections, nextSection]
@@ -414,10 +396,8 @@ const ClassesManagement = () => {
     }
   };
 
-  // Open modal for adding new class
   const handleOpenModal = (cls?: SchoolClass) => {
     if (cls) {
-      // Edit mode - detect education system based on level
       const francophonesLevels = ['6e', '5e', '4e', '3e', '2nde', '1ère A', '1ère C', '1ère D', '1ère TI', 'Terminale A', 'Terminale C', 'Terminale D', 'Terminale TI'];
       const detectedSystem = francophonesLevels.includes(cls.level) ? 'francophone' : 'anglophone';
       
@@ -429,13 +409,12 @@ const ClassesManagement = () => {
         subjects: cls.subjects?.map((item: any) => ({
           subjectInfo: item.subjectInfo?._id || item.subjectInfo,
           coefficient: item.coefficient || "",
-          teacherInfo: item.teacherInfo?._id || item.teacherInfo?.id || "", // normalize id with safety check
+          teacherInfo: item.teacherInfo?._id || item.teacherInfo?.id || "",
         })) || [],
       });
       setEducationSystem(detectedSystem);
       setEditingId(cls._id || null);
     } else {
-      // Add mode - use resetForm
       resetForm();
       setEditingId(null);
     }
@@ -443,28 +422,27 @@ const ClassesManagement = () => {
     setShowModal(true);
   };
 
-  // Edit class, load data into form
   const handleEdit = (cls: SchoolClass) => {
     handleOpenModal(cls);
   };
 
-  // Delete class with confirmation
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette classe ?")) return;
+    if (!window.confirm(t('classes.confirm_delete'))) return;
     setLoading(true);
     setError(null);
     try {
       await classService.remove(id);
       toast({ 
-        title: "Classe supprimée avec succès",
+        title: t('classes.success.delete'),
         variant: "default"
       });
       fetchClasses();
     } catch (error) {
       console.error("Failed to delete class:", error);
-      setError("Erreur lors de la suppression de la classe. Veuillez réessayer.");
+      setError(t('classes.errors.delete_failed'));
       toast({ 
-        title: "Erreur lors de la suppression",
+        title: t('common.error'),
+        description: t('classes.errors.delete_failed'),
         variant: "destructive"
       });
     } finally {
@@ -472,23 +450,25 @@ const ClassesManagement = () => {
     }
   };
 
-  // Toggle class status Open/Closed
   const toggleStatus = async (cls: SchoolClass) => {
     setLoading(true);
     try {
       await classService.update(cls._id!, {
         ...cls,
-        status: cls.status === "Ouvert" ? "Fermé" : "Ouvert",
+        status: cls.status === "Open" ? "Closed" : "Open",
       });
       fetchClasses();
     } catch {
-      toast({ title: "Erreur lors du changement de statut" });
+      toast({ 
+        title: t('common.error'),
+        description: t('classes.errors.toggle_status'),
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle file import
   const handleImport = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -497,17 +477,23 @@ const ClassesManagement = () => {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const data = XLSX.utils.sheet_to_json(ws);
         classService.bulkImport(data as SchoolClass[]).then(() => {
-          toast({ title: "Import réussi" });
+          toast({ 
+            title: t('classes.success.import'),
+            variant: "default"
+          });
           fetchClasses();
         });
       } catch {
-        toast({ title: "Erreur lors de l'import" });
+        toast({ 
+          title: t('common.error'),
+          description: t('classes.errors.import_failed'),
+          variant: "destructive"
+        });
       }
     };
     reader.readAsBinaryString(file);
   };
 
-  // Export to Excel
   const exportExcel = () => {
     const ws = XLSX.utils.json_to_sheet(classes);
     const wb = XLSX.utils.book_new();
@@ -515,18 +501,22 @@ const ClassesManagement = () => {
     XLSX.writeFile(wb, "classes.xlsx");
   };
 
-  // Export to PDF
   const exportPDF = () => {
     const doc = new jsPDF();
-    const date = new Date().toLocaleDateString("fr-FR");
+    const date = new Date().toLocaleDateString();
     doc.setFontSize(16);
-    doc.text("Liste des Classes", 14, 20);
+    doc.text(t('classes.export.title'), 14, 20);
     doc.setFontSize(10);
-    doc.text(`Date d'exportation : ${date}`, 14, 28);
+    doc.text(`${t('classes.export.date')}: ${date}`, 14, 28);
 
     autoTable(doc, {
       startY: 35,
-      head: [["Nom", "Statut", "Capacité", "Année"]],
+      head: [[
+        t('classes.table.name'),
+        t('classes.table.status'),
+        t('classes.table.capacity'),
+        t('classes.table.year')
+      ]],
       body: classes.map((cls) => [
         cls.classesName,
         cls.status,
@@ -540,7 +530,6 @@ const ClassesManagement = () => {
     doc.save(`classes_${date.replace(/\//g, "-")}.pdf`);
   };
 
-  // Manage subjects in form
   const handleSubjectChange = (index: number, field: keyof ClassSubject, value: any) => {
     const updatedSubjects = [...form.subjects];
     updatedSubjects[index] = {
@@ -564,7 +553,6 @@ const ClassesManagement = () => {
     });
   };
 
-  // Prevent selecting duplicate subjects
   const availableSubjectsForIndex = (index: number) => {
     const selectedIds = form.subjects.map((s) => s.subjectInfo).filter(Boolean);
     return subjects.filter(
@@ -575,10 +563,9 @@ const ClassesManagement = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gestion des Classes</h1>
+        <h1 className="text-2xl font-bold">{t('classes.title')}</h1>
       </div>
       
-      {/* Error Display */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
           <div className="flex items-center">
@@ -596,7 +583,7 @@ const ClassesManagement = () => {
       
       <div className="flex justify-between mb-4">
         <Input
-          placeholder="Rechercher une classe..."
+          placeholder={t('classes.search_placeholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-64"
@@ -607,23 +594,23 @@ const ClassesManagement = () => {
             onClick={() => handleOpenModal()}
             disabled={loading || submitting}
           >
-            <FilePlus className="mr-2 h-4 w-4" /> Ajouter
+            <FilePlus className="mr-2 h-4 w-4" /> {t('classes.add_button')}
           </Button>
           <Button 
             onClick={() => setShowQuickCreateModal(true)} 
             disabled={loading || submitting}
             variant="secondary"
           >
-            <GraduationCap className="mr-2 h-4 w-4" /> Création Rapide
+            <GraduationCap className="mr-2 h-4 w-4" /> {t('classes.quick_create')}
           </Button>
           <Button variant="outline" onClick={exportExcel} disabled={loading || submitting}>
-            <Download className="mr-2 h-4 w-4" /> Excel
+            <Download className="mr-2 h-4 w-4" /> {t('classes.export_excel')}
           </Button>
           <Button variant="outline" onClick={exportPDF} disabled={loading || submitting}>
-            <Download className="mr-2 h-4 w-4" /> PDF
+            <Download className="mr-2 h-4 w-4" /> {t('classes.export_pdf')}
           </Button>
           <label className="cursor-pointer bg-muted px-3 py-1 rounded">
-            <Upload className="inline h-4 w-4 mr-2" /> Importer
+            <Upload className="inline h-4 w-4 mr-2" /> {t('classes.import_button')}
             <input
               type="file"
               hidden
@@ -638,7 +625,7 @@ const ClassesManagement = () => {
         <div className="flex justify-center items-center p-8">
           <div className="flex flex-col items-center justify-center space-y-3">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="text-muted-foreground">Chargement des classes...</p>
+            <p className="text-muted-foreground">{t('classes.loading')}</p>
           </div>
         </div>
       ) : currentData.length === 0 ? (
@@ -647,12 +634,12 @@ const ClassesManagement = () => {
             <GraduationCap className="h-12 w-12 text-muted-foreground" />
             <div className="space-y-2">
               <p className="text-lg font-medium text-muted-foreground">
-                {search ? "Aucune classe trouvée" : "Aucune classe disponible"}
+                {search ? t('classes.no_results') : t('classes.no_classes')}
               </p>
               {!search && (
                 <Button onClick={() => handleOpenModal()} className="mt-4">
                   <FilePlus className="h-4 w-4 mr-2" />
-                  Ajouter une classe
+                  {t('classes.add_first')}
                 </Button>
               )}
             </div>
@@ -668,10 +655,10 @@ const ClassesManagement = () => {
             handleEdit={handleEdit}
             toggleStatus={toggleStatus}
             handleDelete={handleDelete}
+            t={t}
           />
       )}
 
-      {/* Pagination */}
       {!loading && currentData.length > 0 && (
         <div className="flex justify-between items-center mt-4">
           <button
@@ -679,7 +666,7 @@ const ClassesManagement = () => {
             onClick={goToPreviousPage}
             disabled={currentPage === 1 || loading}
           >
-            Précédent
+            {t('pagination.previous')}
           </button>
 
           <div className="space-x-2">
@@ -704,21 +691,20 @@ const ClassesManagement = () => {
             onClick={goToNextPage}
             disabled={currentPage === totalPages || loading}
           >
-            Suivant
+            {t('pagination.next')}
           </button>
         </div>
       )}
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-background rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-semibold mb-4">
-              {editingId ? "Modifier" : "Créer"} une Classe
+              {editingId ? t('classes.edit_title') : t('classes.create_title')}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label>Nom</Label>
+                <Label>{t('classes.form.name')}</Label>
                 <Input
                   value={form.classesName}
                   onChange={(e) => setForm({ ...form, classesName: e.target.value })}
@@ -728,7 +714,7 @@ const ClassesManagement = () => {
               </div>
 
               <div>
-                <Label>Description</Label>
+                <Label>{t('classes.form.description')}</Label>
                 <Input
                   value={form.description ?? ""}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -737,25 +723,25 @@ const ClassesManagement = () => {
               </div>
 
               <div>
-                <Label>Statut</Label>
+                <Label>{t('classes.form.status')}</Label>
                 <Select
                   value={form.status}
                   onValueChange={(value) => setForm({ ...form, status: value })}
                   disabled={submitting}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choisir un statut" />
+                    <SelectValue placeholder={t('classes.form.select_status')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Open">Ouvert</SelectItem>
-                    <SelectItem value="Closed">Fermé</SelectItem>
+                    <SelectItem value="Open">{t('classes.status.open')}</SelectItem>
+                    <SelectItem value="Closed">{t('classes.status.closed')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Capacité</Label>
+                  <Label>{t('classes.form.capacity')}</Label>
                   <Input
                     type="number"
                     min={0}
@@ -768,7 +754,7 @@ const ClassesManagement = () => {
                 </div>
 
                 <div>
-                  <Label>Frais (Amount Fee)</Label>
+                  <Label>{t('classes.form.fee')}</Label>
                   <Input
                     type="number"
                     min={0}
@@ -783,50 +769,50 @@ const ClassesManagement = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Système Éducatif</Label>
+                  <Label>{t('classes.form.education_system')}</Label>
                   <Select
                     value={educationSystem}
                     onValueChange={(value: 'francophone' | 'anglophone') => {
                       setEducationSystem(value);
-                      setForm({ ...form, level: "" }); // Reset level when changing system
+                      setForm({ ...form, level: "" });
                     }}
                     disabled={submitting}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choisir un système" />
+                      <SelectValue placeholder={t('classes.form.select_system')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="francophone">🇫🇷 Système Francophone</SelectItem>
-                      <SelectItem value="anglophone">🇬🇧 Système Anglophone</SelectItem>
+                      <SelectItem value="francophone">🇫🇷 {t('classes.system.francophone')}</SelectItem>
+                      <SelectItem value="anglophone">🇬🇧 {t('classes.system.anglophone')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Niveau</Label>
+                  <Label>{t('classes.form.level')}</Label>
                   <Select
                     value={form.level}
                     onValueChange={(value) => setForm({ ...form, level: value })}
                     disabled={submitting}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionnez un niveau" />
+                      <SelectValue placeholder={t('classes.form.select_level')} />
                     </SelectTrigger>
                     <SelectContent>
                       {educationSystem === 'francophone' ? (
                         <>
-                          <SelectItem value="6e">6e (Sixième)</SelectItem>
-                          <SelectItem value="5e">5e (Cinquième)</SelectItem>
-                          <SelectItem value="4e">4e (Quatrième)</SelectItem>
-                          <SelectItem value="3e">3e (Troisième)</SelectItem>
-                          <SelectItem value="2nde">2nde (Seconde)</SelectItem>
-                          <SelectItem value="1ère A">1ère A (Première Littéraire)</SelectItem>
-                          <SelectItem value="1ère C">1ère C (Première Scientifique)</SelectItem>
-                          <SelectItem value="1ère D">1ère D (Première Sciences Expérimentales)</SelectItem>
-                          <SelectItem value="1ère TI">1ère TI (Première Technique Industrielle)</SelectItem>
-                          <SelectItem value="Terminale A">Terminale A (Littéraire)</SelectItem>
-                          <SelectItem value="Terminale C">Terminale C (Scientifique)</SelectItem>
-                          <SelectItem value="Terminale D">Terminale D (Sciences Expérimentales)</SelectItem>
-                          <SelectItem value="Terminale TI">Terminale TI (Technique Industrielle)</SelectItem>
+                          <SelectItem value="6e">6e ({t('classes.levels.sixth')})</SelectItem>
+                          <SelectItem value="5e">5e ({t('classes.levels.fifth')})</SelectItem>
+                          <SelectItem value="4e">4e ({t('classes.levels.fourth')})</SelectItem>
+                          <SelectItem value="3e">3e ({t('classes.levels.third')})</SelectItem>
+                          <SelectItem value="2nde">2nde ({t('classes.levels.second')})</SelectItem>
+                          <SelectItem value="1ère A">1ère A ({t('classes.levels.first_literary')})</SelectItem>
+                          <SelectItem value="1ère C">1ère C ({t('classes.levels.first_science')})</SelectItem>
+                          <SelectItem value="1ère D">1ère D ({t('classes.levels.first_experimental')})</SelectItem>
+                          <SelectItem value="1ère TI">1ère TI ({t('classes.levels.first_technical')})</SelectItem>
+                          <SelectItem value="Terminale A">Terminale A ({t('classes.levels.final_literary')})</SelectItem>
+                          <SelectItem value="Terminale C">Terminale C ({t('classes.levels.final_science')})</SelectItem>
+                          <SelectItem value="Terminale D">Terminale D ({t('classes.levels.final_experimental')})</SelectItem>
+                          <SelectItem value="Terminale TI">Terminale TI ({t('classes.levels.final_technical')})</SelectItem>
                         </>
                       ) : (
                         <>
@@ -835,14 +821,14 @@ const ClassesManagement = () => {
                           <SelectItem value="Form 3">Form 3</SelectItem>
                           <SelectItem value="Form 4">Form 4</SelectItem>
                           <SelectItem value="Form 5">Form 5</SelectItem>
-                          <SelectItem value="Lower Sixth A">Lower Sixth A (Arts)</SelectItem>
-                          <SelectItem value="Lower Sixth C">Lower Sixth C (Science)</SelectItem>
-                          <SelectItem value="Lower Sixth D">Lower Sixth D (Biology)</SelectItem>
-                          <SelectItem value="Lower Sixth TI">Lower Sixth TI (Technical)</SelectItem>
-                          <SelectItem value="Upper Sixth A">Upper Sixth A (Arts)</SelectItem>
-                          <SelectItem value="Upper Sixth C">Upper Sixth C (Science)</SelectItem>
-                          <SelectItem value="Upper Sixth D">Upper Sixth D (Biology)</SelectItem>
-                          <SelectItem value="Upper Sixth TI">Upper Sixth TI (Technical)</SelectItem>
+                          <SelectItem value="Lower Sixth A">Lower Sixth A ({t('classes.levels.arts')})</SelectItem>
+                          <SelectItem value="Lower Sixth C">Lower Sixth C ({t('classes.levels.science')})</SelectItem>
+                          <SelectItem value="Lower Sixth D">Lower Sixth D ({t('classes.levels.biology')})</SelectItem>
+                          <SelectItem value="Lower Sixth TI">Lower Sixth TI ({t('classes.levels.technical')})</SelectItem>
+                          <SelectItem value="Upper Sixth A">Upper Sixth A ({t('classes.levels.arts')})</SelectItem>
+                          <SelectItem value="Upper Sixth C">Upper Sixth C ({t('classes.levels.science')})</SelectItem>
+                          <SelectItem value="Upper Sixth D">Upper Sixth D ({t('classes.levels.biology')})</SelectItem>
+                          <SelectItem value="Upper Sixth TI">Upper Sixth TI ({t('classes.levels.technical')})</SelectItem>
                         </>
                       )}
                     </SelectContent>
@@ -850,27 +836,27 @@ const ClassesManagement = () => {
                 </div>
 
                 <div>
-                  <Label>Année Académique (YYYY-YYYY)</Label>
+                  <Label>{t('classes.form.academic_year')}</Label>
                   <Input
                     type="text"
                     value={form.year ?? ""}
                     pattern="\d{4}-\d{4}"
                     onChange={(e) => setForm({ ...form, year: e.target.value })}
-                    placeholder="ex: 2024-2025"
+                    placeholder={t('classes.form.year_placeholder')}
                     disabled={submitting}
                   />
                 </div>
               </div>
 
               <div>
-                <Label>Enseignant Principal</Label>
+                <Label>{t('classes.form.main_teacher')}</Label>
                 <Select
                   value={form.mainTeacherInfo ?? ""}
                   onValueChange={(value) => setForm({ ...form, mainTeacherInfo: value })}
                   disabled={submitting}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner l'enseignant" />
+                    <SelectValue placeholder={t('classes.form.select_teacher')} />
                   </SelectTrigger>
                   <SelectContent>
                     {teachers.map((teacher) => (
@@ -882,20 +868,19 @@ const ClassesManagement = () => {
                 </Select>
               </div>
 
-              {/* Subjects Section */}
               <div className="border p-3 rounded-lg">
                 <div className="flex justify-between items-center mb-2">
-                  <Label className="text-lg font-semibold">Matières</Label>
+                  <Label className="text-lg font-semibold">{t('classes.form.subjects')}</Label>
                   <Button
                     type="button"
                     size="sm"
                     onClick={addSubject}
                     disabled={submitting || form.subjects.length >= subjects.length}
                   >
-                    + Ajouter une matière
+                    + {t('classes.form.add_subject')}
                   </Button>
                 </div>
-                {form.subjects.length === 0 && <p>Aucune matière ajoutée</p>}
+                {form.subjects.length === 0 && <p>{t('classes.form.no_subjects')}</p>}
                 {form.subjects.map((subject, index) => (
                   <div key={index} className="grid grid-cols-3 gap-2 mb-2 items-center">
                     <Select
@@ -904,7 +889,7 @@ const ClassesManagement = () => {
                       disabled={submitting}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Matière" />
+                        <SelectValue placeholder={t('classes.form.subject')} />
                       </SelectTrigger>
                       <SelectContent>
                         {availableSubjectsForIndex(index).map((subj) => (
@@ -917,7 +902,7 @@ const ClassesManagement = () => {
 
                     <Input
                       type="number"
-                      placeholder="Coefficient"
+                      placeholder={t('classes.form.coefficient')}
                       min={0}
                       value={subject.coefficient}
                       onChange={(e) =>
@@ -936,7 +921,7 @@ const ClassesManagement = () => {
                       disabled={submitting}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Enseignant" />
+                        <SelectValue placeholder={t('classes.form.teacher')} />
                       </SelectTrigger>
                       <SelectContent>
                         {teachers.map((t) => (
@@ -954,13 +939,12 @@ const ClassesManagement = () => {
                       onClick={() => removeSubject(index)}
                       disabled={submitting}
                     >
-                      Supprimer
+                      {t('common.delete')}
                     </Button>
                   </div>
                 ))}
               </div>
 
-              {/* Error Display in Modal */}
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center">
                   <AlertCircle className="h-4 w-4 text-red-500 mr-2" />
@@ -975,16 +959,16 @@ const ClassesManagement = () => {
                   onClick={() => setShowModal(false)}
                   disabled={submitting}
                 >
-                  Annuler
+                  {t('common.cancel')}
                 </Button>
                 <Button type="submit" disabled={submitting}>
                   {submitting ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {editingId ? "Mise à jour..." : "Création..."}
+                      {editingId ? t('classes.updating') : t('classes.creating')}
                     </>
                   ) : (
-                    editingId ? "Mettre à jour" : "Créer"
+                    editingId ? t('common.update') : t('common.create')
                   )}
                 </Button>
               </div>
@@ -993,57 +977,56 @@ const ClassesManagement = () => {
         </div>
       )}
 
-      {/* Quick Create Modal */}
       {showQuickCreateModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-background rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-semibold mb-4">
-              🚀 Création Rapide de Classes
+              🚀 {t('classes.quick_create_title')}
             </h2>
             <div className="space-y-4">
               <div>
-                <Label>Niveau</Label>
+                <Label>{t('classes.form.level')}</Label>
                 <Select
                   value={quickCreateForm.level}
                   onValueChange={(value) => setQuickCreateForm(prev => ({ ...prev, level: value }))}
                   disabled={submitting}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionnez un niveau" />
+                    <SelectValue placeholder={t('classes.form.select_level')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="6e">6e (Sixième)</SelectItem>
-                    <SelectItem value="5e">5e (Cinquième)</SelectItem>
-                    <SelectItem value="4e">4e (Quatrième)</SelectItem>
-                    <SelectItem value="3e">3e (Troisième)</SelectItem>
-                    <SelectItem value="2nde">2nde (Seconde)</SelectItem>
-                    <SelectItem value="1ère A">1ère A (Première Littéraire)</SelectItem>
-                    <SelectItem value="1ère C">1ère C (Première Scientifique)</SelectItem>
-                    <SelectItem value="1ère D">1ère D (Première Sciences Expérimentales)</SelectItem>
-                    <SelectItem value="1ère TI">1ère TI (Première Technique Industrielle)</SelectItem>
-                    <SelectItem value="Terminale A">Terminale A (Littéraire)</SelectItem>
-                    <SelectItem value="Terminale C">Terminale C (Scientifique)</SelectItem>
-                    <SelectItem value="Terminale D">Terminale D (Sciences Expérimentales)</SelectItem>
-                    <SelectItem value="Terminale TI">Terminale TI (Technique Industrielle)</SelectItem>
+                    <SelectItem value="6e">6e ({t('classes.levels.sixth')})</SelectItem>
+                    <SelectItem value="5e">5e ({t('classes.levels.fifth')})</SelectItem>
+                    <SelectItem value="4e">4e ({t('classes.levels.fourth')})</SelectItem>
+                    <SelectItem value="3e">3e ({t('classes.levels.third')})</SelectItem>
+                    <SelectItem value="2nde">2nde ({t('classes.levels.second')})</SelectItem>
+                    <SelectItem value="1ère A">1ère A ({t('classes.levels.first_literary')})</SelectItem>
+                    <SelectItem value="1ère C">1ère C ({t('classes.levels.first_science')})</SelectItem>
+                    <SelectItem value="1ère D">1ère D ({t('classes.levels.first_experimental')})</SelectItem>
+                    <SelectItem value="1ère TI">1ère TI ({t('classes.levels.first_technical')})</SelectItem>
+                    <SelectItem value="Terminale A">Terminale A ({t('classes.levels.final_literary')})</SelectItem>
+                    <SelectItem value="Terminale C">Terminale C ({t('classes.levels.final_science')})</SelectItem>
+                    <SelectItem value="Terminale D">Terminale D ({t('classes.levels.final_experimental')})</SelectItem>
+                    <SelectItem value="Terminale TI">Terminale TI ({t('classes.levels.final_technical')})</SelectItem>
                     <SelectItem value="Form 1">Form 1</SelectItem>
                     <SelectItem value="Form 2">Form 2</SelectItem>
                     <SelectItem value="Form 3">Form 3</SelectItem>
                     <SelectItem value="Form 4">Form 4</SelectItem>
                     <SelectItem value="Form 5">Form 5</SelectItem>
-                    <SelectItem value="Lower Sixth A">Lower Sixth A (Arts)</SelectItem>
-                    <SelectItem value="Lower Sixth C">Lower Sixth C (Science)</SelectItem>
-                    <SelectItem value="Lower Sixth D">Lower Sixth D (Biology)</SelectItem>
-                    <SelectItem value="Lower Sixth TI">Lower Sixth TI (Technical)</SelectItem>
-                    <SelectItem value="Upper Sixth A">Upper Sixth A (Arts)</SelectItem>
-                    <SelectItem value="Upper Sixth C">Upper Sixth C (Science)</SelectItem>
-                    <SelectItem value="Upper Sixth D">Upper Sixth D (Biology)</SelectItem>
-                    <SelectItem value="Upper Sixth TI">Upper Sixth TI (Technical)</SelectItem>
+                    <SelectItem value="Lower Sixth A">Lower Sixth A ({t('classes.levels.arts')})</SelectItem>
+                    <SelectItem value="Lower Sixth C">Lower Sixth C ({t('classes.levels.science')})</SelectItem>
+                    <SelectItem value="Lower Sixth D">Lower Sixth D ({t('classes.levels.biology')})</SelectItem>
+                    <SelectItem value="Lower Sixth TI">Lower Sixth TI ({t('classes.levels.technical')})</SelectItem>
+                    <SelectItem value="Upper Sixth A">Upper Sixth A ({t('classes.levels.arts')})</SelectItem>
+                    <SelectItem value="Upper Sixth C">Upper Sixth C ({t('classes.levels.science')})</SelectItem>
+                    <SelectItem value="Upper Sixth D">Upper Sixth D ({t('classes.levels.biology')})</SelectItem>
+                    <SelectItem value="Upper Sixth TI">Upper Sixth TI ({t('classes.levels.technical')})</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label>Sections</Label>
+                <Label>{t('classes.form.sections')}</Label>
                 <div className="space-y-2">
                   {quickCreateForm.sections.map((section, index) => (
                     <div key={index} className="flex items-center space-x-2">
@@ -1072,14 +1055,14 @@ const ClassesManagement = () => {
                     onClick={addSection}
                     disabled={submitting || quickCreateForm.sections.length >= 10}
                   >
-                    + Ajouter une section
+                    + {t('classes.form.add_section')}
                   </Button>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Année Académique</Label>
+                  <Label>{t('classes.form.academic_year')}</Label>
                   <Input
                     value={quickCreateForm.year}
                     onChange={(e) => setQuickCreateForm(prev => ({ ...prev, year: e.target.value }))}
@@ -1088,7 +1071,7 @@ const ClassesManagement = () => {
                   />
                 </div>
                 <div>
-                  <Label>Capacité</Label>
+                  <Label>{t('classes.form.capacity')}</Label>
                   <Input
                     type="number"
                     min={1}
@@ -1100,7 +1083,7 @@ const ClassesManagement = () => {
               </div>
 
               <div>
-                <Label>Frais de Scolarité</Label>
+                <Label>{t('classes.form.fee')}</Label>
                 <Input
                   type="number"
                   min={0}
@@ -1119,13 +1102,13 @@ const ClassesManagement = () => {
                   disabled={submitting}
                 />
                 <Label htmlFor="addDefaultSubjects">
-                  Ajouter les matières par défaut
+                  {t('classes.form.add_default_subjects')}
                 </Label>
               </div>
 
               {quickCreateForm.addDefaultSubjects && quickCreateForm.level && (
                 <div className="bg-muted p-3 rounded">
-                  <p className="text-sm font-medium mb-2">Matières qui seront ajoutées :</p>
+                  <p className="text-sm font-medium mb-2">{t('classes.form.subjects_to_add')}:</p>
                   <div className="text-xs space-y-1">
                     {((['6e', '5e', '4e', '3e', '2nde', '1ère', 'Terminale'].includes(quickCreateForm.level) 
                       ? defaultSubjects.francophone 
@@ -1133,7 +1116,7 @@ const ClassesManagement = () => {
                     )).map((subject, index) => (
                       <div key={index} className="flex justify-between">
                         <span>{subject.name}</span>
-                        <span className="text-muted-foreground">Coef. {subject.coefficient}</span>
+                        <span className="text-muted-foreground">{t('classes.coefficient')} {subject.coefficient}</span>
                       </div>
                     ))}
                   </div>
@@ -1147,7 +1130,7 @@ const ClassesManagement = () => {
                 onClick={() => setShowQuickCreateModal(false)}
                 disabled={submitting}
               >
-                Annuler
+                {t('common.cancel')}
               </Button>
               <Button 
                 onClick={handleQuickCreate}
@@ -1156,12 +1139,12 @@ const ClassesManagement = () => {
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Création...
+                    {t('classes.creating')}
                   </>
                 ) : (
                   <>
                     <GraduationCap className="mr-2 h-4 w-4" />
-                    Créer {quickCreateForm.sections.length} classe(s)
+                    {t('classes.create_count', { count: quickCreateForm.sections.length })}
                   </>
                 )}
               </Button>

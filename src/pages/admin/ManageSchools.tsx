@@ -18,13 +18,18 @@ const ManageSchools = () => {
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
   const fetchSchools = async () => {
     setLoading(true);
     try {
       const res = await api.get("/schools");
       setSchools(res.data || []);
     } catch (err) {
-      Swal.fire("Error", "Failed to fetch schools", "error");
+      Swal.fire(
+        t('admin.manage_schools.error.title'),
+        t('admin.manage_schools.error.fetch_failed'),
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -43,26 +48,37 @@ const ManageSchools = () => {
         : "active";
 
     const confirm = await Swal.fire({
-      title: `Change access status to ${newStatus}?`,
+      title: t('admin.manage_schools.confirm.title', { status: t(`admin.manage_schools.status.${newStatus}`) }),
+      text: t('admin.manage_schools.confirm.text'),
       icon: "warning",
       showCancelButton: true,
+      confirmButtonText: t('admin.manage_schools.confirm.confirm_button'),
+      cancelButtonText: t('admin.manage_schools.confirm.cancel_button'),
     });
 
     if (!confirm.isConfirmed) return;
 
     try {
       await api.put(`/schools/${id}/access-status`, { status: newStatus });
-      Swal.fire("Updated", "School access updated", "success");
+      Swal.fire(
+        t('admin.manage_schools.success.title'),
+        t('admin.manage_schools.success.status_updated'),
+        "success"
+      );
       fetchSchools();
     } catch (err) {
-      Swal.fire("Error", "Failed to update status", "error");
+      Swal.fire(
+        t('admin.manage_schools.error.title'),
+        t('admin.manage_schools.error.update_failed'),
+        "error"
+      );
     }
   };
 
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">
-        {t("schoolManagement.title")}
+        {t("admin.manage_schools.title")}
       </h2>
 
       {loading ? (
@@ -90,7 +106,7 @@ const ManageSchools = () => {
                       key={header}
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
-                      {t(`schoolManagement.headers.${header}`)}
+                      {t(`admin.manage_schools.headers.${header}`)}
                     </th>
                   ))}
                 </tr>
@@ -113,20 +129,20 @@ const ManageSchools = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap font-medium text-blue-600">
-                      {t(`plans.${school.plan?.toLowerCase() || "free"}`)}
+                      {t(`admin.manage_schools.plans.${school.plan?.toLowerCase() || "free"}`)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="space-y-1">
                         <div>
-                          {t("schoolManagement.usage.students")}:{" "}
+                          {t("admin.manage_schools.usage.students")}:{" "}
                           {school.usage?.studentsCount || 0}
                         </div>
                         <div>
-                          {t("schoolManagement.usage.staff")}:{" "}
+                          {t("admin.manage_schools.usage.staff")}:{" "}
                           {school.usage?.staffCount || 0}
                         </div>
                         <div>
-                          {t("schoolManagement.usage.classes")}:{" "}
+                          {t("admin.manage_schools.usage.classes")}:{" "}
                           {school.usage?.classCount || 0}
                         </div>
                       </div>
@@ -140,7 +156,7 @@ const ManageSchools = () => {
                         }`}
                       >
                         {t(
-                          `billingStatus.${
+                          `admin.manage_schools.billingStatus.${
                             school.billing?.status || "inactive"
                           }`
                         )}
@@ -156,13 +172,13 @@ const ManageSchools = () => {
                             : "bg-red-100 text-red-800"
                         }`}
                       >
-                        {t(`accessStatus.${school.accessStatus || "inactive"}`)}
+                        {t(`admin.manage_schools.accessStatus.${school.accessStatus || "inactive"}`)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-3">
                         <button
-                          title={t("actions.view")}
+                          title={t("admin.manage_schools.actions.view")}
                           onClick={() =>
                             navigate(
                               `/admin-dashboard/manage-schools/${school._id}`
@@ -173,7 +189,7 @@ const ManageSchools = () => {
                           <Eye className="h-4 w-4" />
                         </button>
                         <button
-                          title={t("actions.toggleAccess")}
+                          title={t("admin.manage_schools.actions.toggleAccess")}
                           onClick={() =>
                             toggleAccess(school._id, school.accessStatus)
                           }
@@ -197,10 +213,8 @@ const ManageSchools = () => {
                 ))}
                 {schools.length === 0 && (
                   <tr>
-                    <td
-                      className="px-6 py-8 text-center text-sm text-gray-500"
-                    >
-                      {t("schoolManagement.noSchools")}
+                    <td colSpan={9} className="px-6 py-8 text-center text-sm text-gray-500">
+                      {t("admin.manage_schools.no_schools")}
                     </td>
                   </tr>
                 )}

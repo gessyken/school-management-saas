@@ -381,40 +381,96 @@ export const getSchoolById = async (req, res) => {
 export const updateSchool = async (req, res) => {
   const { schoolId } = req.params;
   const userId = req.user._id;
-  const updates = req.body;
-
+  console.log(userId)
   try {
     const school = await School.findById(schoolId);
     if (!school) {
       return res.status(404).json({ message: "School not found." });
     }
 
-    // Only creator or admin can update
-    if (
-      school.createdBy.toString() !== userId.toString() &&
-      !req.roles.includes("ADMIN") &&
-      !req.roles.includes("DIRECTOR")
-    ) {
-      console.log("Unauthorized to edit this school.")
+    // Check authorization
+    const isCreator = school.createdBy.toString() === userId.toString();
+    const isAdmin = req.roles.includes("ADMIN");
+    const isDirector = req.roles.includes("DIRECTOR");
+
+    if (!isCreator && !isAdmin && !isDirector) {
       return res.status(403).json({ message: "Unauthorized to edit this school." });
+    }
+    console.log(req.body)
+    // Handle regular form data
+    const {
+      name,
+      email,
+      phone,
+      address,
+      description,
+      website,
+      subdomain,
+      plan,
+      accessStatus,
+      memberShipAccessStatus,
+      documents
+    } = req.body;
+
+    // Handle document removals if needed
+    if (documents && Array.isArray(documents)) {
+      school.documents = documents;
+    }
+
+    // Handle file uploads first if any
+    if (req.files) {
+      if (req.files.logo) {
+        // Process logo upload - replace with your actual file handling logic
+        const logoUrl = req.files['logo'] ? `/uploads/schools/${req.files['logo'][0].filename}` : school.logoUrl;
+        school.logoUrl = logoUrl;
+
+      }
+
+      if (req.files.documents) {
+        // Process document uploads
+        const documentUrls = req.files['documents'] ?
+          req.files['documents'].map(file => `/uploads/schools/${file.filename}`) : [];
+        console.log("documentUrls", documentUrls)
+        school.documents = [...(school.documents || []), ...documentUrls];
+      }
     }
 
 
-    // Apply allowed updates
-    const allowedFields = ["name", "email", "phone", "address", "subdomain", "logoUrl"];
-    allowedFields.forEach((field) => {
-      if (updates[field] !== undefined) {
-        school[field] = updates[field];
+    // Basic information
+    if (name) school.name = name;
+    if (email) school.email = email;
+    if (phone) school.phone = phone;
+    if (address) school.address = address;
+    if (description) school.description = description;
+    if (website) school.website = website;
+    if (subdomain) school.subdomain = subdomain;
+
+    // Plan and access
+    if (plan) school.plan = plan;
+    if (accessStatus) school.accessStatus = accessStatus;
+    if (memberShipAccessStatus !== undefined) {
+      school.memberShipAccessStatus = memberShipAccessStatus === 'true';
+    }
+
+    await school.save();
+
+    res.json({
+      message: "School updated successfully",
+      school: {
+        ...school.toObject(),
+        billing: {
+          ...school.billing,
+          trialEndsAt: school.billing?.trialEndsAt?.toISOString()
+        }
       }
     });
 
-    await school.save();
-    res.json({ message: "School updated successfully", school });
   } catch (error) {
     console.error("Update school error:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 };
+
 
 // GET /api/schools/:schoolId/members
 export const getSchoolMembers = async (req, res) => {
@@ -422,7 +478,7 @@ export const getSchoolMembers = async (req, res) => {
 
   try {
     const school = await School.findById(schoolId)
-      .populate("members", "name email roles memberships")
+      .populate("members", "firstName lastName email roles memberships")
       .populate("members.memberships", "name email roles");
 
     if (!school) {
@@ -488,5 +544,79 @@ export const updateMemberRoles = async (req, res) => {
   } catch (error) {
     console.error("Error updating roles:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+// 1. Get billing rules & usage
+export const getBillingInfo = async (req, res) => {
+  const { schoolId } = req.params;
+
+  try {
+    const school = await School.findById(schoolId).select("billingRules usage");
+    if (!school) {
+      return res.status(404).json({ error: "School not found" });
+    }
+
+    return res.status(200).json({
+      billingRules: school.billingRules,
+      usage: school.usage,
+    });
+  } catch (err) {
+    console.error("Error fetching billing info:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+// 2. Update billing rules
+export const updateBillingRules = async (req, res) => {
+  const { schoolId } = req.params;
+  const updates = req.body; // { baseMonthlyFee, perStudentFee, ... }
+
+  try {
+    const school = await School.findById(schoolId);
+    if (!school) {
+      return res.status(404).json({ error: "School not found" });
+    }
+
+    // Update fields
+    for (const key in updates) {
+      if (school.billingRules.hasOwnProperty(key)) {
+        school.billingRules[key] = updates[key];
+      }
+    }
+
+    await school.save();
+
+    return res.status(200).json({ message: "Billing rules updated", billingRules: school.billingRules });
+  } catch (err) {
+    console.error("Error updating billing rules:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+// 3. Update usage counts (students, staff, classes, etc.)
+export const updateUsage = async (req, res) => {
+  const { schoolId } = req.params;
+  const updates = req.body; // { studentsCount, staffCount, ... }
+
+  try {
+    const school = await School.findById(schoolId);
+    if (!school) {
+      return res.status(404).json({ error: "School not found" });
+    }
+
+    for (const key in updates) {
+      if (school.usage.hasOwnProperty(key)) {
+        school.usage[key] = updates[key];
+      }
+    }
+
+    school.usage.lastUsageCalculated = new Date();
+    await school.save();
+
+    return res.status(200).json({ message: "Usage updated", usage: school.usage });
+  } catch (err) {
+    console.error("Error updating usage:", err);
+    return res.status(500).json({ error: "Server error" });
   }
 };

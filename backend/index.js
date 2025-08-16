@@ -13,6 +13,7 @@ import settingRoutes from './src/routes/settingRoutes.js';
 import classRoutes from './src/routes/classRoutes.js';
 import logRoutes from './src/routes/logRoutes.js';
 import "express-async-errors";
+import path from "path";
 
 // Create Express app
 const app = express();
@@ -47,6 +48,7 @@ app.use((req, res, next) => {
 
 // 🔥 Add global request logger
 app.use(requestLogger);
+app.use("/document", express.static(path.join(process.cwd())));
 
 // Register API routes
 app.use('/api/users', userRoutes);
@@ -61,8 +63,13 @@ app.use('/api/logs', logRoutes);
 import schoolRoutes from './src/routes/schoolRoutes.js';
 app.use('/api/schools', schoolRoutes);
 import authRoutes from './src/routes/authRoutes.js';
+import invoiceRoutes from './src/routes/invoiceRoutes.js';
+app.use('/api/invoices', invoiceRoutes);
 import { requestLogger } from "./src/middleware/requestLogger.js";
 app.use('/api/auth', authRoutes);
+
+import { getAdminDashboardStats } from "./src/controllers/statsController.js";
+app.use('/api/admin/stats', getAdminDashboardStats);
 
 // Middleware for handling not found routes
 // app.use(notFound);

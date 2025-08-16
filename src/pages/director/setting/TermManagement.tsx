@@ -12,8 +12,10 @@ import { DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Pencil, Trash, Plus, AlertCircle, XCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "react-i18next";
 
 const TermManagement = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
 
   const [terms, setTerms] = useState<Term[]>([]);
@@ -49,8 +51,8 @@ const TermManagement = () => {
       }
     } catch (error) {
       console.error('Error fetching terms and academic years:', error);
-      setError('Échec du chargement des données');
-      toast({ variant: "destructive", description: "Échec du chargement des données." });
+      setError(t('school.settings.term.error.loading'));
+      toast({ variant: "destructive", description: t('school.settings.term.error.loading') });
     }
   };
 
@@ -74,32 +76,32 @@ const TermManagement = () => {
     try {
       if (editItem && editItem._id) {
         await settingService.updateTerm(editItem._id, form);
-        toast({ description: "Trimestre mis à jour avec succès.", variant: "default" });
+        toast({ description: t('school.settings.term.success.update'), variant: "default" });
       } else {
         await settingService.createTerm(form);
-        toast({ description: "Trimestre créé avec succès.", variant: "default" });
+        toast({ description: t('school.settings.term.success.create'), variant: "default" });
       }
       setDialogOpen(false);
       resetForm();
       fetchData();
     } catch (error) {
       console.error('Error saving term:', error);
-      setError('Échec de l\'enregistrement du trimestre');
-      toast({ variant: "destructive", description: "Échec de l'enregistrement du trimestre." });
+      setError(t('school.settings.term.error.save'));
+      toast({ variant: "destructive", description: t('school.settings.term.error.save') });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce trimestre ?")) return;
+    if (!window.confirm(t('school.settings.term.confirm.delete'))) return;
     setError(null);
     try {
       await settingService.deleteTerm(id);
-      toast({ description: "Trimestre supprimé avec succès.", variant: "default" });
+      toast({ description: t('school.settings.term.success.delete'), variant: "default" });
       fetchData();
     } catch (error) {
       console.error('Error deleting term:', error);
-      setError('Échec de la suppression du trimestre');
-      toast({ variant: "destructive", description: "Échec de la suppression du trimestre." });
+      setError(t('school.settings.term.error.delete'));
+      toast({ variant: "destructive", description: t('school.settings.term.error.delete') });
     }
   };
 
@@ -122,6 +124,7 @@ const TermManagement = () => {
     .filter((term) =>
       filter.academicYear ? term.academicYear === filter.academicYear : true
     );
+    
   const changeStatus = async (id: string, currentStatus: boolean) => {
     const newStatus = currentStatus ? "inactive" : "active";
     setError(null);
@@ -129,21 +132,27 @@ const TermManagement = () => {
       await settingService.updateTerm(id, {
         isActive: !currentStatus,
       });
-      toast({ description: `Statut changé en ${newStatus === 'active' ? 'actif' : 'inactif'}.`, variant: "default" });
+      toast({ 
+        description: t(`school.settings.term.status.${newStatus}`), 
+        variant: "default" 
+      });
       fetchData();
     } catch (error) {
       console.error('Error changing term status:', error);
-      setError('Échec de la mise à jour du statut');
+      setError(t('school.settings.term.error.status'));
       toast({
         variant: "destructive",
-        description: "Échec de la mise à jour du statut.",
+        description: t('school.settings.term.error.status'),
       });
     }
   };
+  
   return (
     <Card className="m-4 shadow-lg border">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <CardTitle className="text-xl font-bold">Trimestres</CardTitle>
+        <CardTitle className="text-xl font-bold">
+          {t('school.settings.term.title')}
+        </CardTitle>
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <select
@@ -161,7 +170,7 @@ const TermManagement = () => {
             ))}
           </select>
           <Input
-            placeholder="Rechercher les trimestres..."
+            placeholder={t('school.settings.term.search.placeholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-xs"
@@ -172,7 +181,7 @@ const TermManagement = () => {
               setDialogOpen(true);
             }}
           >
-            <Plus className="mr-1 h-4 w-4" /> Ajouter
+            <Plus className="mr-1 h-4 w-4" /> {t('school.settings.term.add.button')}
           </Button>
         </div>
       </CardHeader>
@@ -193,7 +202,9 @@ const TermManagement = () => {
 
       <CardContent className="grid gap-4">
         {filteredTerms.length === 0 ? (
-          <p className="text-center text-muted-foreground">Aucun trimestre trouvé.</p>
+          <p className="text-center text-muted-foreground">
+            {t('school.settings.term.no_results')}
+          </p>
         ) : (
           filteredTerms.map((term) => (
             <div
@@ -206,7 +217,7 @@ const TermManagement = () => {
                   {term.startDate?.slice(0, 10)} - {term.endDate?.slice(0, 10)}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Année: {term.academicYear || "N/A"}
+                  {t('school.settings.term.academic_year')}: {term.academicYear || t('school.settings.term.na')}
                 </p>
               </div>
               <div className="flex gap-2 items-center">
@@ -219,14 +230,12 @@ const TermManagement = () => {
                   />
                   <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition"></div>
                   <div className="absolute left-1 top-1 w-4 h-4 bg-background rounded-full peer-checked:translate-x-5 transition"></div>
-                  {/* <span className="ml-3 text-sm font-medium text-foreground">
-                                  {form.isCurrent ? "Active" : "Inactive"}
-                                </span> */}
                 </Label>
                 <Button
                   size="icon"
                   variant="outline"
                   onClick={() => handleEdit(term)}
+                  aria-label={t('school.settings.term.edit.aria_label')}
                 >
                   <Pencil className="w-4 h-4" />
                 </Button>
@@ -234,6 +243,7 @@ const TermManagement = () => {
                   size="icon"
                   variant="destructive"
                   onClick={() => handleDelete(term._id!)}
+                  aria-label={t('school.settings.term.delete.aria_label')}
                 >
                   <Trash className="w-4 h-4" />
                 </Button>
@@ -247,7 +257,7 @@ const TermManagement = () => {
         <DialogContent>
           <DialogHeader>
             <h3 className="text-lg font-semibold">
-              {editItem ? "Modifier le Trimestre" : "Ajouter un Trimestre"}
+              {editItem ? t('school.settings.term.edit.title') : t('school.settings.term.add.title')}
             </h3>
           </DialogHeader>
 
@@ -265,12 +275,12 @@ const TermManagement = () => {
               className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="" disabled>
-                Sélectionner un trimestre
+                {t('school.settings.term.select.placeholder')}
               </option>
-              <option value="Term 1">Term 1</option>
-              <option value="Term 2">Term 2</option>
-              <option value="Term 3">Term 3</option>
-              <option value="Term 4">Term 4</option>
+              <option value="Term 1">{t('school.settings.term.term1')}</option>
+              <option value="Term 2">{t('school.settings.term.term2')}</option>
+              <option value="Term 3">{t('school.settings.term.term3')}</option>
+              <option value="Term 4">{t('school.settings.term.term4')}</option>
             </select>
             <Label className="relative inline-flex items-center cursor-pointer mt-2">
               <Input
@@ -284,20 +294,20 @@ const TermManagement = () => {
               <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition"></div>
               <div className="absolute left-1 top-1 w-4 h-4 bg-background rounded-full peer-checked:translate-x-5 transition"></div>
               <span className="ml-3 text-sm font-medium text-foreground">
-                {form.isActive ? "Actif" : "Inactif"}
+                {form.isActive ? t('school.settings.term.active') : t('school.settings.term.inactive')}
               </span>
             </Label>
             <Input
               required
               type="date"
-              placeholder="Date de début"
+              placeholder={t('school.settings.term.start_date')}
               value={form.startDate}
               onChange={(e) => setForm({ ...form, startDate: e.target.value })}
             />
             <Input
               required
               type="date"
-              placeholder="Date de fin"
+              placeholder={t('school.settings.term.end_date')}
               value={form.endDate}
               onChange={(e) => setForm({ ...form, endDate: e.target.value })}
             />
@@ -310,7 +320,7 @@ const TermManagement = () => {
               className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="" disabled>
-                Sélectionner l'année académique
+                {t('school.settings.term.select_academic_year')}
               </option>
               {academicYears.map((year) => (
                 <option key={year._id} value={year.name}>
@@ -325,9 +335,11 @@ const TermManagement = () => {
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
               >
-                Annuler
+                {t('school.settings.term.cancel')}
               </Button>
-              <Button type="submit">{editItem ? "Modifier" : "Créer"}</Button>
+              <Button type="submit">
+                {editItem ? t('school.settings.term.update') : t('school.settings.term.create')}
+              </Button>
             </div>
           </form>
         </DialogContent>

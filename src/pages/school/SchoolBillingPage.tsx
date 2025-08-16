@@ -90,13 +90,13 @@ const SchoolBillingPage = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-6">
-      <h2 className="text-2xl font-bold text-skyblue">{t("billing.title")}</h2>
+      <h2 className="text-2xl font-bold text-skyblue">{t("school.billing.title")}</h2>
 
       {/* Usage Section */}
       <Card>
         <CardHeader>
           <CardHeader>
-            <h3 className="font-semibold">{t("billing.usageTitle")}</h3>
+            <h3 className="font-semibold">{t("school.billing.usageTitle")}</h3>
           </CardHeader>
         </CardHeader>
         <CardContent className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
@@ -116,7 +116,7 @@ const SchoolBillingPage = () => {
           ))}
           <Button onClick={updateUsage} disabled={submitting} className="mt-3">
             {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            {t("billing.saveUsage")}
+            {t("school.billing.saveUsage")}
           </Button>
         </CardContent>
       </Card>

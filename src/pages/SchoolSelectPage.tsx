@@ -5,13 +5,14 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, PlusCircle } from "lucide-react";
+import { Loader2, PlusCircle, SchoolIcon } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import Header from "@/components/header/Header";
 import SchoolCreateModal from "@/components/modals/SchoolCreateModal";
 import { useSchool } from "@/context/SchoolContext";
 import { useAuth } from "@/context/AuthContext";
 import { School } from "@/types/School";
+import { BASE_URL } from "@/lib/api";
 
 interface SchoolCardProps {
   school: School;
@@ -35,11 +36,16 @@ const SchoolCard = ({
   return (
     <Card className="hover:shadow-xl transition duration-300 h-full flex flex-col">
       <CardHeader className="flex flex-col items-center text-center space-y-2 flex-grow">
-        <img
-          src={school.logoUrl || "/default-school-logo.png"}
-          alt={t('school.logoAlt')}
-          className="h-16 w-16 object-cover rounded-full border"
-        />
+        {school.logoUrl ? (
+          <img
+            src={`${BASE_URL}/../document/${school.logoUrl}`}
+            alt={t('school.logoAlt')}
+            className="h-16 w-16 object-cover rounded-full border"
+          />
+        ) : (
+          <SchoolIcon className="h-16 w-16 text-gray-400" /> // Example from Heroicons
+        )}
+
         <h4 className="text-lg font-semibold">{school.name}</h4>
         {school.email && (
           <p className="text-xs text-muted-foreground">{school.email}</p>
@@ -237,11 +243,15 @@ const SchoolSelectPage = () => {
                   {pendingValidationSchools.map((school) => (
                     <Card key={school._id} className="border-yellow-400 bg-yellow-50 hover:shadow-lg transition duration-300 h-full flex flex-col">
                       <CardHeader className="flex flex-col items-center text-center space-y-2 flex-grow">
-                        <img
-                          src={school.logoUrl || "/default-school-logo.png"}
-                          alt={t('school.logoAlt')}
-                          className="h-16 w-16 object-cover rounded-full border"
-                        />
+                        {school.logoUrl ? (
+                          <img
+                            src={`${BASE_URL}/../document/${school.logoUrl}`}
+                            alt={t('school.logoAlt')}
+                            className="h-16 w-16 object-cover rounded-full border"
+                          />
+                        ) : (
+                          <SchoolIcon className="h-16 w-16 text-gray-400" /> // Example from Heroicons
+                        )}
                         <h4 className="text-lg font-semibold">{school.name}</h4>
                         {school.email && (
                           <p className="text-xs text-muted-foreground">{school.email}</p>

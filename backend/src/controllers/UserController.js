@@ -74,6 +74,82 @@ class UserController {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
+  async search(req, res) {
+    try {
+      const { email, name, role, status } = req.query;
+
+      // Build the query object
+      const query = {};
+
+      if (email) {
+        query.email = { $regex: email, $options: 'i' };
+      }
+
+      if (name) {
+        query.$or = [
+          { firstName: { $regex: name, $options: 'i' } },
+          { lastName: { $regex: name, $options: 'i' } },
+          {
+            $expr: {
+              $regexMatch: {
+                input: { $concat: ["$firstName", " ", "$lastName"] },
+                regex: name,
+                options: "i"
+              }
+            }
+          }
+        ];
+      }
+
+      if (role) {
+        query.roles = role;
+      }
+
+      if (status) {
+        query.status = status;
+      }
+
+      // Pagination
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+
+      // Projection to exclude sensitive fields
+      const projection = {
+        password: 0,
+        'security.loginAttempts': 0,
+        'security.lockUntil': 0,
+        'security.passwordResetToken': 0,
+        'security.passwordResetExpires': 0
+      };
+
+      const [users, total] = await Promise.all([
+        User.find(query, projection)
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        User.countDocuments(query)
+      ]);
+      console.log(users)
+      res.json({
+        success: true,
+        users: users,
+        pagination: {
+          total,
+          page,
+          pages: Math.ceil(total / limit),
+          limit
+        }
+      });
+    } catch (error) {
+      console.error('Search error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error searching users',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
   async getAllUsersPerSchool(req, res) {
     try {
       console.log(req.query)

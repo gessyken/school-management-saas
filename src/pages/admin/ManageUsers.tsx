@@ -3,8 +3,9 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { Badge } from "@/components/ui/badge";
 import api from "../../lib/api";
-import { ShieldCheck, KeyRound, UserX } from "lucide-react"; // Lucide Icons
+import { ShieldCheck, KeyRound, UserX } from "lucide-react";
 import { useTranslation } from "react-i18next";
+
 const ManageUsers = () => {
   const { t } = useTranslation();
   const [users, setUsers] = useState([]);
@@ -29,11 +30,10 @@ const ManageUsers = () => {
       setLoading(true);
       const userRes = await api.get("/users/getAll");
       const schoolRes = await api.get("/schools");
-      console.log("schoolRes", schoolRes.data);
       setUsers(userRes.data.users || []);
       setSchools(schoolRes.data || []);
     } catch (err) {
-      Swal.fire("Error", "Failed to load data", "error");
+      Swal.fire(t("admin.manage_user.error.loading.title"), t("admin.manage_user.error.loading.description"), "error");
     } finally {
       setLoading(false);
     }
@@ -42,7 +42,7 @@ const ManageUsers = () => {
   useEffect(() => {
     fetchData();
   }, []);
-  console.log("schools", users);
+
   const filteredUsers = users.filter((user) => {
     return (
       (!filters.school ||
@@ -57,28 +57,30 @@ const ManageUsers = () => {
       title: message,
       icon: "warning",
       showCancelButton: true,
+      confirmButtonText: t("common.confirm"),
+      cancelButtonText: t("common.cancel"),
     });
     if (res.isConfirmed) await onConfirm();
   };
 
   const toggleUserStatus = async (id) => {
-    confirmAction("Toggle user's status?", async () => {
+    confirmAction(t("admin.manage_user.confirm.toggle_status"), async () => {
       await api.put(`/users/${id}/toggle-status`);
       fetchData();
     });
   };
 
   const toggleUserRole = async (id) => {
-    confirmAction("Toggle user's global role?", async () => {
+    confirmAction(t("admin.manage_user.confirm.toggle_role"), async () => {
       await api.put(`/users/${id}/toggle-role`);
       fetchData();
     });
   };
 
   const resetUserPassword = async (email) => {
-    confirmAction(`Reset password for ${email}?`, async () => {
+    confirmAction(t("admin.manage_user.confirm.reset_password", { email }), async () => {
       await api.post("/users/reset-password", { email });
-      Swal.fire("Success", "Password reset link sent", "success");
+      Swal.fire(t("admin.manage_user.success.reset_password.title"), t("admin.manage_user.success.reset_password.description"), "success");
     });
   };
 
@@ -90,7 +92,7 @@ const ManageUsers = () => {
         memberships: [{ school: newUser.schoolId, roles: newUser.schoolRoles }],
       };
       await api.post("/users/register", payload);
-      Swal.fire("Success", "User registered", "success");
+      Swal.fire(t("admin.manage_user.success.register.title"), t("admin.manage_user.success.register.description"), "success");
       setShowRegisterModal(false);
       setNewUser({
         firstName: "",
@@ -105,7 +107,7 @@ const ManageUsers = () => {
       });
       fetchData();
     } catch {
-      Swal.fire("Error", "Registration failed", "error");
+      Swal.fire(t("admin.manage_user.error.register.title"), t("admin.manage_user.error.register.description"), "error");
     }
   };
 
@@ -113,13 +115,13 @@ const ManageUsers = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">
-          {t("userManagement.title")}
+          {t("admin.manage_user.title")}
         </h2>
         <button
           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow-sm transition-colors"
           onClick={() => setShowRegisterModal(true)}
         >
-          {t("userManagement.registerNew")}
+          {t("admin.manage_user.register_new")}
         </button>
       </div>
 
@@ -129,7 +131,7 @@ const ManageUsers = () => {
           value={filters.school}
           onChange={(e) => setFilters({ ...filters, school: e.target.value })}
         >
-          <option value="">{t("filters.allSchools")}</option>
+          <option value="">{t("admin.manage_user.filters.all_schools")}</option>
           {schools.map((s) => (
             <option key={s._id} value={s._id}>
               {s.name}
@@ -141,18 +143,18 @@ const ManageUsers = () => {
           value={filters.status}
           onChange={(e) => setFilters({ ...filters, status: e.target.value })}
         >
-          <option value="">{t("filters.allStatus")}</option>
-          <option value="active">{t("status.active")}</option>
-          <option value="inactive">{t("status.inactive")}</option>
+          <option value="">{t("admin.manage_user.filters.all_status")}</option>
+          <option value="active">{t("admin.manage_user.status.active")}</option>
+          <option value="inactive">{t("admin.manage_user.status.inactive")}</option>
         </select>
         <select
           className="border border-gray-300 rounded-md p-2 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           value={filters.role}
           onChange={(e) => setFilters({ ...filters, role: e.target.value })}
         >
-          <option value="">{t("filters.allRoles")}</option>
-          <option value="USER">{t("roles.user")}</option>
-          <option value="ADMIN">{t("roles.admin")}</option>
+          <option value="">{t("admin.manage_user.filters.all_roles")}</option>
+          <option value="USER">{t("admin.manage_user.roles.user")}</option>
+          <option value="ADMIN">{t("admin.manage_user.roles.admin")}</option>
         </select>
       </div>
 
@@ -165,7 +167,7 @@ const ManageUsers = () => {
                 "email",
                 "phone",
                 "status",
-                "globalRole",
+                "global_role",
                 "memberships",
                 "actions",
               ].map((header) => (
@@ -173,7 +175,7 @@ const ManageUsers = () => {
                   key={header}
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  {t(`userManagement.headers.${header}`)}
+                  {t(`admin.manage_user.headers.${header}`)}
                 </th>
               ))}
             </tr>
@@ -198,7 +200,7 @@ const ManageUsers = () => {
                         : "bg-red-100 text-red-800"
                     }`}
                   >
-                    {t(`status.${u.status}`)}
+                    {t(`admin.manage_user.status.${u.status}`)}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap space-x-1">
@@ -207,7 +209,7 @@ const ManageUsers = () => {
                       key={r}
                       className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
                     >
-                      {t(`roles.${r.toLowerCase()}`)}
+                      {t(`admin.manage_user.roles.${r.toLowerCase()}`)}
                     </span>
                   ))}
                 </td>
@@ -225,7 +227,7 @@ const ManageUsers = () => {
                           >
                             <div className="font-medium text-gray-800">
                               {school?.name ||
-                                t("userManagement.unknownSchool")}
+                                t("admin.manage_user.unknown_school")}
                             </div>
                             <div className="mt-1 flex flex-wrap gap-1">
                               {m.roles.map((role, j) => (
@@ -233,7 +235,7 @@ const ManageUsers = () => {
                                   key={j}
                                   className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800"
                                 >
-                                  {t(`schoolRoles.${role.toLowerCase()}`)}
+                                  {t(`admin.manage_user.school_roles.${role.toLowerCase()}`)}
                                 </span>
                               ))}
                             </div>
@@ -250,21 +252,21 @@ const ManageUsers = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex justify-end space-x-2">
                     <button
-                      title={t("actions.toggleStatus")}
+                      title={t("admin.manage_user.actions.toggle_status")}
                       onClick={() => toggleUserStatus(u._id)}
                       className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
                     >
                       <UserX className="h-4 w-4" />
                     </button>
                     <button
-                      title={t("actions.toggleRole")}
+                      title={t("admin.manage_user.actions.toggle_role")}
                       onClick={() => toggleUserRole(u._id)}
                       className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50"
                     >
                       <ShieldCheck className="h-4 w-4" />
                     </button>
                     <button
-                      title={t("actions.resetPassword")}
+                      title={t("admin.manage_user.actions.reset_password")}
                       onClick={() => resetUserPassword(u.email)}
                       className="text-yellow-600 hover:text-yellow-900 p-1 rounded hover:bg-yellow-50"
                     >
@@ -283,19 +285,19 @@ const ManageUsers = () => {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
             <div className="p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">
-                {t("userManagement.registerTitle")}
+                {t("admin.manage_user.register_title")}
               </h3>
               <div className="space-y-4">
                 {[
-                  "firstName",
-                  "lastName",
+                  "first_name",
+                  "last_name",
                   "email",
                   "password",
-                  "phoneNumber",
+                  "phone_number",
                 ].map((field) => (
                   <div key={field}>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {t(`userForm.${field}`)}
+                      {t(`admin.manage_user.form.${field}`)}
                     </label>
                     <input
                       type={
@@ -306,9 +308,9 @@ const ManageUsers = () => {
                           : "text"
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      value={newUser[field]}
+                      value={newUser[field.replace('_', '')]}
                       onChange={(e) =>
-                        setNewUser({ ...newUser, [field]: e.target.value })
+                        setNewUser({ ...newUser, [field.replace('_', '')]: e.target.value })
                       }
                     />
                   </div>
@@ -316,7 +318,7 @@ const ManageUsers = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t("userForm.gender")}
+                    {t("admin.manage_user.form.gender")}
                   </label>
                   <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -327,7 +329,7 @@ const ManageUsers = () => {
                   >
                     {["male", "female", "other"].map((gender) => (
                       <option key={gender} value={gender}>
-                        {t(`genders.${gender}`)}
+                        {t(`admin.manage_user.genders.${gender}`)}
                       </option>
                     ))}
                   </select>
@@ -335,7 +337,7 @@ const ManageUsers = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t("userForm.role")}
+                    {t("admin.manage_user.form.role")}
                   </label>
                   <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -346,7 +348,7 @@ const ManageUsers = () => {
                   >
                     {["USER", "ADMIN"].map((role) => (
                       <option key={role} value={role}>
-                        {t(`roles.${role.toLowerCase()}`)}
+                        {t(`admin.manage_user.roles.${role.toLowerCase()}`)}
                       </option>
                     ))}
                   </select>
@@ -354,7 +356,7 @@ const ManageUsers = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t("userForm.school")}
+                    {t("admin.manage_user.form.school")}
                   </label>
                   <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -363,7 +365,7 @@ const ManageUsers = () => {
                       setNewUser({ ...newUser, schoolId: e.target.value })
                     }
                   >
-                    <option value="">{t("userForm.selectSchool")}</option>
+                    <option value="">{t("admin.manage_user.form.select_school")}</option>
                     {schools.map((s) => (
                       <option key={s._id} value={s._id}>
                         {s.name}
@@ -374,7 +376,7 @@ const ManageUsers = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t("userForm.schoolRoles")}
+                    {t("admin.manage_user.form.school_roles")}
                   </label>
                   <select
                     multiple
@@ -392,7 +394,7 @@ const ManageUsers = () => {
                     {["DIRECTOR", "SECRETARY", "TEACHER", "ADMIN"].map(
                       (role) => (
                         <option key={role} value={role}>
-                          {t(`schoolRoles.${role.toLowerCase()}`)}
+                          {t(`admin.manage_user.school_roles.${role.toLowerCase()}`)}
                         </option>
                       )
                     )}

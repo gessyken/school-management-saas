@@ -29,7 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-
+import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -48,17 +48,13 @@ import PaymentForm from "./setting/PaymentForm";
 const itemsPerPage = 5;
 
 export default function ClassesList() {
+  const { t } = useTranslation();
   const [students, setStudents] = useState<Student[]>([]);
-  const [academicStudents, setAcademicStudents] = useState<
-    AcademicYearStudent[]
-  >([]);
+  const [academicStudents, setAcademicStudents] = useState<AcademicYearStudent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [showModal, setShowModal] = useState(false);
-
-  const [modalMode, setModalMode] = useState<"view" | "edit" | "create" | null>(
-    null
-  );
+  const [modalMode, setModalMode] = useState<"view" | "edit" | "create" | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [filter, setFilter] = useState({
@@ -68,7 +64,6 @@ export default function ClassesList() {
     academicYear: "",
   });
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
-
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const { toast } = useToast();
 
@@ -89,40 +84,49 @@ export default function ClassesList() {
       });
     }
   };
+
   const fetchClasses = async () => {
     try {
       const res = await classService.getAll({});
-      console.log(res.data);
       setClasses(res.data.classes);
     } catch {
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les classes",
+        title: t("common.error"),
+        description: t("school.class_list.errors.load_classes"),
       });
     }
   };
+
   const fetchStudents = async () => {
     try {
       const data = await studentService.getAll();
-      console.log(data);
       setStudents(data.students);
     } catch (error) {
       console.error("Failed to fetch students", error);
+      toast({
+        title: t("common.error"),
+        description: t("school.class_list.errors.load_students"),
+      });
     } finally {
       setLoading(false);
     }
   };
+
   const fetchAcademicYear = async () => {
     try {
       const data = await academicService.getAll();
-      console.log("fetchAcademicYear", data);
       setAcademicStudents(data.students);
     } catch (error) {
-      console.error("Failed to fetch students", error);
+      console.error("Failed to fetch academic students", error);
+      toast({
+        title: t("common.error"),
+        description: t("school.class_list.errors.load_academic_students"),
+      });
     } finally {
       setLoading(false);
     }
   };
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
@@ -138,6 +142,7 @@ export default function ClassesList() {
     .filter((student) =>
       filter.level ? student?.level === filter.level : true
     );
+
   const filteredAcademicStudents = academicStudents
     .filter(
       (academic) =>
@@ -172,7 +177,7 @@ export default function ClassesList() {
     goToNextPage,
     goToPreviousPage,
     goToPage,
-  } = usePagination(filteredAcademicStudents, itemsPerPage); // subjects is your full data list
+  } = usePagination(filteredAcademicStudents, itemsPerPage);
 
   const exportExcel = () => {
     try {
@@ -183,96 +188,90 @@ export default function ClassesList() {
         const classInfo = record.classes || {};
         const year = record.year;
 
-        // Flatten each term
         record.terms.forEach((term) => {
-          const termName = term.termInfo?.name || "N/A";
+          const termName = term.termInfo?.name || t("common.na");
           const termAverage = term.average || 0;
-          const termRank = term.rank ?? "N/A";
-          const termDiscipline = term.discipline || "N/A";
+          const termRank = term.rank ?? t("common.na");
+          const termDiscipline = term.discipline || t("common.na");
 
           term.sequences.forEach((sequence) => {
-            const sequenceName = sequence.sequenceInfo?.name || "N/A";
+            const sequenceName = sequence.sequenceInfo?.name || t("common.na");
             const sequenceAverage = sequence.average || 0;
-            const sequenceRank = sequence.rank ?? "N/A";
+            const sequenceRank = sequence.rank ?? t("common.na");
             const absences = sequence.absences || 0;
 
             sequence.subjects.forEach((subject) => {
-              const subjectName = subject.subjectInfo?.name || "N/A";
-              const currentMark = subject.marks?.currentMark ?? "N/A";
+              const subjectName = subject.subjectInfo?.name || t("common.na");
+              const currentMark = subject.marks?.currentMark ?? t("common.na");
 
-              // Handle modifications
               const modifications =
                 (subject.marks?.modified || [])
                   .map((mod) => {
-                    return `${mod.dateModified.toLocaleDateString()} by ${
+                    return `${mod.dateModified.toLocaleDateString()} ${t("common.by")} ${
                       mod.modifiedBy?.name
                     }: ${mod.preMark} → ${mod.modMark}`;
                   })
-                  .join(" | ") || "No Modifications";
+                  .join(" | ") || t("school.class_list.no_modifications");
 
               formattedData.push({
-                "Année Académique": year,
-                "Nom de l'étudiant": `${student.firstName || "N/A"} ${
+                [t("school.class_list.excel.academic_year")]: year,
+                [t("school.class_list.excel.student_name")]: `${student.firstName || t("common.na")} ${
                   student.lastName || ""
                 }`,
-                Classe: classInfo.name || "N/A",
-                Terme: termName,
-                "Moyenne Terme": termAverage,
-                "Rang Terme": termRank,
-                Discipline: termDiscipline,
-                Séquence: sequenceName,
-                "Moyenne Séquence": sequenceAverage,
-                "Rang Séquence": sequenceRank,
-                Absences: absences,
-                Matière: subjectName,
-                "Note Actuelle": currentMark,
-                "Modifications de Note": modifications,
-                "Créé le": record.createdAt.toLocaleString(),
-                "Mis à jour le": record.updatedAt.toLocaleString(),
+                [t("school.class_list.excel.class")]: classInfo.name || t("common.na"),
+                [t("school.class_list.excel.term")]: termName,
+                [t("school.class_list.excel.term_average")]: termAverage,
+                [t("school.class_list.excel.term_rank")]: termRank,
+                [t("school.class_list.excel.discipline")]: termDiscipline,
+                [t("school.class_list.excel.sequence")]: sequenceName,
+                [t("school.class_list.excel.sequence_average")]: sequenceAverage,
+                [t("school.class_list.excel.sequence_rank")]: sequenceRank,
+                [t("school.class_list.excel.absences")]: absences,
+                [t("school.class_list.excel.subject")]: subjectName,
+                [t("school.class_list.excel.current_mark")]: currentMark,
+                [t("school.class_list.excel.mark_modifications")]: modifications,
+                [t("common.created_at")]: record.createdAt.toLocaleString(),
+                [t("common.updated_at")]: record.updatedAt.toLocaleString(),
               });
             });
           });
         });
       });
 
-      // Convert to Excel
       const ws = XLSX.utils.json_to_sheet(formattedData);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Année Académique");
-      XLSX.writeFile(wb, "academic_years.xlsx");
+      XLSX.utils.book_append_sheet(wb, ws, t("school.class_list.excel.sheet_name"));
+      XLSX.writeFile(wb, t("school.class_list.excel.file_name"));
     } catch (error) {
-      console.error(
-        "Erreur lors de l'exportation des années académiques:",
-        error
-      );
+      console.error("Export error:", error);
+      toast({
+        title: t("common.error"),
+        description: t("school.class_list.errors.export_failed"),
+      });
     }
   };
 
   const exportPDF = () => {
     const doc = new jsPDF();
 
-    // Title
     doc.setFontSize(16);
-    doc.text("Liste des Matières", 14, 20);
+    doc.text(t("school.class_list.pdf.title"), 14, 20);
 
-    // Date
-    const date = new Date().toLocaleDateString("fr-FR");
+    const date = new Date().toLocaleDateString();
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Date d'exportation : ${date}`, 14, 28);
+    doc.text(`${t("common.export_date")}: ${date}`, 14, 28);
 
-    // Table headers
     const tableColumn = [
-      "matricule",
-      "firstName",
-      "email",
-      "level",
-      "phoneNumber",
-      "dateOfBirth",
-      "gender",
+      t("school.class_list.pdf.matricule"),
+      t("school.class_list.pdf.first_name"),
+      t("school.class_list.pdf.email"),
+      t("school.class_list.pdf.level"),
+      t("school.class_list.pdf.phone"),
+      t("school.class_list.pdf.dob"),
+      t("school.class_list.pdf.gender"),
     ];
 
-    // Table rows
     const tableRows = students.map((s) => [
       s.matricule,
       s.firstName,
@@ -283,7 +282,6 @@ export default function ClassesList() {
       s.gender,
     ]);
 
-    // AutoTable
     autoTable(doc, {
       startY: 35,
       head: [tableColumn],
@@ -293,7 +291,7 @@ export default function ClassesList() {
         valign: "middle",
       },
       headStyles: {
-        fillColor: [41, 128, 185], // Blue
+        fillColor: [41, 128, 185],
         textColor: 255,
         fontStyle: "bold",
       },
@@ -301,15 +299,16 @@ export default function ClassesList() {
       margin: { top: 35 },
     });
 
-    // Save
-    doc.save(`matieres_${date.replace(/\//g, "-")}.pdf`);
+    doc.save(`${t("school.class_list.pdf.file_prefix")}_${date.replace(/\//g, "-")}.pdf`);
   };
+
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "";
 
   const handleTabChange = (tabKey: string) => {
     setSearchParams({ tab: tabKey });
   };
+
   const [openPaymentForm, setOpenPaymentForm] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
 
@@ -322,31 +321,31 @@ export default function ClassesList() {
     });
     setOpenPaymentForm(true);
   };
+
   const handlePaymentSubmit = async (student, fee) => {
-    // refresh data or show notification
     try {
       await academicService.addFee(student.studentId, fee);
       toast({
-        title: "success",
-        description: "Fee added successfully",
+        title: t("common.success"),
+        description: t("school.class_list.payment_success"),
       });
       setOpenPaymentForm(false);
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Failed to add fee",
+        title: t("common.error"),
+        description: t("school.class_list.errors.payment_failed"),
       });
     }
   };
+
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold">Gestion de la liste des classes</h1>
+      <h1 className="text-2xl font-bold">{t("school.class_list.title")}</h1>
       <Card className="p-4">
         <div className="space-y-6">
-          {/* Top Bar: Search + Actions */}
           <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
             <Input
-              placeholder="Rechercher une matière..."
+              placeholder={t("school.class_list.search_placeholder")}
               className="md:w-1/3 w-full"
               onChange={handleSearch}
               value={searchTerm}
@@ -359,6 +358,7 @@ export default function ClassesList() {
                 className="flex items-center gap-2"
               >
                 <Download className="h-4 w-4" />
+                {/* {t("common.excel")} */}
                 Excel
               </Button>
 
@@ -368,6 +368,7 @@ export default function ClassesList() {
                 className="flex items-center gap-2"
               >
                 <Download className="h-4 w-4" />
+                {/* {t("common.pdf")} */}
                 PDF
               </Button>
             </div>
@@ -377,14 +378,17 @@ export default function ClassesList() {
                 handleTabChange(activeTab === "" ? "assign-student" : "")
               }
             >
-              {activeTab === "" ? "Assigner un élève" : "Voir la liste"}
+              {activeTab === "" 
+                ? t("school.class_list.assign_student") 
+                : t("school.class_list.view_list")}
             </Button>
           </div>
 
-          {/* Filter Section */}
           <div className="bg-background p-6 rounded-xl shadow border-border">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Filtres</h2>
+              <h2 className="text-lg font-semibold text-foreground">
+                {t("school.students.filters.title")}
+              </h2>
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -413,14 +417,14 @@ export default function ClassesList() {
                     d="M6 18L18 6M6 6l12 12"
                   />
                 </svg>
-                Réinitialiser
+                {t("school.students.filters.reset")}
               </Button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="block mb-1 text-sm font-medium text-foreground">
-                  Niveau
+                  {t("school.class_list.level")}
                 </label>
                 <select
                   className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
@@ -428,11 +432,10 @@ export default function ClassesList() {
                   onChange={(e) => {
                     goToPage(1);
                     setFilter({ ...filter, level: e.target.value });
-                    console.log("filteredStudents", filteredStudents);
                     setSelectedStudents([]);
                   }}
                 >
-                  <option value="">Tous</option>
+                  <option value="">{t("school.students.filters.all")}</option>
                   <option value="6ème">6ème</option>
                   <option value="5ème">5ème</option>
                   <option value="4ème">4ème</option>
@@ -444,7 +447,7 @@ export default function ClassesList() {
               </div>
               <div>
                 <label className="block mb-1 text-sm font-medium text-foreground">
-                  Classes
+                  {t("school.class_list.classes")}
                 </label>
                 <select
                   className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
@@ -455,7 +458,7 @@ export default function ClassesList() {
                     setFilter({ ...filter, classes: classId });
                   }}
                 >
-                  <option value="">Tous</option>
+                  <option value="">{t("school.students.filters.all")}</option>
                   {filteredClasses.map((item) => (
                     <option key={item._id} value={item._id}>
                       {item.classesName}
@@ -465,7 +468,7 @@ export default function ClassesList() {
               </div>
               <div>
                 <label className="block mb-1 text-sm font-medium text-foreground">
-                  Academic Year
+                  {t("school.class_list.academic_year")}
                 </label>
                 <select
                   required
@@ -477,7 +480,7 @@ export default function ClassesList() {
                   className="w-full sm:w-auto border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="" disabled>
-                    Select Academic Year
+                    {t("school.class_list.select_year")}
                   </option>
                   {academicYears.map((year) => (
                     <option key={year._id} value={year.name}>
@@ -500,12 +503,12 @@ export default function ClassesList() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Matricule</TableHead>
-                      <TableHead>Nom complet</TableHead>
-                      <TableHead>classe</TableHead>
-                      <TableHead>Niveau</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>{t("school.class_list.matricule")}</TableHead>
+                      <TableHead>{t("school.class_list.full_name")}</TableHead>
+                      <TableHead>{t("school.class_list.class")}</TableHead>
+                      <TableHead>{t("school.class_list.level")}</TableHead>
+                      <TableHead>{t("school.class_list.status")}</TableHead>
+                      <TableHead>{t("school.students.table.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -518,16 +521,16 @@ export default function ClassesList() {
                               `${academic?.student?.firstName} ${academic?.student?.lastName}`}
                           </TableCell>
                           <TableCell>
-                            {academic?.classes?.classesName || "N/A"}
+                            {academic?.classes?.classesName || t("common.na")}
                           </TableCell>
                           <TableCell>{academic?.student?.level}</TableCell>
                           <TableCell>{academic?.student?.status}</TableCell>
                           <TableCell>
                             <button
-                              onClick={() => handleOpenPaymentForm(academic)} // Replace row._id with the academic year or student ID
+                              onClick={() => handleOpenPaymentForm(academic)}
                               className="bg-primary hover:bg-primary/80 text-white px-4 py-1 rounded"
                             >
-                              Add Payment
+                              {t("school.class_list.add_payment")}
                             </button>
                           </TableCell>
                         </TableRow>
@@ -538,7 +541,7 @@ export default function ClassesList() {
                           colSpan={7}
                           className="text-center text-muted-foreground"
                         >
-                          Aucun étudiant trouvé.
+                          {t("school.class_list.no_students")}
                         </TableCell>
                       </TableRow>
                     )}
@@ -550,7 +553,7 @@ export default function ClassesList() {
                     onClick={goToPreviousPage}
                     disabled={currentPage === 1}
                   >
-                    Précédent
+                    {t("common.pagination.previous")}
                   </button>
 
                   <div className="space-x-2">
@@ -574,7 +577,7 @@ export default function ClassesList() {
                     onClick={goToNextPage}
                     disabled={currentPage === totalPages}
                   >
-                    Suivant
+                    {t("common.pagination.next")}
                   </button>
                 </div>
               </>
@@ -597,10 +600,7 @@ export default function ClassesList() {
               if (e.target === e.currentTarget) setOpenPaymentForm(false);
             }}
           >
-            <div
-              className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg"
-              // max height = 90% of viewport height
-            >
+            <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg">
               <PaymentForm
                 student={selectedStudent}
                 onCancel={() => setOpenPaymentForm(false)}

@@ -12,7 +12,7 @@ export interface SchoolClass {
   description?: string;
   status?: string ;
   level: string;
-  capacity?: number|"";
+  capacity?: number|string|'';
   amountFee?: number|"";
   subjects?: SubjectInfo[];
   studentList?: any[]; // Array of Student ObjectIds

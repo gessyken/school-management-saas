@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { studentService, Student } from "@/lib/services/studentService";
 import { Card } from "@/components/ui/card";
@@ -44,6 +45,7 @@ import { useToast } from "@/components/ui/use-toast";
 const itemsPerPage = 5;
 
 export default function StudentManagement() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -53,7 +55,7 @@ export default function StudentManagement() {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Générer un matricule automatique
+  // Generate automatic matricule
   const generateMatricule = () => {
     const year = new Date().getFullYear();
     const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
@@ -89,11 +91,11 @@ export default function StudentManagement() {
       setStudents(data.students || []);
     } catch (error) {
       console.error("Failed to fetch students", error);
-      setError("Erreur lors du chargement des étudiants. Veuillez réessayer.");
+      setError(t('school.students.error.loading'));
       setStudents([]);
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les étudiants",
+        title: t('common.error'),
+        description: t('school.students.error.load_failed'),
         variant: "destructive",
       });
     } finally {
@@ -133,16 +135,25 @@ export default function StudentManagement() {
     goToNextPage,
     goToPreviousPage,
     goToPage,
-  } = usePagination(filteredStudents, itemsPerPage); // subjects is your full data list
+  } = usePagination(filteredStudents, itemsPerPage);
 
   const handleDelete = async (id?: string) => {
     if (!id) return;
-    if (confirm("Êtes-vous sûr de vouloir supprimer cet étudiant ?")) {
+    if (confirm(t('school.students.confirm_delete'))) {
       try {
         await studentService.delete(id);
         fetchStudents();
+        toast({
+          title: t('common.success'),
+          description: t('school.students.success.deleted'),
+        });
       } catch (error) {
         console.error("Failed to delete student", error);
+        toast({
+          title: t('common.error'),
+          description: t('school.students.error.delete_failed'),
+          variant: "destructive",
+        });
       }
     }
   };
@@ -155,6 +166,7 @@ export default function StudentManagement() {
     setModalMode(mode);
     setIsModalOpen(true);
   };
+
   const handleImport = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -165,86 +177,101 @@ export default function StudentManagement() {
       const rawData: any[] = XLSX.utils.sheet_to_json(ws);
 
       const parsedData: Student[] = rawData.map((row) => ({
-        matricule: row["Matricule"],
-        firstName: row["firstName"],
-        lastName: row["lastName"],
-        email: row["Email"] !== "N/A" ? row["Email"] : "",
-        phoneNumber: row["Téléphone"] !== "N/A" ? row["Téléphone"] : "",
-        gender: row["Genre"] !== "N/A" ? row["Genre"] : undefined,
+        matricule: row[t('school.students.export.matricule')],
+        firstName: row[t('school.students.export.firstName')],
+        lastName: row[t('school.students.export.lastName')],
+        email: row[t('school.students.export.email')] !== "N/A" ? row[t('school.students.export.email')] : "",
+        phoneNumber: row[t('school.students.export.phone')] !== "N/A" ? row[t('school.students.export.phone')] : "",
+        gender: row[t('school.students.export.gender')] !== "N/A" ? row[t('school.students.export.gender')] : undefined,
         dateOfBirth:
-          row["Date de naissance"] !== "N/A" ? row["Date de naissance"] : "",
-        level: row["Niveau"],
-        status: row["Statut"] !== "N/A" ? row["Statut"] : undefined,
+          row[t('school.students.export.dob')] !== "N/A" ? row[t('school.students.export.dob')] : "",
+        level: row[t('school.students.export.level')],
+        status: row[t('school.students.export.status')] !== "N/A" ? row[t('school.students.export.status')] : undefined,
         address: {
           street:
-            row["Adresse - Rue"] !== "N/A" ? row["Adresse - Rue"] : undefined,
+            row[t('school.students.export.address_street')] !== "N/A" ? row[t('school.students.export.address_street')] : undefined,
           city:
-            row["Adresse - Ville"] !== "N/A"
-              ? row["Adresse - Ville"]
+            row[t('school.students.export.address_city')] !== "N/A"
+              ? row[t('school.students.export.address_city')]
               : undefined,
           state:
-            row["Adresse - Région/État"] !== "N/A"
-              ? row["Adresse - Région/État"]
+            row[t('school.students.export.address_state')] !== "N/A"
+              ? row[t('school.students.export.address_state')]
               : undefined,
           country:
-            row["Adresse - Pays"] !== "N/A" ? row["Adresse - Pays"] : undefined,
+            row[t('school.students.export.address_country')] !== "N/A" ? row[t('school.students.export.address_country')] : undefined,
         },
         emergencyContact: {
           name:
-            row["Contact d'urgence - Nom"] !== "N/A"
-              ? row["Contact d'urgence - Nom"]
+            row[t('school.students.export.emergency_name')] !== "N/A"
+              ? row[t('school.students.export.emergency_name')]
               : undefined,
           relationship:
-            row["Contact d'urgence - Relation"] !== "N/A"
-              ? row["Contact d'urgence - Relation"]
+            row[t('school.students.export.emergency_relation')] !== "N/A"
+              ? row[t('school.students.export.emergency_relation')]
               : undefined,
           phone:
-            row["Contact d'urgence - Téléphone"] !== "N/A"
-              ? row["Contact d'urgence - Téléphone"]
+            row[t('school.students.export.emergency_phone')] !== "N/A"
+              ? row[t('school.students.export.emergency_phone')]
               : undefined,
         },
         createdAt:
-          row["Date de création"] !== "N/A"
-            ? row["Date de création"]
+          row[t('school.students.export.created_at')] !== "N/A"
+            ? row[t('school.students.export.created_at')]
             : undefined,
         updatedAt:
-          row["Date de mise à jour"] !== "N/A"
-            ? row["Date de mise à jour"]
+          row[t('school.students.export.updated_at')] !== "N/A"
+            ? row[t('school.students.export.updated_at')]
             : undefined,
       }));
-      console.log(parsedData);
-      studentService.bulkImport(parsedData).then(fetchStudents);
+      
+      studentService.bulkImport(parsedData)
+        .then(() => {
+          fetchStudents();
+          toast({
+            title: t('common.success'),
+            description: t('school.students.success.imported'),
+          });
+        })
+        .catch(error => {
+          console.error("Import failed:", error);
+          toast({
+            title: t('common.error'),
+            description: t('school.students.error.import_failed'),
+            variant: "destructive",
+          });
+        });
     };
     reader.readAsBinaryString(file);
   };
 
   const exportExcel = () => {
     const formattedStudents = students.map((student) => ({
-      Matricule: student.matricule,
-      firstName: student.firstName,
-      lastName: student.lastName,
-      Email: student.email || "N/A",
-      Téléphone: student.phoneNumber || "N/A",
-      Genre: student.gender || "N/A",
-      "Date de naissance": student.dateOfBirth || "N/A",
-      Niveau: student.level,
-      Statut: student.status || "N/A",
-      "Adresse - Rue": student.address?.street || "N/A",
-      "Adresse - Ville": student.address?.city || "N/A",
-      "Adresse - Région/État": student.address?.state || "N/A",
-      "Adresse - Pays": student.address?.country || "N/A",
-      "Contact d'urgence - Nom": student.emergencyContact?.name || "N/A",
-      "Contact d'urgence - Relation":
+      [t('school.students.export.matricule')]: student.matricule,
+      [t('school.students.export.firstName')]: student.firstName,
+      [t('school.students.export.lastName')]: student.lastName,
+      [t('school.students.export.email')]: student.email || "N/A",
+      [t('school.students.export.phone')]: student.phoneNumber || "N/A",
+      [t('school.students.export.gender')]: student.gender || "N/A",
+      [t('school.students.export.dob')]: student.dateOfBirth || "N/A",
+      [t('school.students.export.level')]: student.level,
+      [t('school.students.export.status')]: student.status || "N/A",
+      [t('school.students.export.address_street')]: student.address?.street || "N/A",
+      [t('school.students.export.address_city')]: student.address?.city || "N/A",
+      [t('school.students.export.address_state')]: student.address?.state || "N/A",
+      [t('school.students.export.address_country')]: student.address?.country || "N/A",
+      [t('school.students.export.emergency_name')]: student.emergencyContact?.name || "N/A",
+      [t('school.students.export.emergency_relation')]:
         student.emergencyContact?.relationship || "N/A",
-      "Contact d'urgence - Téléphone": student.emergencyContact?.phone || "N/A",
-      "Date de création": student.createdAt || "N/A",
-      "Date de mise à jour": student.updatedAt || "N/A",
+      [t('school.students.export.emergency_phone')]: student.emergencyContact?.phone || "N/A",
+      [t('school.students.export.created_at')]: student.createdAt || "N/A",
+      [t('school.students.export.updated_at')]: student.updatedAt || "N/A",
     }));
 
     const ws = XLSX.utils.json_to_sheet(formattedStudents);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Étudiants");
-    XLSX.writeFile(wb, "etudiants.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, t('school.students.export.sheet_name'));
+    XLSX.writeFile(wb, `${t('school.students.export.filename')}.xlsx`);
   };
 
   const exportPDF = () => {
@@ -252,23 +279,23 @@ export default function StudentManagement() {
 
     // Title
     doc.setFontSize(16);
-    doc.text("Liste des Matières", 14, 20);
+    doc.text(t('school.students.export.pdf_title'), 14, 20);
 
     // Date
-    const date = new Date().toLocaleDateString("fr-FR");
+    const date = new Date().toLocaleDateString();
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Date d'exportation : ${date}`, 14, 28);
+    doc.text(`${t('school.students.export.export_date')}: ${date}`, 14, 28);
 
     // Table headers
     const tableColumn = [
-      "matricule",
-      "firstName",
-      "email",
-      "level",
-      "phoneNumber",
-      "dateOfBirth",
-      "gender",
+      t('school.students.export.matricule'),
+      t('school.students.export.firstName'),
+      t('school.students.export.email'),
+      t('school.students.export.level'),
+      t('school.students.export.phone'),
+      t('school.students.export.dob'),
+      t('school.students.export.gender'),
     ];
 
     // Table rows
@@ -292,7 +319,7 @@ export default function StudentManagement() {
         valign: "middle",
       },
       headStyles: {
-        fillColor: [41, 128, 185], // Blue
+        fillColor: [41, 128, 185],
         textColor: 255,
         fontStyle: "bold",
       },
@@ -301,12 +328,11 @@ export default function StudentManagement() {
     });
 
     // Save
-    doc.save(`matieres_${date.replace(/\//g, "-")}.pdf`);
+    doc.save(`${t('school.students.export.filename')}_${date.replace(/\//g, "-")}.pdf`);
   };
 
   const handleOpenModal = (student?: Student) => {
     if (student) {
-      // Detect education system based on level
       const francophonesLevels = ['6e', '5e', '4e', '3e', '2nde', '1ère', 'Terminale'];
       const detectedSystem = francophonesLevels.includes(student.level) ? 'francophone' : 'anglophone';
       
@@ -319,6 +345,7 @@ export default function StudentManagement() {
     setError(null);
     setShowModal(true);
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -327,15 +354,25 @@ export default function StudentManagement() {
     try {
       if (editingId) {
         await studentService.update(editingId, form);
+        toast({
+          title: t('common.success'),
+          description: t('school.students.success.updated'),
+        });
       } else {
         await studentService.create(form);
+        toast({
+          title: t('common.success'),
+          description: t('school.students.success.created'),
+        });
       }
       await fetchStudents();
       setShowModal(false);
       resetForm();
     } catch (error) {
       console.error("Failed to submit student:", error);
-      setError(editingId ? "Erreur lors de la modification de l'étudiant" : "Erreur lors de l'ajout de l'étudiant");
+      setError(editingId 
+        ? t('school.students.error.update_failed') 
+        : t('school.students.error.create_failed'));
     } finally {
       setSubmitting(false);
     }
@@ -357,9 +394,9 @@ export default function StudentManagement() {
 
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold">Student Management</h1>
+      <h1 className="text-2xl font-bold">{t('school.students.title')}</h1>
       
-      {/* Affichage des erreurs */}
+      {/* Error display */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-center gap-2">
           <AlertCircle className="h-4 w-4" />
@@ -378,7 +415,7 @@ export default function StudentManagement() {
           {/* Top Bar: Search + Actions */}
           <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
             <Input
-              placeholder="Rechercher une matière..."
+              placeholder={t('school.students.search_placeholder')}
               className="md:w-1/3 w-full"
               onChange={handleSearch}
               value={searchTerm}
@@ -390,7 +427,7 @@ export default function StudentManagement() {
                 onClick={() => handleOpenModal()}
               >
                 <FilePlus className="h-4 w-4" />
-                Ajouter un étudiant
+                {t('school.students.add_student')}
               </Button>
 
               <Button
@@ -413,7 +450,7 @@ export default function StudentManagement() {
 
               <label className="cursor-pointer bg-muted hover:bg-muted/80 text-sm px-3 py-2 rounded flex items-center gap-2">
                 <Upload className="h-4 w-4" />
-                Importer
+                {t('school.students.import')}
                 <input
                   type="file"
                   hidden
@@ -428,7 +465,9 @@ export default function StudentManagement() {
           {/* Filter Section */}
           <div className="bg-background p-6 rounded-xl shadow border">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Filtres</h2>
+              <h2 className="text-lg font-semibold text-foreground">
+                {t('school.students.filters.title')}
+              </h2>
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -451,14 +490,14 @@ export default function StudentManagement() {
                     d="M6 18L18 6M6 6l12 12"
                   />
                 </svg>
-                Réinitialiser
+                {t('school.students.filters.reset')}
               </Button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="block mb-1 text-sm font-medium text-foreground">
-                  Niveau
+                  {t('school.students.filters.level')}
                 </label>
                 <select
                   className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
@@ -468,17 +507,17 @@ export default function StudentManagement() {
                     setFilter({ ...filter, level: e.target.value });
                   }}
                 >
-                  <option value="">Tous</option>
-                  <optgroup label="🇫🇷 Système Francophone">
-                    <option value="6e">6e (Sixième)</option>
-                    <option value="5e">5e (Cinquième)</option>
-                    <option value="4e">4e (Quatrième)</option>
-                    <option value="3e">3e (Troisième)</option>
-                    <option value="2nde">2nde (Seconde)</option>
-                    <option value="1ère">1ère (Première)</option>
-                    <option value="Terminale">Terminale</option>
+                  <option value="">{t('school.students.filters.all')}</option>
+                  <optgroup label={t('school.students.filters.francophone_system')}>
+                    <option value="6e">6e ({t('school.students.levels.sixth')})</option>
+                    <option value="5e">5e ({t('school.students.levels.fifth')})</option>
+                    <option value="4e">4e ({t('school.students.levels.fourth')})</option>
+                    <option value="3e">3e ({t('school.students.levels.third')})</option>
+                    <option value="2nde">2nde ({t('school.students.levels.second')})</option>
+                    <option value="1ère">1ère ({t('school.students.levels.first')})</option>
+                    <option value="Terminale">{t('school.students.levels.terminal')}</option>
                   </optgroup>
-                  <optgroup label="🇬🇧 Système Anglophone">
+                  <optgroup label={t('school.students.filters.anglophone_system')}>
                     <option value="Form 1">Form 1</option>
                     <option value="Form 2">Form 2</option>
                     <option value="Form 3">Form 3</option>
@@ -492,7 +531,7 @@ export default function StudentManagement() {
 
               <div>
                 <label className="block mb-1 text-sm font-medium text-foreground">
-                  Sexe
+                  {t('school.students.filters.gender')}
                 </label>
                 <select
                   className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
@@ -502,15 +541,15 @@ export default function StudentManagement() {
                     setFilter({ ...filter, gender: e.target.value });
                   }}
                 >
-                  <option value="">Tous</option>
-                  <option value="male">Homme</option>
-                  <option value="female">Femme</option>
+                  <option value="">{t('school.students.filters.all')}</option>
+                  <option value="male">{t('school.students.gender.male')}</option>
+                  <option value="female">{t('school.students.gender.female')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block mb-1 text-sm font-medium text-foreground">
-                  Statut
+                  {t('school.students.filters.status')}
                 </label>
                 <select
                   className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
@@ -520,11 +559,11 @@ export default function StudentManagement() {
                     setFilter({ ...filter, status: e.target.value });
                   }}
                 >
-                  <option value="">Tous</option>
-                  <option value="active">Actif</option>
-                  <option value="suspended">Suspendu</option>
-                  <option value="graduated">Diplômé</option>
-                  <option value="withdrawn">Abandonné</option>
+                  <option value="">{t('school.students.filters.all')}</option>
+                  <option value="active">{t('school.students.status.active')}</option>
+                  <option value="suspended">{t('school.students.status.suspended')}</option>
+                  <option value="graduated">{t('school.students.status.graduated')}</option>
+                  <option value="withdrawn">{t('school.students.status.withdrawn')}</option>
                 </select>
               </div>
             </div>
@@ -534,7 +573,9 @@ export default function StudentManagement() {
         {loading ? (
           <div className="flex flex-col justify-center items-center p-12 space-y-4">
             <Loader2 className="animate-spin h-12 w-12 text-primary" />
-            <p className="text-muted-foreground text-lg">Chargement des étudiants...</p>
+            <p className="text-muted-foreground text-lg">
+              {t('school.students.loading')}
+            </p>
           </div>
         ) : (
           <>
@@ -543,25 +584,25 @@ export default function StudentManagement() {
                 <TableHeader className="bg-muted">
                   <TableRow>
                     <TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Matricule
+                      {t('school.students.table.matricule')}
                     </TableHead>
                     <TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Nom complet
+                      {t('school.students.table.full_name')}
                     </TableHead>
                     <TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Classe
+                      {t('school.students.table.class')}
                     </TableHead>
                     <TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Niveau
+                      {t('school.students.table.level')}
                     </TableHead>
                     <TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Sexe
+                      {t('school.students.table.gender')}
                     </TableHead>
                     <TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Statut
+                      {t('school.students.table.status')}
                     </TableHead>
                     <TableHead className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Actions
+                      {t('school.students.table.actions')}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -586,7 +627,7 @@ export default function StudentManagement() {
                           {student.level}
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground capitalize">
-                          {student.gender}
+                          {student.gender && t(`school.students.gender.${student.gender}`)}
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap text-sm">
                           <span
@@ -598,7 +639,7 @@ export default function StudentManagement() {
                                 : "bg-destructive/20 text-destructive"
                             }`}
                           >
-                            {student.status}
+                            {student.status && t(`school.students.status.${student.status}`)}
                           </span>
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
@@ -620,20 +661,22 @@ export default function StudentManagement() {
                                 onClick={() => openModal("view", student)}
                                 className="flex items-center gap-2 px-4 py-2 hover:bg-primary/10 cursor-pointer"
                               >
-                                <Eye className="w-4 h-4 text-primary" /> Voir
+                                <Eye className="w-4 h-4 text-primary" /> 
+                                {t('school.students.actions.view')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleOpenModal(student)}
                                 className="flex items-center gap-2 px-4 py-2 hover:bg-secondary/10 cursor-pointer"
                               >
                                 <Pencil className="w-4 h-4 text-secondary" />{" "}
-                                Modifier
+                                {t('school.students.actions.edit')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleDelete(student._id)}
                                 className="flex items-center gap-2 px-4 py-2 hover:bg-destructive/10 cursor-pointer text-destructive"
                               >
-                                <Trash className="w-4 h-4" /> Supprimer
+                                <Trash className="w-4 h-4" /> 
+                                {t('school.students.actions.delete')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -646,11 +689,13 @@ export default function StudentManagement() {
                         <div className="flex flex-col items-center justify-center space-y-4">
                           <GraduationCap className="h-16 w-16 text-muted-foreground/50" />
                           <div className="text-center space-y-2">
-                            <h3 className="text-lg font-medium text-foreground">Aucun étudiant trouvé</h3>
+                            <h3 className="text-lg font-medium text-foreground">
+                              {t('school.students.no_students.title')}
+                            </h3>
                             <p className="text-sm text-muted-foreground max-w-sm">
                               {searchTerm || filter.level || filter.gender || filter.status 
-                                ? "Aucun étudiant ne correspond à vos critères de recherche."
-                                : "Commencez par ajouter votre premier étudiant."}
+                                ? t('school.students.no_students.filtered')
+                                : t('school.students.no_students.empty')}
                             </p>
                           </div>
                           {!searchTerm && !filter.level && !filter.gender && !filter.status && (
@@ -659,7 +704,7 @@ export default function StudentManagement() {
                               className="flex items-center gap-2"
                             >
                               <FilePlus className="h-4 w-4" />
-                              Ajouter un étudiant
+                              {t('school.students.add_student')}
                             </Button>
                           )}
                         </div>
@@ -680,7 +725,7 @@ export default function StudentManagement() {
                 disabled={currentPage === 1}
                 className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-foreground bg-background border border-border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Précédent
+                {t('common.pagination.previous')}
               </button>
 
               <div className="hidden sm:flex space-x-2">
@@ -704,7 +749,7 @@ export default function StudentManagement() {
                 disabled={currentPage === totalPages}
                 className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-foreground bg-background border border-border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Suivant
+                {t('common.pagination.next')}
               </button>
             </nav>
           </>
@@ -715,7 +760,9 @@ export default function StudentManagement() {
             <div className="bg-background rounded-lg w-full max-w-3xl mx-4 my-8 shadow-lg max-h-screen overflow-hidden">
               <div className="p-6">
                 <h3 className="text-xl font-semibold mb-4">
-                  {editingId ? "Modifier l'étudiant" : "Ajouter un étudiant"}
+                  {editingId 
+                    ? t('school.students.modal.edit_title') 
+                    : t('school.students.modal.create_title')}
                 </h3>
 
                 <form
@@ -724,7 +771,9 @@ export default function StudentManagement() {
                 >
                   {/* Basic Info */}
                   <div className="col-span-2">
-                    <label className="block mb-1 font-medium">Matricule</label>
+                    <label className="block mb-1 font-medium">
+                      {t('school.students.form.matricule')}
+                    </label>
                     <input
                       type="text"
                       className="w-full border-border p-2 rounded"
@@ -737,7 +786,9 @@ export default function StudentManagement() {
                   </div>
 
                   <div>
-                    <label className="block mb-1 font-medium">Prénom</label>
+                    <label className="block mb-1 font-medium">
+                      {t('school.students.form.first_name')}
+                    </label>
                     <input
                       type="text"
                       className="w-full border-border p-2 rounded"
@@ -750,7 +801,9 @@ export default function StudentManagement() {
                   </div>
 
                   <div>
-                    <label className="block mb-1 font-medium">Nom</label>
+                    <label className="block mb-1 font-medium">
+                      {t('school.students.form.last_name')}
+                    </label>
                     <input
                       type="text"
                       className="w-full border-border p-2 rounded"
@@ -763,7 +816,9 @@ export default function StudentManagement() {
                   </div>
 
                   <div>
-                    <label className="block mb-1 font-medium">Email</label>
+                    <label className="block mb-1 font-medium">
+                      {t('school.students.form.email')}
+                    </label>
                     <input
                       type="email"
                       className="w-full border-border p-2 rounded"
@@ -775,7 +830,9 @@ export default function StudentManagement() {
                   </div>
 
                   <div>
-                    <label className="block mb-1 font-medium">Téléphone</label>
+                    <label className="block mb-1 font-medium">
+                      {t('school.students.form.phone')}
+                    </label>
                     <input
                       type="tel"
                       className="w-full border-border p-2 rounded"
@@ -787,22 +844,30 @@ export default function StudentManagement() {
                   </div>
 
                   <div>
-                    <label className="block mb-1 font-medium">Système Éducatif</label>
+                    <label className="block mb-1 font-medium">
+                      {t('school.students.form.education_system')}
+                    </label>
                     <select
                       className="w-full border-border p-2 rounded"
                       value={educationSystem}
                       onChange={(e) => {
                         setEducationSystem(e.target.value as 'francophone' | 'anglophone');
-                        setForm({ ...form, level: "" }); // Reset level when changing system
+                        setForm({ ...form, level: "" });
                       }}
                     >
-                      <option value="francophone">🇫🇷 Système Francophone</option>
-                      <option value="anglophone">🇬🇧 Système Anglophone</option>
+                      <option value="francophone">
+                        {t('school.students.form.francophone_system')}
+                      </option>
+                      <option value="anglophone">
+                        {t('school.students.form.anglophone_system')}
+                      </option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block mb-1 font-medium">Niveau</label>
+                    <label className="block mb-1 font-medium">
+                      {t('school.students.form.level')}
+                    </label>
                     <select
                       className="w-full border-border p-2 rounded"
                       value={form.level}
@@ -811,16 +876,18 @@ export default function StudentManagement() {
                       }
                       required
                     >
-                      <option value="">Sélectionnez un niveau</option>
+                      <option value="">
+                        {t('school.students.form.select_level')}
+                      </option>
                       {educationSystem === 'francophone' ? (
                         <>
-                          <option value="6e">6e (Sixième)</option>
-                          <option value="5e">5e (Cinquième)</option>
-                          <option value="4e">4e (Quatrième)</option>
-                          <option value="3e">3e (Troisième)</option>
-                          <option value="2nde">2nde (Seconde)</option>
-                          <option value="1ère">1ère (Première)</option>
-                          <option value="Terminale">Terminale</option>
+                          <option value="6e">6e ({t('school.students.levels.sixth')})</option>
+                          <option value="5e">5e ({t('school.students.levels.fifth')})</option>
+                          <option value="4e">4e ({t('school.students.levels.fourth')})</option>
+                          <option value="3e">3e ({t('school.students.levels.third')})</option>
+                          <option value="2nde">2nde ({t('school.students.levels.second')})</option>
+                          <option value="1ère">1ère ({t('school.students.levels.first')})</option>
+                          <option value="Terminale">{t('school.students.levels.terminal')}</option>
                         </>
                       ) : (
                         <>
@@ -838,7 +905,7 @@ export default function StudentManagement() {
 
                   <div>
                     <label className="block mb-1 font-medium">
-                      Date de naissance
+                      {t('school.students.form.dob')}
                     </label>
                     <input
                       type="date"
@@ -851,7 +918,9 @@ export default function StudentManagement() {
                   </div>
 
                   <div>
-                    <label className="block mb-1 font-medium">Genre</label>
+                    <label className="block mb-1 font-medium">
+                      {t('school.students.form.gender')}
+                    </label>
                     <select
                       className="w-full border p-2 rounded"
                       value={form.gender}
@@ -859,18 +928,28 @@ export default function StudentManagement() {
                         setForm({ ...form, gender: e.target.value })
                       }
                     >
-                      <option value="">Sélectionnez</option>
-                      <option value="male">Masculin</option>
-                      <option value="female">Féminin</option>
-                      <option value="other">Autre</option>
+                      <option value="">
+                        {t('school.students.form.select_gender')}
+                      </option>
+                      <option value="male">
+                        {t('school.students.gender.male')}
+                      </option>
+                      <option value="female">
+                        {t('school.students.gender.female')}
+                      </option>
+                      <option value="other">
+                        {t('school.students.gender.other')}
+                      </option>
                     </select>
                   </div>
 
                   {/* Address */}
-                  <div className="col-span-2 pt-4 font-semibold">Adresse</div>
+                  <div className="col-span-2 pt-4 font-semibold">
+                    {t('school.students.form.address_section')}
+                  </div>
                   <input
                     type="text"
-                    placeholder="Rue"
+                    placeholder={t('school.students.form.street')}
                     className="border-border p-2 rounded"
                     value={form.address?.street || ""}
                     onChange={(e) =>
@@ -882,7 +961,7 @@ export default function StudentManagement() {
                   />
                   <input
                     type="text"
-                    placeholder="Ville"
+                    placeholder={t('school.students.form.city')}
                     className="border-border p-2 rounded"
                     value={form.address?.city || ""}
                     onChange={(e) =>
@@ -894,7 +973,7 @@ export default function StudentManagement() {
                   />
                   <input
                     type="text"
-                    placeholder="Région/État"
+                    placeholder={t('school.students.form.state')}
                     className="border-border p-2 rounded"
                     value={form.address?.state || ""}
                     onChange={(e) =>
@@ -906,7 +985,7 @@ export default function StudentManagement() {
                   />
                   <input
                     type="text"
-                    placeholder="Pays"
+                    placeholder={t('school.students.form.country')}
                     className="border-border p-2 rounded"
                     value={form.address?.country || ""}
                     onChange={(e) =>
@@ -919,11 +998,11 @@ export default function StudentManagement() {
 
                   {/* Emergency Contact */}
                   <div className="col-span-2 pt-4 font-semibold">
-                    Contact d'urgence
+                    {t('school.students.form.emergency_contact')}
                   </div>
                   <input
                     type="text"
-                    placeholder="Nom"
+                    placeholder={t('school.students.form.emergency_name')}
                     className="border-border p-2 rounded"
                     value={form.emergencyContact?.name || ""}
                     onChange={(e) =>
@@ -938,7 +1017,7 @@ export default function StudentManagement() {
                   />
                   <input
                     type="text"
-                    placeholder="Relation"
+                    placeholder={t('school.students.form.emergency_relation')}
                     className="border-border p-2 rounded"
                     value={form.emergencyContact?.relationship || ""}
                     onChange={(e) =>
@@ -953,7 +1032,7 @@ export default function StudentManagement() {
                   />
                   <input
                     type="text"
-                    placeholder="Téléphone"
+                    placeholder={t('school.students.form.emergency_phone')}
                     className="border-border p-2 rounded col-span-2"
                     value={form.emergencyContact?.phone || ""}
                     onChange={(e) =>
@@ -969,7 +1048,9 @@ export default function StudentManagement() {
 
                   {/* Status */}
                   <div className="col-span-2">
-                    <label className="block mb-1 font-medium">Statut</label>
+                    <label className="block mb-1 font-medium">
+                      {t('school.students.form.status')}
+                    </label>
                     <select
                       className="w-full border-border p-2 rounded"
                       value={form.status}
@@ -977,15 +1058,25 @@ export default function StudentManagement() {
                         setForm({ ...form, status: e.target.value })
                       }
                     >
-                      <option value="">Sélectionnez un statut</option>
-                      <option value="active">Actif</option>
-                      <option value="suspended">Suspendu</option>
-                      <option value="graduated">Diplômé</option>
-                      <option value="withdrawn">Abandonné</option>
+                      <option value="">
+                        {t('school.students.form.select_status')}
+                      </option>
+                      <option value="active">
+                        {t('school.students.status.active')}
+                      </option>
+                      <option value="suspended">
+                        {t('school.students.status.suspended')}
+                      </option>
+                      <option value="graduated">
+                        {t('school.students.status.graduated')}
+                      </option>
+                      <option value="withdrawn">
+                        {t('school.students.status.withdrawn')}
+                      </option>
                     </select>
                   </div>
 
-                  {/* Affichage des erreurs dans le modal */}
+                  {/* Error display in modal */}
                   {error && (
                     <div className="col-span-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-center gap-2">
                       <AlertCircle className="h-4 w-4" />
@@ -1004,7 +1095,7 @@ export default function StudentManagement() {
                       disabled={submitting}
                       className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Annuler
+                      {t('common.cancel')}
                     </button>
                     <button
                       type="submit"
@@ -1013,8 +1104,12 @@ export default function StudentManagement() {
                     >
                       {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                       {submitting 
-                        ? (editingId ? "Mise à jour..." : "Ajout...") 
-                        : (editingId ? "Mettre à jour" : "Ajouter")
+                        ? (editingId 
+                            ? t('common.updating') 
+                            : t('common.adding')) 
+                        : (editingId 
+                            ? t('common.update') 
+                            : t('common.add'))
                       }
                     </button>
                   </div>
@@ -1031,11 +1126,11 @@ export default function StudentManagement() {
                 <div className="flex items-center">
                   <Info className="text-primary w-5 h-5 mr-2" />
                   <h3 className="text-lg font-bold text-foreground">
-                    Détails de l'étudiant
+                    {t('school.students.details.title')}
                   </h3>
                 </div>
                 <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-                  Fermer
+                  {t('common.close')}
                 </Button>
               </div>
 
@@ -1046,64 +1141,82 @@ export default function StudentManagement() {
                   <div className="flex items-start">
                     <BadgeCheck className="w-4 h-4 mt-1 mr-2 text-primary" />
                     <div>
-                      <span className="font-medium">Matricule:</span>{" "}
+                      <span className="font-medium">
+                        {t('school.students.form.matricule')}:
+                      </span>{" "}
                       {selectedStudent.matricule}
                     </div>
                   </div>
                   <div className="flex items-start">
                     <User className="w-4 h-4 mt-1 mr-2 text-primary" />
                     <div>
-                      <span className="font-medium">Nom complet:</span>{" "}
+                      <span className="font-medium">
+                        {t('school.students.table.full_name')}:
+                      </span>{" "}
                       {selectedStudent.firstName} {selectedStudent.lastName}
                     </div>
                   </div>
                   <div className="flex items-start">
                     <Mail className="w-4 h-4 mt-1 mr-2 text-primary" />
                     <div>
-                      <span className="font-medium">Email:</span>{" "}
+                      <span className="font-medium">
+                        {t('school.students.form.email')}:
+                      </span>{" "}
                       {selectedStudent.email || "N/A"}
                     </div>
                   </div>
                   <div className="flex items-start">
                     <Phone className="w-4 h-4 mt-1 mr-2 text-secondary" />
                     <div>
-                      <span className="font-medium">Téléphone:</span>{" "}
+                      <span className="font-medium">
+                        {t('school.students.form.phone')}:
+                      </span>{" "}
                       {selectedStudent.phoneNumber || "N/A"}
                     </div>
                   </div>
                   <div className="flex items-start">
                     <Smile className="w-4 h-4 mt-1 mr-2 text-secondary" />
                     <div>
-                      <span className="font-medium">Genre:</span>{" "}
-                      {selectedStudent.gender || "N/A"}
+                      <span className="font-medium">
+                        {t('school.students.form.gender')}:
+                      </span>{" "}
+                      {selectedStudent.gender 
+                        ? t(`school.students.gender.${selectedStudent.gender}`) 
+                        : "N/A"}
                     </div>
                   </div>
                   <div className="flex items-start">
                     <Calendar className="w-4 h-4 mt-1 mr-2 text-primary" />
                     <div>
-                      <span className="font-medium">Date de naissance:</span>{" "}
-                      {new Date(
-                        selectedStudent.dateOfBirth
-                      ).toLocaleDateString() || "N/A"}
+                      <span className="font-medium">
+                        {t('school.students.form.dob')}:
+                      </span>{" "}
+                      {selectedStudent.dateOfBirth
+                        ? new Date(selectedStudent.dateOfBirth).toLocaleDateString()
+                        : "N/A"}
                     </div>
                   </div>
                   <div className="flex items-start">
                     <GraduationCap className="w-4 h-4 mt-1 mr-2 text-primary" />
                     <div>
-                      <span className="font-medium">Niveau:</span>{" "}
+                      <span className="font-medium">
+                        {t('school.students.form.level')}:
+                      </span>{" "}
                       {selectedStudent.level}
                     </div>
                   </div>
                   <div className="flex items-start">
                     {selectedStudent.status === "active" ? (
-              <CheckCircle className="w-4 h-4 mt-1 mr-2 text-primary" />
-            ) : selectedStudent.status === "suspended" ? (
-              <AlertCircle className="w-4 h-4 mt-1 mr-2 text-destructive" />
-            ) : (
-              <XCircle className="w-4 h-4 mt-1 mr-2 text-destructive" />
-            )}
+                      <CheckCircle className="w-4 h-4 mt-1 mr-2 text-primary" />
+                    ) : selectedStudent.status === "suspended" ? (
+                      <AlertCircle className="w-4 h-4 mt-1 mr-2 text-destructive" />
+                    ) : (
+                      <XCircle className="w-4 h-4 mt-1 mr-2 text-destructive" />
+                    )}
                     <div>
-                      <span className="font-medium">Statut:</span>{" "}
+                      <span className="font-medium">
+                        {t('school.students.form.status')}:
+                      </span>{" "}
                       <span
                         className={`font-semibold ${
                           selectedStudent.status === "active"
@@ -1113,7 +1226,9 @@ export default function StudentManagement() {
                             : "text-destructive"
                         }`}
                       >
-                        {selectedStudent.status}
+                        {selectedStudent.status 
+                          ? t(`school.students.status.${selectedStudent.status}`) 
+                          : "N/A"}
                       </span>
                     </div>
                   </div>
@@ -1122,33 +1237,39 @@ export default function StudentManagement() {
                 {/* Address */}
                 <div>
                   <h4 className="text-base font-semibold text-foreground mb-2">
-                    Adresse
+                    {t('school.students.form.address_section')}
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>Rue: {selectedStudent.address?.street || "N/A"}</div>
-                    <div>Ville: {selectedStudent.address?.city || "N/A"}</div>
                     <div>
-                      Région/État: {selectedStudent.address?.state || "N/A"}
+                      {t('school.students.form.street')}: {selectedStudent.address?.street || "N/A"}
                     </div>
-                    <div>Pays: {selectedStudent.address?.country || "N/A"}</div>
+                    <div>
+                      {t('school.students.form.city')}: {selectedStudent.address?.city || "N/A"}
+                    </div>
+                    <div>
+                      {t('school.students.form.state')}: {selectedStudent.address?.state || "N/A"}
+                    </div>
+                    <div>
+                      {t('school.students.form.country')}: {selectedStudent.address?.country || "N/A"}
+                    </div>
                   </div>
                 </div>
 
                 {/* Emergency Contact */}
                 <div>
                   <h4 className="text-base font-semibold text-foreground mb-2">
-                    Contact d'urgence
+                    {t('school.students.form.emergency_contact')}
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      Nom: {selectedStudent.emergencyContact?.name || "N/A"}
+                      {t('school.students.form.emergency_name')}: {selectedStudent.emergencyContact?.name || "N/A"}
                     </div>
                     <div>
-                      Relation:{" "}
+                      {t('school.students.form.emergency_relation')}:{" "}
                       {selectedStudent.emergencyContact?.relationship || "N/A"}
                     </div>
                     <div className="col-span-2">
-                      Téléphone:{" "}
+                      {t('school.students.form.emergency_phone')}:{" "}
                       {selectedStudent.emergencyContact?.phone || "N/A"}
                     </div>
                   </div>

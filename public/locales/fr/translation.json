@@ -144,11 +144,775 @@
     "requestJoinButton": "Demander à rejoindre",
     "noResultsMessage": "Aucune école ne correspond à votre recherche",
     "noSchoolsMessage": "Vous n'avez accès à aucune école pour le moment",
-    "createFirstSchoolButton": "Créer votre première école"
+    "createFirstSchoolButton": "Créer votre première école",
+    "students": {
+      "title": "Gestion des Étudiants",
+      "search_placeholder": "Rechercher un étudiant...",
+      "add_student": "Ajouter un étudiant",
+      "import": "Importer",
+      "export": {
+        "matricule": "Matricule",
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "email": "Email",
+        "phone": "Téléphone",
+        "gender": "Genre",
+        "dob": "Date de naissance",
+        "level": "Niveau",
+        "status": "Statut",
+        "address_street": "Adresse - Rue",
+        "address_city": "Adresse - Ville",
+        "address_state": "Adresse - Région/État",
+        "address_country": "Adresse - Pays",
+        "emergency_name": "Contact d'urgence - Nom",
+        "emergency_relation": "Contact d'urgence - Relation",
+        "emergency_phone": "Contact d'urgence - Téléphone",
+        "created_at": "Date de création",
+        "updated_at": "Date de mise à jour",
+        "sheet_name": "Étudiants",
+        "filename": "etudiants",
+        "pdf_title": "Liste des Étudiants",
+        "export_date": "Date d'exportation"
+      },
+      "filters": {
+        "title": "Filtres",
+        "reset": "Réinitialiser",
+        "all": "Tous",
+        "level": "Niveau",
+        "gender": "Sexe",
+        "status": "Statut",
+        "francophone_system": "🇫🇷 Système Francophone",
+        "anglophone_system": "🇬🇧 Système Anglophone"
+      },
+      "levels": {
+        "sixth": "Sixième",
+        "fifth": "Cinquième",
+        "fourth": "Quatrième",
+        "third": "Troisième",
+        "second": "Seconde",
+        "first": "Première",
+        "terminal": "Terminale"
+      },
+      "gender": {
+        "male": "Masculin",
+        "female": "Féminin",
+        "other": "Autre"
+      },
+      "status": {
+        "active": "Actif",
+        "suspended": "Suspendu",
+        "graduated": "Diplômé",
+        "withdrawn": "Abandonné"
+      },
+      "table": {
+        "matricule": "Matricule",
+        "full_name": "Nom complet",
+        "class": "Classe",
+        "level": "Niveau",
+        "gender": "Sexe",
+        "status": "Statut",
+        "actions": "Actions"
+      },
+      "actions": {
+        "view": "Voir",
+        "edit": "Modifier",
+        "delete": "Supprimer"
+      },
+      "no_students": {
+        "title": "Aucun étudiant trouvé",
+        "filtered": "Aucun étudiant ne correspond à vos critères de recherche.",
+        "empty": "Commencez par ajouter votre premier étudiant."
+      },
+      "modal": {
+        "create_title": "Ajouter un étudiant",
+        "edit_title": "Modifier l'étudiant"
+      },
+      "form": {
+        "matricule": "Matricule",
+        "first_name": "Prénom",
+        "last_name": "Nom",
+        "email": "Email",
+        "phone": "Téléphone",
+        "education_system": "Système Éducatif",
+        "francophone_system": "🇫🇷 Système Francophone",
+        "anglophone_system": "🇬🇧 Système Anglophone",
+        "level": "Niveau",
+        "select_level": "Sélectionnez un niveau",
+        "dob": "Date de naissance",
+        "gender": "Genre",
+        "select_gender": "Sélectionnez",
+        "status": "Statut",
+        "select_status": "Sélectionnez un statut",
+        "address_section": "Adresse",
+        "street": "Rue",
+        "city": "Ville",
+        "state": "Région/État",
+        "country": "Pays",
+        "emergency_contact": "Contact d'urgence",
+        "emergency_name": "Nom",
+        "emergency_relation": "Relation",
+        "emergency_phone": "Téléphone"
+      },
+      "details": {
+        "title": "Détails de l'étudiant"
+      },
+      "confirm_delete": "Êtes-vous sûr de vouloir supprimer cet étudiant ?",
+      "loading": "Chargement des étudiants...",
+      "error": {
+        "loading": "Erreur lors du chargement des étudiants. Veuillez réessayer.",
+        "load_failed": "Impossible de charger les étudiants",
+        "delete_failed": "Échec de la suppression de l'étudiant",
+        "update_failed": "Erreur lors de la modification de l'étudiant",
+        "create_failed": "Erreur lors de l'ajout de l'étudiant",
+        "import_failed": "Échec de l'importation des étudiants"
+      },
+      "success": {
+        "created": "Étudiant créé avec succès",
+        "updated": "Étudiant mis à jour avec succès",
+        "deleted": "Étudiant supprimé avec succès",
+        "imported": "Étudiants importés avec succès"
+      }
+    },
+    "class_list": {
+      "title": "Gestion de la liste des classes",
+      "search_placeholder": "Rechercher un étudiant...",
+      "assign_student": "Assigner un élève",
+      "view_list": "Voir la liste",
+      "level": "Niveau",
+      "classes": "Classes",
+      "academic_year": "Année Académique",
+      "select_year": "Sélectionner l'année académique",
+      "matricule": "Matricule",
+      "full_name": "Nom complet",
+      "class": "Classe",
+      "status": "Statut",
+      "add_payment": "Ajouter Paiement",
+      "no_students": "Aucun étudiant trouvé.",
+      "payment_success": "Frais ajoutés avec succès",
+      "no_modifications": "Aucune modification",
+      "errors": {
+        "load_classes": "Impossible de charger les classes",
+        "load_students": "Impossible de charger les étudiants",
+        "load_academic_students": "Impossible de charger les étudiants académiques",
+        "export_failed": "Échec de l'exportation",
+        "payment_failed": "Échec de l'ajout des frais"
+      },
+      "excel": {
+        "academic_year": "Année Académique",
+        "student_name": "Nom de l'étudiant",
+        "class": "Classe",
+        "term": "Terme",
+        "term_average": "Moyenne Terme",
+        "term_rank": "Rang Terme",
+        "discipline": "Discipline",
+        "sequence": "Séquence",
+        "sequence_average": "Moyenne Séquence",
+        "sequence_rank": "Rang Séquence",
+        "absences": "Absences",
+        "subject": "Matière",
+        "current_mark": "Note Actuelle",
+        "mark_modifications": "Modifications de Note",
+        "sheet_name": "Année Académique",
+        "file_name": "annees_academiques.xlsx"
+      },
+      "pdf": {
+        "title": "Liste des Classes",
+        "matricule": "Matricule",
+        "first_name": "Prénom",
+        "email": "Email",
+        "level": "Niveau",
+        "phone": "Téléphone",
+        "dob": "Date de Naissance",
+        "gender": "Genre",
+        "file_prefix": "classes"
+      }
+    },
+    "result": {
+      "title": "📘 Gestion des Résultats",
+      "search_placeholder": "🔎 Rechercher un étudiant...",
+      "report_card": "Bulletin",
+      "results": "Résultats",
+      "absences": "Absences",
+      "no_students": "Aucun étudiant trouvé.",
+      "calculate_rank_term": "Calculer le rang pour le trimestre {term}",
+      "calculate_rank_sequence": "Calculer le rang pour la séquence {sequence}",
+      "calculate_rank_subject": "Calculer le rang pour la matière {subject}",
+      "filters": {
+        "title": "Filtres",
+        "reset": "Réinitialiser",
+        "all": "Tous",
+        "academic_year": "Année Académique",
+        "select_academic_year": "Sélectionner une année académique",
+        "class": "Classe",
+        "select_class": "Sélectionner une classe",
+        "term": "Trimestre",
+        "sequence": "Séquence",
+        "subject": "Matière"
+      },
+      "table": {
+        "matricule": "Matricule",
+        "student_name": "Nom de l'étudiant",
+        "mark": "Note",
+        "average": "Moyenne",
+        "rank": "Rang",
+        "discipline": "Discipline",
+        "absences": "Absences"
+      },
+      "export": {
+        "academic_year": "Année Académique",
+        "student_name": "Nom de l'étudiant",
+        "class": "Classe",
+        "term": "Trimestre",
+        "term_average": "Moyenne Trimestre",
+        "term_rank": "Rang Trimestre",
+        "discipline": "Discipline",
+        "sequence": "Séquence",
+        "sequence_average": "Moyenne Séquence",
+        "sequence_rank": "Rang Séquence",
+        "subject": "Matière",
+        "current_mark": "Note Actuelle",
+        "mark_modifications": "Modifications de Note",
+        "modification": "{date} par {name}: {before} → {after}",
+        "no_modifications": "Aucune modification",
+        "created_at": "Créé le",
+        "updated_at": "Mis à jour le",
+        "sheet_name": "Année Académique",
+        "filename": "resultats_academiques",
+        "pdf_title": "Résultats Académiques",
+        "export_date": "Date d'exportation",
+        "matricule": "Matricule",
+        "email": "Email",
+        "level": "Niveau",
+        "phone": "Téléphone",
+        "dob": "Date de naissance",
+        "gender": "Genre"
+      },
+      "success": {
+        "export_excel": "Export Excel réussi",
+        "export_pdf": "Export PDF réussi",
+        "calculate_rank": "Calcul des rangs réussi"
+      },
+      "error": {
+        "load_classes": "Échec du chargement des classes",
+        "load_students": "Échec du chargement des étudiants",
+        "load_terms": "Échec du chargement des trimestres",
+        "export_excel": "Échec de l'export Excel",
+        "export_pdf": "Échec de l'export PDF",
+        "calculate_rank": "Échec du calcul des rangs"
+      }
+    },
+    "common": {
+      "error": "Erreur",
+      "success": "Succès",
+      "loading": "Chargement...",
+      "na": "N/A",
+      "pagination": {
+        "previous": "Précédent",
+        "next": "Suivant"
+      },
+      "name": "Nom",
+      "average": "Moy",
+      "rank": "Rang",
+      "discipline": "Discipline",
+      "separator": "|"
+    },
+    "reportcard": {
+      "title": "Bulletin Scolaire",
+      "matricule": "Matricule",
+      "full_name": "Nom Complet",
+      "subject": "Matière",
+      "export_pdf": "Exporter en PDF",
+      "export_csv": "Exporter en CSV",
+      "summary": "Résumé",
+      "overall_average": "Moyenne Générale",
+      "pdf_filename": "Bulletin",
+      "csv_filename": "Bulletin"
+    },
+    "grades": {
+      "title": "📘 Gestion des Notes",
+      "search_placeholder": "🔎 Rechercher un étudiant...",
+      "absences": "Absences",
+      "absences_selected": "⚠️ Absences sélectionnées",
+      "absences_description": "Ici, vous pouvez enregistrer ou afficher les absences des élèves pour le trimestre {term} de l'année académique {year}.",
+      "no_students": "Aucun étudiant trouvé.",
+      "calculate_rank": "Calculer le rang",
+      "filters": {
+        "academic_year": "Année Académique",
+        "class": "Classe",
+        "select_class": "Sélectionner une classe",
+        "subject": "Matière",
+        "select_subject": "Sélectionner une matière",
+        "term": "Trimestre",
+        "select_term": "Sélectionner un trimestre"
+      },
+      "table": {
+        "matricule": "Matricule",
+        "student_name": "Nom de l'étudiant",
+        "mark": "Note",
+        "rank": "Rang",
+        "discipline": "Discipline",
+        "absences": "Absences"
+      },
+      "subject": {
+        "name": "Nom",
+        "code": "Code",
+        "coefficient": "Coefficient",
+        "term": "Trimestre",
+        "academic_year": "Année académique"
+      },
+      "export": {
+        "excel": "Excel",
+        "pdf": "PDF",
+        "academic_year": "Année Académique",
+        "student_name": "Nom de l'étudiant",
+        "class": "Classe",
+        "term": "Trimestre",
+        "term_average": "Moyenne Trimestre",
+        "term_rank": "Rang Trimestre",
+        "discipline": "Discipline",
+        "sequence": "Séquence",
+        "sequence_average": "Moyenne Séquence",
+        "sequence_rank": "Rang Séquence",
+        "absences": "Absences",
+        "subject": "Matière",
+        "current_mark": "Note Actuelle",
+        "mark_modifications": "Modifications de Note",
+        "modification": "{date} par {name}: {before} → {after}",
+        "no_modifications": "Aucune modification",
+        "created_at": "Créé le",
+        "updated_at": "Mis à jour le",
+        "sheet_name": "Année Académique",
+        "filename": "annees_academiques",
+        "pdf_title": "Résultats Académiques",
+        "export_date": "Date d'exportation",
+        "matricule": "Matricule",
+        "email": "Email",
+        "level": "Niveau",
+        "phone": "Téléphone",
+        "dob": "Date de naissance",
+        "gender": "Genre"
+      },
+      "success": {
+        "export_excel": "Export Excel réussi",
+        "export_pdf": "Export PDF réussi",
+        "update_mark": "Note mise à jour avec succès",
+        "update_absences": "Absences mises à jour avec succès",
+        "calculate_rank": "Rangs calculés avec succès"
+      },
+      "error": {
+        "load_sequences": "Échec du chargement des séquences",
+        "load_academic_years": "Échec du chargement des années académiques",
+        "load_classes": "Échec du chargement des classes",
+        "load_students": "Échec du chargement des étudiants",
+        "load_terms": "Échec du chargement des trimestres",
+        "export_excel": "Échec de l'export Excel",
+        "export_pdf": "Échec de l'export PDF",
+        "update_mark": "Échec de la mise à jour de la note",
+        "update_absences": "Échec de la mise à jour des absences",
+        "calculate_rank": "Échec du calcul des rangs"
+      }
+    },
+    "settings": {
+      "title": "Gestion des paramètres",
+      "tabs": {
+        "academic_years": "Années académiques",
+        "terms": "Trimestres",
+        "sequences": "Séquences"
+      },
+      "error": {
+        "load_data": "Échec du chargement des données de configuration"
+      },
+      "term": {
+        "title": "Trimestres",
+        "search": {
+          "placeholder": "Rechercher les trimestres..."
+        },
+        "add": {
+          "button": "Ajouter",
+          "title": "Ajouter un Trimestre"
+        },
+        "edit": {
+          "title": "Modifier le Trimestre",
+          "aria_label": "Modifier le trimestre"
+        },
+        "delete": {
+          "aria_label": "Supprimer le trimestre"
+        },
+        "select": {
+          "placeholder": "Sélectionner un trimestre",
+          "academic_year": "Sélectionner l'année académique"
+        },
+        "term1": "Term 1",
+        "term2": "Term 2",
+        "term3": "Term 3",
+        "term4": "Term 4",
+        "start_date": "Date de début",
+        "end_date": "Date de fin",
+        "academic_year": "Année académique",
+        "active": "Actif",
+        "inactive": "Inactif",
+        "na": "N/A",
+        "no_results": "Aucun trimestre trouvé.",
+        "cancel": "Annuler",
+        "update": "Modifier",
+        "create": "Créer",
+        "confirm": {
+          "delete": "Êtes-vous sûr de vouloir supprimer ce trimestre ?"
+        },
+        "success": {
+          "create": "Trimestre créé avec succès.",
+          "update": "Trimestre mis à jour avec succès.",
+          "delete": "Trimestre supprimé avec succès."
+        },
+        "status": {
+          "active": "Statut changé en actif.",
+          "inactive": "Statut changé en inactif."
+        },
+        "error": {
+          "loading": "Échec du chargement des données.",
+          "save": "Échec de l'enregistrement du trimestre.",
+          "delete": "Échec de la suppression du trimestre.",
+          "status": "Échec de la mise à jour du statut."
+        }
+      },
+      "year": {
+        "title": "Années Académiques",
+        "search": "Rechercher les années académiques...",
+        "add": "Ajouter",
+        "empty": "Aucune année académique trouvée.",
+        "error": {
+          "load": "Échec du chargement des années académiques",
+          "save": "Échec de l'enregistrement de l'année académique",
+          "delete": "Échec de la suppression de l'année académique",
+          "status": "Échec de la mise à jour du statut"
+        },
+        "success": {
+          "create": "Année académique créée avec succès",
+          "update": "Année académique mise à jour avec succès",
+          "delete": "Année académique supprimée avec succès"
+        },
+        "confirm": {
+          "delete": "Êtes-vous sûr de vouloir supprimer cette année académique ?"
+        },
+        "status": {
+          "active": "Actif",
+          "inactive": "Inactif"
+        },
+        "edit": "Modifier l'Année Académique",
+        "create": "Ajouter une Année Académique",
+        "select": "Sélectionner l'année académique",
+        "startDate": "Date de début",
+        "endDate": "Date de fin",
+        "cancel": "Annuler",
+        "update": "Modifier"
+      },
+      "seq": {
+        "title": "Gestion des Séquences",
+        "search": "Rechercher des séquences...",
+        "add": "Ajouter une Séquence",
+        "empty": "Aucune séquence trouvée",
+        "name": "Nom",
+        "startDate": "Date de début",
+        "endDate": "Date de fin",
+        "term": "Trimestre",
+        "actions": "Actions",
+        "selectYear": "Sélectionner l'année académique",
+        "allTerms": "Tous les trimestres",
+        "selectSeq": "Sélectionner une séquence",
+        "seq1": "Séquence 1",
+        "seq2": "Séquence 2",
+        "seq3": "Séquence 3",
+        "seq4": "Séquence 4",
+        "academicYear": "Année Académique",
+        "selectTerm": "Sélectionner un trimestre",
+        "edit": "Modifier la Séquence",
+        "new": "Nouvelle Séquence",
+        "update": "Mettre à jour la Séquence",
+        "create": "Créer une Séquence",
+        "error": {
+          "title": "Erreur",
+          "general": "Une erreur s'est produite",
+          "load": "Échec du chargement des séquences",
+          "loadYear": "Échec du chargement des années académiques",
+          "loadTerm": "Échec du chargement des trimestres",
+          "save": "Échec de l'enregistrement de la séquence",
+          "delete": "Échec de la suppression de la séquence",
+          "status": "Échec de la mise à jour du statut"
+        },
+        "success": {
+          "create": "Séquence créée avec succès",
+          "update": "Séquence mise à jour avec succès",
+          "delete": "Séquence supprimée avec succès"
+        },
+        "confirm": {
+          "delete": "Êtes-vous sûr de vouloir supprimer cette séquence ?"
+        },
+        "status": {
+          "active": "Statut changé en actif",
+          "inactive": "Statut changé en inactif"
+        }
+      }
+    },
+    "fee": {
+      "title": "Gestion des Frais Académiques",
+      "loading": "Chargement des frais...",
+      "no_results": "Aucun frais disponible",
+      "no_results_filtered": "Aucun frais trouvé",
+      "add_fees_message": "Les frais apparaîtront ici une fois ajoutés",
+      "adjust_filters": "Essayez de modifier vos critères de recherche",
+      "bill_id": "Bill ID",
+      "type": "Type",
+      "amount": "Montant (FCFA)",
+      "payment_date": "Date de Paiement",
+      "payment_method": "Méthode de Paiement",
+      "student_name": "Nom de l'Étudiant",
+      "class": "Classe",
+      "level": "Niveau",
+      "academic_year": "Année Académique",
+      "student": "Étudiant",
+      "total_paid": "Total Payé",
+      "remaining": "Reste à Payer",
+      "currency": "FCFA",
+      "actions": "Actions",
+      "detail": {
+        "title": "Détails du Frais",
+        "description": "Informations complètes sur le frais sélectionné."
+      },
+      "filters": {
+        "title": "Filtres",
+        "reset": "Réinitialiser",
+        "search": "Rechercher Étudiant",
+        "search_placeholder": "Ex: Étudiant",
+        "all": "Tous",
+        "french_system": "🇫🇷 Système Francophone",
+        "english_system": "🇬🇧 Système Anglophone"
+      },
+      "levels": {
+        "sixth": "6e (Sixième)",
+        "fifth": "5e (Cinquième)",
+        "fourth": "4e (Quatrième)",
+        "third": "3e (Troisième)",
+        "second": "2nde (Seconde)",
+        "first": "1ère (Première)",
+        "terminal": "Terminale"
+      },
+      "export": {
+        "excel": "Exporter Excel",
+        "pdf": "Exporter PDF",
+        "sheet_name": "Frais"
+      },
+      "pagination": {
+        "page": "Page {current} sur {total}",
+        "previous": "Précédent",
+        "next": "Suivant"
+      },
+      "close": "Fermer",
+      "view_aria": "Voir frais {billID}",
+      "edit_aria": "Modifier frais {billID}",
+      "delete_aria": "Supprimer frais {billID}",
+      "success": {
+        "title": "Succès",
+        "delete": "Frais supprimé avec succès",
+        "update": "Frais mis à jour avec succès"
+      },
+      "error": {
+        "title": "Erreur",
+        "load": "Échec du chargement des frais. Veuillez réessayer.",
+        "load_academic_years": "Impossible de charger les années académiques",
+        "load_classes": "Impossible de charger les classes",
+        "delete": "Échec de la suppression des frais. Veuillez réessayer.",
+        "update": "Échec de la mise à jour des frais. Veuillez réessayer."
+      },
+      "confirm": {
+        "delete": "Êtes-vous sûr de vouloir supprimer le frais {billID} ?"
+      }
+    },
+    "payment_form": {
+      "student_info": "Informations de l'Étudiant",
+      "name": "Nom",
+      "class": "Classe",
+      "academic_year": "Année Académique",
+      "na": "N/A",
+      "bill_id": "Facture",
+      "fee_type": "Type de Frais",
+      "amount": "Montant",
+      "payment_date": "Date de Paiement",
+      "payment_method": "Méthode de Paiement",
+      "cancel": "Annuler",
+      "update_button": "Mettre à Jour",
+      "add_button": "Ajouter Frais",
+      "placeholders": {
+        "bill_id": "Entrez l'ID de la facture",
+        "fee_type": "Entrez le type de frais",
+        "amount": "Entrez le montant",
+        "payment_method": "Entrez la méthode de paiement"
+      },
+      "errors": {
+        "bill_id_required": "L'ID de la facture est requis",
+        "type_required": "Le type de frais est requis",
+        "amount_invalid": "Le montant doit être supérieur à zéro",
+        "date_required": "La date de paiement est requise",
+        "method_required": "La méthode de paiement est requise",
+        "student_missing": "Les informations de l'étudiant sont manquantes."
+      }
+    },
+    "assign_class": {
+      "title": "Assigner les élèves à une classe",
+      "studentList": "Liste des élèves",
+      "notAssigned": "Non assigné",
+      "noStudents": "Aucun élève trouvé",
+      "assignButton": "Assigner",
+      "status": {
+        "active": "Actif",
+        "suspended": "Suspendu",
+        "inactive": "Inactif"
+      },
+      "success": {
+        "title": "Succès",
+        "description": "Créés: {{created}}, Mis à jour: {{updated}}, Échecs: {{failed}}"
+      },
+      "error": {
+        "title": "Erreur",
+        "required": "Champ requis",
+        "selectRequirements": "Veuillez sélectionner une classe, une année et au moins un élève",
+        "general": "Erreur lors de l'assignation"
+      }
+    },
+    "manage_members": {
+      "title": "Gérer les membres",
+      "loading": "Chargement des membres...",
+      "empty": "Aucun membre trouvé",
+      "search": {
+        "placeholder": "Rechercher des membres...",
+        "no_results": "Aucun membre ne correspond à votre recherche"
+      },
+      "roles": {
+        "label": "Rôles"
+      },
+      "update_button": "Mettre à jour les rôles",
+      "success": {
+        "update": {
+          "title": "Rôles mis à jour",
+          "description": "Les rôles des membres ont été mis à jour avec succès"
+        }
+      },
+      "error": {
+        "loading": {
+          "title": "Erreur de chargement",
+          "description": "Échec du chargement des membres. Veuillez réessayer."
+        },
+        "update": {
+          "title": "Échec de la mise à jour",
+          "description": "Échec de la mise à jour des rôles. Veuillez réessayer."
+        }
+      }
+    },
+    "edit_school": {
+      "title": "Modifier l'École",
+      "name": "Nom de l'École",
+      "email": "Email",
+      "phone": "Téléphone",
+      "address": "Adresse",
+      "subdomain": "Sous-domaine",
+      "subdomain_placeholder": "votre-ecole",
+      "plan": "Plan",
+      "select_plan": "Sélectionner un plan",
+      "plan_free": "Gratuit",
+      "plan_basic": "Basique",
+      "plan_pro": "Pro",
+      "access_status": "Statut d'Accès",
+      "select_status": "Sélectionner un statut",
+      "status_pending": "En Attente de Vérification",
+      "status_active": "Actif",
+      "status_suspended": "Suspendu",
+      "status_blocked": "Bloqué",
+      "block_reason": "Raison du Blocage",
+      "logo": "Logo de l'École",
+      "logo_alt": "Logo de l'école",
+      "change_logo": "Changer le Logo",
+      "upload_logo": "Télécharger Logo",
+      "documents": "Documents de l'École",
+      "document": "Document",
+      "add_document": "Ajouter Document",
+      "membership_access": "Autoriser l'Accès aux Membres",
+      "cancel": "Annuler",
+      "saving": "Enregistrement...",
+      "save_changes": "Enregistrer les Modifications",
+      "success": {
+        "title": "Succès",
+        "school_updated": "Détails de l'école mis à jour avec succès",
+        "logo_uploaded": "Logo téléchargé avec succès",
+        "document_uploaded": "Document téléchargé avec succès"
+      },
+      "error": {
+        "title": "Erreur",
+        "load_failed": "Échec du chargement des détails de l'école",
+        "update_failed": "Échec de la mise à jour de l'école",
+        "logo_upload_failed": "Échec du téléchargement du logo",
+        "document_upload_failed": "Échec du téléchargement du document"
+      },
+      "validation": {
+        "title": "Erreur de Validation",
+        "name_required": "Le nom de l'école est requis",
+        "email_required": "L'email est requis",
+        "email_invalid": "Format d'email invalide",
+        "subdomain_invalid": "Le sous-domaine ne peut contenir que des lettres minuscules, des chiffres et des traits d'union"
+      }
+    },
+    "join_requests": {
+      "title": "Demandes d'adhésion",
+      "empty": "Aucune demande d'adhésion en attente",
+      "invite_button": "Inviter un utilisateur",
+      "approve_button": "Approuver",
+      "reject_button": "Rejeter",
+      "invite_modal": {
+        "title": "Inviter un utilisateur",
+        "search_placeholder": "Rechercher par email...",
+        "results": "Résultats de recherche",
+        "no_results": "Aucun utilisateur trouvé",
+        "send_button": "Envoyer l'invitation"
+      },
+      "success": {
+        "approved": {
+          "title": "Demande approuvée",
+          "description": "L'utilisateur a été ajouté à l'école."
+        },
+        "rejected": {
+          "title": "Demande rejetée",
+          "description": "La demande d'adhésion a été refusée."
+        },
+        "invite_sent": {
+          "title": "Invitation envoyée",
+          "description": "La demande d'adhésion a été envoyée à l'utilisateur."
+        }
+      },
+      "error": {
+        "loading": {
+          "title": "Erreur de chargement",
+          "description": "Impossible de charger les demandes. Veuillez réessayer."
+        },
+        "search": {
+          "title": "Erreur de recherche",
+          "description": "Impossible d'effectuer la recherche. Veuillez réessayer."
+        },
+        "invite": {
+          "title": "Échec de l'invitation",
+          "description": "Impossible d'envoyer la demande. Veuillez réessayer."
+        },
+        "approve": {
+          "title": "Échec de l'approbation",
+          "description": "Impossible d'approuver la demande. Veuillez réessayer."
+        },
+        "reject": {
+          "title": "Échec du rejet",
+          "description": "Impossible de rejeter la demande. Veuillez réessayer."
+        }
+      }
+    }
   },
   "overview": "Vue d'ensemble",
   "academic": "Académique",
-  "classes": "Classes",
+  "class": "Classes",
   "subjects": "Matières",
   "results": "Résultats",
   "students": "Élèves",
@@ -221,5 +985,272 @@
   },
   "alt_texts": {
     "logo_preview": "Aperçu du logo"
+  },
+  "subject": {
+    "management_title": "Gestion des Matières",
+    "total_subjects": "Nombre total de matières",
+    "active_subjects": "Matières actives",
+    "inactive_subjects": "Matières inactives",
+    "search_placeholder": "Rechercher une matière...",
+    "add_button": "Ajouter",
+    "export_excel": "Excel",
+    "export_pdf": "PDF",
+    "import_button": "Importer",
+    "loading_message": "Chargement...",
+    "table_name": "Nom",
+    "table_code": "Code",
+    "table_status": "Statut",
+    "table_actions": "Actions",
+    "view_action": "Voir",
+    "edit_action": "Modifier",
+    "deactivate_action": "Désactiver",
+    "activate_action": "Activer",
+    "delete_action": "Supprimer",
+    "previous_button": "Précédent",
+    "next_button": "Suivant",
+    "page_info": "Page {{current}} sur {{total}}",
+    "add_modal_title": "Ajouter une matière",
+    "edit_modal_title": "Modifier la matière",
+    "view_modal_title": "Détails de la matière",
+    "name_label": "Nom",
+    "code_label": "Code",
+    "description_label": "Description",
+    "active_label": "Actif",
+    "cancel_button": "Annuler",
+    "save_button": "Enregistrer",
+    "status_label": "Statut",
+    "active_status": "Actif",
+    "inactive_status": "Inactif",
+    "close_button": "Fermer",
+    "delete_confirmation": "Êtes-vous sûr de vouloir supprimer la matière \"{{name}}\" ?"
+  },
+  "classes": {
+    "title": "Gestion des Classes",
+    "search_placeholder": "Rechercher une classe...",
+    "add_button": "Ajouter",
+    "quick_create": "Création Rapide",
+    "export_excel": "Excel",
+    "export_pdf": "PDF",
+    "import_button": "Importer",
+    "loading": "Chargement des classes...",
+    "no_results": "Aucun résultat trouvé",
+    "no_classes": "Aucune classe disponible",
+    "add_first": "Ajouter une première classe",
+    "edit_title": "Modifier la Classe",
+    "create_title": "Créer une Classe",
+    "quick_create_title": "🚀 Création Rapide de Classes",
+    "create_count": "Créer {{count}} classe(s)",
+    "updating": "Mise à jour...",
+    "creating": "Création...",
+    "confirm_delete": "Êtes-vous sûr de vouloir supprimer cette classe ?",
+    "subject": "Matière",
+    "coefficient": "Coefficient",
+    "class_of": "Classe de",
+    "section": "Section",
+    "form": {
+      "name": "Nom",
+      "description": "Description",
+      "status": "Statut",
+      "select_status": "Sélectionner un statut",
+      "capacity": "Capacité",
+      "fee": "Montant des frais",
+      "education_system": "Système Éducatif",
+      "select_system": "Sélectionner un système",
+      "level": "Niveau",
+      "select_level": "Sélectionner un niveau",
+      "academic_year": "Année Académique",
+      "year_placeholder": "ex: 2024-2025",
+      "main_teacher": "Enseignant Principal",
+      "select_teacher": "Sélectionner un enseignant",
+      "subjects": "Matières",
+      "add_subject": "Ajouter une matière",
+      "subject": "Matière",
+      "teacher": "Enseignant",
+      "no_subjects": "Aucune matière ajoutée",
+      "sections": "Sections",
+      "add_section": "Ajouter une section",
+      "add_default_subjects": "Ajouter les matières par défaut",
+      "subjects_to_add": "Matières qui seront ajoutées"
+    },
+    "status": {
+      "open": "Ouvert",
+      "closed": "Fermé"
+    },
+    "system": {
+      "francophone": "Système Francophone",
+      "anglophone": "Système Anglophone"
+    },
+    "levels": {
+      "sixth": "Sixième",
+      "fifth": "Cinquième",
+      "fourth": "Quatrième",
+      "third": "Troisième",
+      "second": "Seconde",
+      "first_literary": "Première Littéraire",
+      "first_science": "Première Scientifique",
+      "first_experimental": "Première Sciences Expérimentales",
+      "first_technical": "Première Technique Industrielle",
+      "final_literary": "Terminale Littéraire",
+      "final_science": "Terminale Scientifique",
+      "final_experimental": "Terminale Sciences Expérimentales",
+      "final_technical": "Terminale Technique Industrielle",
+      "arts": "Arts",
+      "science": "Science",
+      "biology": "Biologie",
+      "technical": "Technique"
+    },
+    "table": {
+      "name": "Nom",
+      "status": "Statut",
+      "capacity": "Capacité",
+      "year": "Année"
+    },
+    "export": {
+      "title": "Liste des Classes",
+      "date": "Date d'exportation"
+    },
+    "success": {
+      "create": "Classe créée avec succès",
+      "update": "Classe mise à jour avec succès",
+      "delete": "Classe supprimée avec succès",
+      "import": "Importation réussie",
+      "quick_create": "{{count}} classe(s) créée(s) avec succès"
+    },
+    "errors": {
+      "load_classes": "Erreur lors du chargement des classes. Veuillez réessayer.",
+      "load_subjects": "Erreur lors du chargement des matières. Veuillez réessayer.",
+      "load_teachers": "Erreur lors du chargement des enseignants. Veuillez réessayer.",
+      "class_name_required": "Le nom de la classe est requis",
+      "subject_teacher_required": "Chaque matière doit avoir un sujet et un enseignant assignés",
+      "update_failed": "Erreur lors de la mise à jour de la classe",
+      "create_failed": "Erreur lors de la création de la classe",
+      "save_failed": "Erreur lors de l'enregistrement de la classe",
+      "delete_failed": "Erreur lors de la suppression de la classe. Veuillez réessayer.",
+      "toggle_status": "Erreur lors du changement de statut",
+      "import_failed": "Erreur lors de l'importation",
+      "quick_create_failed": "Erreur lors de la création rapide",
+      "level_required": "Veuillez sélectionner un niveau",
+      "create_class_failed": "Échec de la création de la classe {{className}}"
+    },
+    "french": "Français",
+    "math": "Mathématiques",
+    "english": "Anglais",
+    "history_geo": "Histoire-Géographie",
+    "physics": "Sciences Physiques",
+    "biology": "Sciences de la Vie et de la Terre",
+    "pe": "Éducation Physique et Sportive",
+    "arts": "Arts Plastiques",
+    "music": "Musique",
+    "english_lang": "English Language",
+    "history": "History",
+    "geography": "Geography",
+    "chemistry": "Chemistry"
+  },
+  "common": {
+    "error": "Erreur",
+    "cancel": "Annuler",
+    "create": "Créer",
+    "update": "Mettre à jour",
+    "delete": "Supprimer",
+    "success": "Succès",
+    "close": "Fermer",
+    "add": "Ajouter",
+    "updating": "Mise à jour...",
+    "adding": "Ajout...",
+    "pagination": {
+      "previous": "Précédent",
+      "next": "Suivant"
+    },
+    "loading": "Chargement...",
+    "na": "N/A",
+    "name": "Nom",
+    "average": "Moy",
+    "rank": "Rang",
+    "discipline": "Discipline",
+    "separator": "|"
+  },
+  "pagination": {
+    "previous": "Précédent",
+    "next": "Suivant"
+  },
+  "admin": {
+    "layout": {
+      "title": "Panneau d'administration",
+      "dashboard": "Tableau de bord",
+      "schools": "Écoles",
+      "users": "Utilisateurs",
+      "reports": "Rapports",
+      "statistics": "Statistiques",
+      "financial": "Rapports financiers",
+      "activity_logs": "Journaux d'activité",
+      "settings": "Paramètres",
+      "change_language": "Changer de langue",
+      "copyright": "Système de gestion scolaire"
+    },
+    "manage_schools": {
+      "title": "Gérer les Écoles",
+      "no_schools": "Aucune école trouvée",
+      "loading": "Chargement des écoles...",
+      "headers": {
+        "school": "École",
+        "email": "Email",
+        "phone": "Téléphone",
+        "subdomain": "Sous-domaine",
+        "plan": "Plan",
+        "usage": "Utilisation",
+        "billingStatus": "Statut de Facturation",
+        "access": "Accès",
+        "actions": "Actions"
+      },
+      "plans": {
+        "free": "Gratuit",
+        "basic": "Basique",
+        "pro": "Pro"
+      },
+      "usage": {
+        "students": "Étudiants",
+        "staff": "Personnel",
+        "classes": "Classes"
+      },
+      "billingStatus": {
+        "active": "Actif",
+        "trialing": "Essai",
+        "past_due": "En Retard",
+        "canceled": "Annulé",
+        "unpaid": "Impayé",
+        "inactive": "Inactif"
+      },
+      "accessStatus": {
+        "active": "Actif",
+        "suspended": "Suspendu",
+        "blocked": "Bloqué",
+        "pending_verification": "En Attente de Vérification",
+        "inactive": "Inactif"
+      },
+      "status": {
+        "active": "Actif",
+        "suspended": "Suspendu",
+        "blocked": "Bloqué"
+      },
+      "actions": {
+        "view": "Voir les Détails",
+        "toggleAccess": "Basculer l'Accès"
+      },
+      "confirm": {
+        "title": "Changer le statut en {status} ?",
+        "text": "Êtes-vous sûr de vouloir changer le statut d'accès de cette école ?",
+        "confirm_button": "Oui, changer",
+        "cancel_button": "Annuler"
+      },
+      "success": {
+        "title": "Succès",
+        "status_updated": "Statut d'accès de l'école mis à jour avec succès"
+      },
+      "error": {
+        "title": "Erreur",
+        "fetch_failed": "Échec du chargement des écoles",
+        "update_failed": "Échec de la mise à jour du statut de l'école"
+      }
+    }
   }
 }

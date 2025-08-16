@@ -48,7 +48,7 @@ const getSidebarTabs = (t: (key: string) => string): SidebarItem[] => [
     label: t("academic"),
     children: [
       {
-        label: t("classes"),
+        label: t("class"),
         path: "/school-dashboard/academic/classes",
         icon: School,
       },

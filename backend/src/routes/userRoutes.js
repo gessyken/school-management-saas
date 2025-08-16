@@ -8,6 +8,8 @@ router.use(protect);
 router.use(getUserRolesForSchool);
 
 router.get('/', UserController.getAllUsersPerSchool);
+router.get('/getAll', UserController.getAllUsers);
+router.get('/search', UserController.search);
 
 // Authentication routes
 // router.post('/register', UserController.register);

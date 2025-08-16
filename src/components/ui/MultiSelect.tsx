@@ -1,7 +1,10 @@
 import React from "react";
 
 interface MultiSelectProps {
-  options: string[];
+  options: {
+    value: string;
+    label: string;
+  }[];
   value: string[];
   onChange: (newValues: string[]) => void;
   disabled?: boolean;
@@ -25,16 +28,15 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
     <div className="flex flex-wrap gap-2">
       {options.map((option) => (
         <button
-          key={option}
+          key={option.value}
           type="button"
-          onClick={() => toggleOption(option)}
-          className={`px-3 py-1 rounded-full text-sm border ${
-            value.includes(option)
+          onClick={() => toggleOption(option.value)}
+          className={`px-3 py-1 rounded-full text-sm border ${value.includes(option.value)
               ? "bg-skyblue text-white border-skyblue"
-              : "bg-white text-foreground border-border"
-          } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+              : "bg-white text-gray-700 border-gray-300"
+            } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
         >
-          {option}
+          {option.label}
         </button>
       ))}
     </div>

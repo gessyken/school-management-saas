@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Eye, Trash2, AlertCircle, XCircle, Loader2, Receipt, FilePlus } from "lucide-react"; // icons for buttons
+import { Edit2, Eye, Trash2, AlertCircle, XCircle, Loader2, Receipt, FilePlus } from "lucide-react";
 import PaymentForm from "./setting/PaymentForm";
 import {
   Dialog,
@@ -29,6 +29,7 @@ import { usePagination } from "@/components/ui/usePagination";
 import { AcademicYear, settingService } from "@/lib/services/settingService";
 import { classService, SchoolClass } from "@/lib/services/classService";
 import { Input } from "@/components/ui/input";
+import { useTranslation } from "react-i18next";
 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -45,14 +46,13 @@ const emptyFee: AcademicFee = {
 
 const itemsPerPage = 5;
 export default function FeesManagement() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [fees, setFees] = useState<any[]>([]);
   const [newFee, setNewFee] = useState<AcademicFee>(emptyFee);
   const [editingFeeId, setEditingFeeId] = useState<string | null>(null);
   const [academicYearId, setAcademicYearId] = useState<string | null>(null);
-  const [academicStudents, setAcademicStudents] = useState<
-    AcademicYearStudent[]
-  >([]);
+  const [academicStudents, setAcademicStudents] = useState<AcademicYearStudent[]>([]);
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [openPaymentForm, setOpenPaymentForm] = useState(false);
@@ -67,19 +67,18 @@ export default function FeesManagement() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const fetchFees = async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await academicService.getAll();
       setAcademicStudents(data.students || []);
-      console.log(data.students[0]);
       const allFees = (data.students || []).flatMap((student: any) =>
         (student.fees || []).map((fee: any) => ({
           ...fee,
           studentId: student._id,
-          studentName:
-            student.student.firstName + " " + student.student.lastName,
+          studentName: student.student.firstName + " " + student.student.lastName,
           studentClass: student.classes?.classesName || "N/A",
           studentLevel: student.classes?.level || "N/A",
           year: student.year || "N/A",
@@ -90,18 +89,19 @@ export default function FeesManagement() {
       setFees(allFees);
     } catch (error) {
       console.error("Failed to fetch fees:", error);
-      setError("Erreur lors du chargement des frais. Veuillez réessayer.");
+      setError(t('school.fee.error.load'));
       setFees([]);
       setAcademicStudents([]);
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les frais",
+        title: t('school.fee.error.title'),
+        description: t('school.fee.error.load'),
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
+
   const loadAcademicYearDetail = async () => {
     try {
       const data = await settingService.getAcademicYears();
@@ -116,8 +116,8 @@ export default function FeesManagement() {
       console.error("Failed to fetch academic years:", error);
       setAcademicYears([]);
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les années académiques",
+        title: t('school.fee.error.title'),
+        description: t('school.fee.error.load_academic_years'),
         variant: "destructive",
       });
     }
@@ -126,41 +126,38 @@ export default function FeesManagement() {
   const fetchClasses = async () => {
     try {
       const res = await classService.getAll({});
-      console.log(res.data);
       setClasses(res.data?.classes || []);
     } catch (error) {
       console.error("Failed to fetch classes:", error);
       setClasses([]);
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les classes",
+        title: t('school.fee.error.title'),
+        description: t('school.fee.error.load_classes'),
         variant: "destructive",
       });
     }
   };
+
   useEffect(() => {
     loadAcademicYearDetail();
     fetchClasses();
     fetchFees();
   }, [academicYearId]);
+
   const filteredFees = fees
     .filter((student) =>
       student.studentName?.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .filter((student) => {
-      console.log(student);
-      console.log(student?.studentClass, " ", filter.classes);
-      console.log(student?.year, " ", filter.academicYear);
-      console.log(student?.studentLevel, " level", filter.level);
-      return (
-        (filter.classes ? student?.studentClass === filter.classes : true) &&
-        (filter.academicYear ? student?.year === filter.academicYear : true) &&
-        (filter.level ? student?.studentLevel === filter.level : true)
-      );
-    });
+    .filter((student) => (
+      (filter.classes ? student?.studentClass === filter.classes : true) &&
+      (filter.academicYear ? student?.year === filter.academicYear : true) &&
+      (filter.level ? student?.studentLevel === filter.level : true)
+    ));
+
   const filteredClasses = classes.filter((item) =>
     filter.level ? item.level === filter.level : true
   );
+
   const {
     currentPage,
     totalPages,
@@ -168,27 +165,26 @@ export default function FeesManagement() {
     goToNextPage,
     goToPreviousPage,
     goToPage,
-  } = usePagination(filteredFees, itemsPerPage); // subjects is your full data list
+  } = usePagination(filteredFees, itemsPerPage);
 
   const handleDeleteFee = async (fee: any) => {
-    console.log(fee);
     if (!fee.billID || !fee.studentId) return;
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le paiement ${fee.billID} ?`)) {
+    if (confirm(t('school.fee.confirm.delete', { billID: fee.billID }))) {
       setLoading(true);
       setError(null);
       try {
         await academicService.deleteFee(fee.studentId, fee.billID);
         toast({
-          title: "Succès",
-          description: "Frais supprimé avec succès",
+          title: t('school.fee.success.title'),
+          description: t('school.fee.success.delete'),
         });
         fetchFees();
       } catch (error) {
         console.error("Failed to delete fee:", error);
-        setError("Erreur lors de la suppression des frais. Veuillez réessayer.");
+        setError(t('school.fee.error.delete'));
         toast({
-          title: "Erreur",
-          description: "Échec de la suppression des frais",
+          title: t('school.fee.error.title'),
+          description: t('school.fee.error.delete'),
           variant: "destructive",
         });
       } finally {
@@ -200,7 +196,6 @@ export default function FeesManagement() {
   const closeModal = () => setSelectedFee(null);
 
   const handleOpenPaymentForm = (fee: any) => {
-    // To edit fee, we want the student info related to the fee:
     const student = academicStudents.find((s) => s._id === fee.studentId);
     setSelectedStudent({
       studentId: student._id,
@@ -217,27 +212,26 @@ export default function FeesManagement() {
     setSubmitting(true);
     setError(null);
     try {
-      // await academicService.addFee(student._id, fee);
-      console.log(student, fee);
       await academicService.updateFee(student.studentId, fee.billID, fee);
       toast({
-        title: "Succès",
-        description: "Frais mis à jour avec succès",
+        title: t('school.fee.success.title'),
+        description: t('school.fee.success.update'),
       });
       setOpenPaymentForm(false);
       fetchFees();
     } catch (error) {
       console.error("Failed to update fee:", error);
-      setError("Erreur lors de la mise à jour des frais. Veuillez réessayer.");
+      setError(t('school.fee.error.update'));
       toast({
-        title: "Erreur",
-        description: "Échec de la mise à jour des frais",
+        title: t('school.fee.error.title'),
+        description: t('school.fee.error.update'),
         variant: "destructive",
       });
     } finally {
       setSubmitting(false);
     }
   };
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
@@ -245,7 +239,7 @@ export default function FeesManagement() {
   const exportToExcel = (data: any[], fileName = "fees.xlsx") => {
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Frais");
+    XLSX.utils.book_append_sheet(workbook, worksheet, t('school.fee.export.sheet_name'));
 
     const excelBuffer = XLSX.write(workbook, {
       bookType: "xlsx",
@@ -262,14 +256,15 @@ export default function FeesManagement() {
     const doc = new jsPDF();
 
     const tableColumn = [
-      "Nom de l'étudiant",
-      "Classe",
-      "Niveau",
-      "Année",
-      "Montant",
-      "Méthode",
-      "Date de paiement",
+      t('school.fee.student_name'),
+      t('school.fee.class'),
+      t('school.fee.level'),
+      t('school.fee.academic_year'),
+      t('school.fee.amount'),
+      t('school.fee.payment_method'),
+      t('school.fee.payment_date'),
     ];
+    
     const tableRows = data.map((fee) => [
       fee.studentName,
       fee.studentClass,
@@ -293,7 +288,7 @@ export default function FeesManagement() {
   return (
     <div className="p-6 bg-background rounded-lg shadow-lg max-w-7xl mx-auto">
       <h2 className="text-3xl font-semibold mb-8 text-foreground">
-        Gestion des Frais Académiques
+        {t('school.fee.title')}
       </h2>
       
       {/* Error Display */}
@@ -320,21 +315,23 @@ export default function FeesManagement() {
           onClick={() => exportToExcel(filteredFees)}
           className="text-primary border-primary hover:bg-primary/10"
         >
-          📄 Exporter Excel
+          📄 {t('school.fee.export.excel')}
         </Button>
         <Button
           variant="outline"
           onClick={() => exportToPDF(filteredFees)}
           className="text-secondary border-secondary hover:bg-secondary/10"
         >
-          🧾 Exporter PDF
+          🧾 {t('school.fee.export.pdf')}
         </Button>
       </div>
 
       {/* Filter Section */}
       <div className="bg-background p-6 rounded-2xl shadow-md border border-border">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-foreground">🎯 Filtres</h2>
+          <h2 className="text-xl font-semibold text-foreground">
+            {t('school.fee.filters.title')}
+          </h2>
           <Button
             variant="ghost"
             onClick={() => {
@@ -361,7 +358,7 @@ export default function FeesManagement() {
                 d="M6 18L18 6M6 6l12 12"
               />
             </svg>
-            Réinitialiser
+            {t('school.fee.filters.reset')}
           </Button>
         </div>
 
@@ -369,10 +366,10 @@ export default function FeesManagement() {
           {/* Search */}
           <div>
             <label className="block mb-1 text-sm font-medium text-foreground">
-              Rechercher une Étudiant
+              {t('school.fee.filters.search')}
             </label>
             <Input
-              placeholder="Ex: Étudiant"
+              placeholder={t('school.fee.filters.search_placeholder')}
               className="w-full"
               onChange={handleSearch}
               value={searchTerm}
@@ -382,7 +379,7 @@ export default function FeesManagement() {
           {/* Level */}
           <div>
             <label className="block mb-1 text-sm font-medium text-foreground">
-              Niveau
+              {t('school.fee.level')}
             </label>
             <select
               className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -392,23 +389,23 @@ export default function FeesManagement() {
                 setFilter({ ...filter, level: e.target.value });
               }}
             >
-              <option value="">Tous</option>
-              <optgroup label="🇫🇷 Système Francophone">
+              <option value="">{t('school.fee.filters.all')}</option>
+              <optgroup label={t('school.fee.filters.french_system')}>
                 {[
-                  { value: "6e", label: "6e (Sixième)" },
-                  { value: "5e", label: "5e (Cinquième)" },
-                  { value: "4e", label: "4e (Quatrième)" },
-                  { value: "3e", label: "3e (Troisième)" },
-                  { value: "2nde", label: "2nde (Seconde)" },
-                  { value: "1ère", label: "1ère (Première)" },
-                  { value: "Terminale", label: "Terminale" },
+                  { value: "6e", label: t('school.fee.levels.sixth') },
+                  { value: "5e", label: t('school.fee.levels.fifth') },
+                  { value: "4e", label: t('school.fee.levels.fourth') },
+                  { value: "3e", label: t('school.fee.levels.third') },
+                  { value: "2nde", label: t('school.fee.levels.second') },
+                  { value: "1ère", label: t('school.fee.levels.first') },
+                  { value: "Terminale", label: t('school.fee.levels.terminal') },
                 ].map((level) => (
                   <option key={level.value} value={level.value}>
                     {level.label}
                   </option>
                 ))}
               </optgroup>
-              <optgroup label="🇬🇧 Système Anglophone">
+              <optgroup label={t('school.fee.filters.english_system')}>
                 {[
                   "Form 1",
                   "Form 2",
@@ -429,7 +426,7 @@ export default function FeesManagement() {
           {/* Classes */}
           <div>
             <label className="block mb-1 text-sm font-medium text-foreground">
-              Classes
+              {t('school.fee.class')}
             </label>
             <select
               className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -439,7 +436,7 @@ export default function FeesManagement() {
                 setFilter({ ...filter, classes: classId });
               }}
             >
-              <option value="">Tous</option>
+              <option value="">{t('school.fee.filters.all')}</option>
               {filteredClasses.map((item) => (
                 <option key={item._id} value={item.classesName}>
                   {item.classesName}
@@ -451,7 +448,7 @@ export default function FeesManagement() {
           {/* Academic Year */}
           <div>
             <label className="block mb-1 text-sm font-medium text-foreground">
-              Année académique
+              {t('school.fee.academic_year')}
             </label>
             <select
               className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -461,7 +458,7 @@ export default function FeesManagement() {
                 setFilter({ ...filter, academicYear: yearId });
               }}
             >
-              <option value="">Tous</option>
+              <option value="">{t('school.fee.filters.all')}</option>
               {academicYears.map((year) => (
                 <option key={year._id} value={year.name}>
                   {year.name}
@@ -476,18 +473,20 @@ export default function FeesManagement() {
         <div className="flex items-center justify-center py-12">
           <div className="flex items-center gap-3">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span className="text-lg text-muted-foreground">Chargement des frais...</span>
+            <span className="text-lg text-muted-foreground">
+              {t('school.fee.loading')}
+            </span>
           </div>
         </div>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Bill ID</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Montant (FCFA)</TableHead>
-              <TableHead>Date de Paiement</TableHead>
-              <TableHead className="text-center">Actions</TableHead>
+              <TableHead>{t('school.fee.bill_id')}</TableHead>
+              <TableHead>{t('school.fee.type')}</TableHead>
+              <TableHead>{t('school.fee.amount')}</TableHead>
+              <TableHead>{t('school.fee.payment_date')}</TableHead>
+              <TableHead className="text-center">{t('school.fee.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -499,71 +498,71 @@ export default function FeesManagement() {
                     <div className="text-center">
                       <p className="text-lg font-medium text-muted-foreground">
                         {searchTerm || filter.level || filter.classes || filter.academicYear
-                          ? "Aucun frais trouvé"
-                          : "Aucun frais disponible"}
+                          ? t('school.fee.no_results_filtered')
+                          : t('school.fee.no_results')}
                       </p>
                       <p className="text-sm text-muted-foreground mt-1">
                         {searchTerm || filter.level || filter.classes || filter.academicYear
-                          ? "Essayez de modifier vos critères de recherche"
-                          : "Les frais apparaîtront ici une fois ajoutés"}
+                          ? t('school.fee.adjust_filters')
+                          : t('school.fee.add_fees_message')}
                       </p>
                     </div>
                   </div>
                 </TableCell>
               </TableRow>
             )}
-          {currentData.map((fee, idx) => (
-            <TableRow
-              key={fee.billID || idx}
-              className="hover:bg-muted/50 transition"
-            >
-              <TableCell>{fee.billID}</TableCell>
-              <TableCell>{fee.type}</TableCell>
-              <TableCell className="text-right font-semibold text-primary">
-                {fee.amount.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-center">
-                {fee.paymentDate
-                  ? new Date(fee.paymentDate).toLocaleDateString()
-                  : "-"}
-              </TableCell>
-              <TableCell className="text-center space-x-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setSelectedFee(fee)}
-                  aria-label={`view fee ${fee.billID}`}
-                >
-                  <Eye className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleOpenPaymentForm(fee)}
-                  aria-label={`Edit fee ${fee.billID}`}
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => handleDeleteFee(fee)}
-                  aria-label={`Delete fee ${fee.billID}`}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+            {currentData.map((fee, idx) => (
+              <TableRow
+                key={fee.billID || idx}
+                className="hover:bg-muted/50 transition"
+              >
+                <TableCell>{fee.billID}</TableCell>
+                <TableCell>{fee.type}</TableCell>
+                <TableCell className="text-right font-semibold text-primary">
+                  {fee.amount.toLocaleString()}
+                </TableCell>
+                <TableCell className="text-center">
+                  {fee.paymentDate
+                    ? new Date(fee.paymentDate).toLocaleDateString()
+                    : "-"}
+                </TableCell>
+                <TableCell className="text-center space-x-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedFee(fee)}
+                    aria-label={t('school.fee.view_aria', { billID: fee.billID })}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleOpenPaymentForm(fee)}
+                    aria-label={t('school.fee.edit_aria', { billID: fee.billID })}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleDeleteFee(fee)}
+                    aria-label={t('school.fee.delete_aria', { billID: fee.billID })}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
       
       {/* Pagination */}
       {!loading && currentData.length > 0 && (
         <div className="flex justify-between items-center mt-6">
           <div className="text-sm text-muted-foreground">
-            Page {currentPage} sur {totalPages}
+            {t('school.fee.pagination.page', { current: currentPage, total: totalPages })}
           </div>
           <div className="flex gap-2">
             <Button
@@ -571,27 +570,28 @@ export default function FeesManagement() {
               onClick={goToPreviousPage}
               disabled={currentPage === 1}
             >
-              Précédent
+              {t('school.fee.pagination.previous')}
             </Button>
             <Button
               variant="outline"
               onClick={goToNextPage}
               disabled={currentPage === totalPages}
             >
-              Suivant
+              {t('school.fee.pagination.next')}
             </Button>
           </div>
         </div>
       )}
+      
       {/* Detail Modal */}
       <Dialog open={!!selectedFee} onOpenChange={closeModal}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-foreground">
-              🧾 Détails du frais
+              {t('school.fee.detail.title')}
             </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              Informations complètes sur le frais sélectionné.
+              {t('school.fee.detail.description')}
             </DialogDescription>
           </DialogHeader>
 
@@ -599,22 +599,28 @@ export default function FeesManagement() {
             <div className="mt-4 space-y-6 text-sm text-foreground">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <span className="font-medium text-muted-foreground">📌 Bill ID:</span>
+                  <span className="font-medium text-muted-foreground">
+                    {t('school.fee.bill_id')}:
+                  </span>
                   <div className="text-foreground">{selectedFee.billID}</div>
                 </div>
                 <div>
-                  <span className="font-medium text-muted-foreground">💳 Type:</span>
+                  <span className="font-medium text-muted-foreground">
+                    {t('school.fee.type')}:
+                  </span>
                   <div className="text-foreground">{selectedFee.type}</div>
                 </div>
                 <div>
-                  <span className="font-medium text-muted-foreground">💰 Montant:</span>
+                  <span className="font-medium text-muted-foreground">
+                    {t('school.fee.amount')}:
+                  </span>
                   <div className="text-foreground">
-                    {selectedFee.amount.toLocaleString()} FCFA
+                    {selectedFee.amount.toLocaleString()} {t('school.fee.currency')}
                   </div>
                 </div>
                 <div>
                   <span className="font-medium text-muted-foreground">
-                    📅 Date de paiement:
+                    {t('school.fee.payment_date')}:
                   </span>
                   <div className="text-foreground">
                     {new Date(selectedFee.paymentDate).toLocaleDateString()}
@@ -622,7 +628,7 @@ export default function FeesManagement() {
                 </div>
                 <div>
                   <span className="font-medium text-muted-foreground">
-                    🏦 Mode de paiement:
+                    {t('school.fee.payment_method')}:
                   </span>
                   <div className="text-foreground">
                     {selectedFee.paymentMethod}
@@ -630,19 +636,21 @@ export default function FeesManagement() {
                 </div>
                 <div>
                   <span className="font-medium text-muted-foreground">
-                    🎓 Étudiant:
+                    {t('school.fee.student')}:
                   </span>
                   <div className="text-foreground">{selectedFee.studentName}</div>
                 </div>
                 <div>
-                  <span className="font-medium text-muted-foreground">🏫 Classe:</span>
+                  <span className="font-medium text-muted-foreground">
+                    {t('school.fee.class')}:
+                  </span>
                   <div className="text-foreground">
                     {selectedFee.studentClass}
                   </div>
                 </div>
                 <div>
                   <span className="font-medium text-muted-foreground">
-                    📚 Année académique:
+                    {t('school.fee.academic_year')}:
                   </span>
                   <div className="text-foreground">{selectedFee.year}</div>
                 </div>
@@ -651,21 +659,21 @@ export default function FeesManagement() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
                 <div>
                   <span className="font-medium text-muted-foreground">
-                    ✅ Total payé:
+                    {t('school.fee.total_paid')}:
                   </span>
                   <div className="text-primary font-semibold">
-                    {selectedFee.totalFeesPaid.toLocaleString()} FCFA
+                    {selectedFee.totalFeesPaid.toLocaleString()} {t('school.fee.currency')}
                   </div>
                 </div>
                 <div>
                   <span className="font-medium text-muted-foreground">
-                    📉 Reste à payer:
+                    {t('school.fee.remaining')}:
                   </span>
                   <div className="text-destructive font-semibold">
                     {(
                       selectedFee.amountToPaid - selectedFee.totalFeesPaid
                     ).toLocaleString()}{" "}
-                    FCFA
+                    {t('school.fee.currency')}
                   </div>
                 </div>
               </div>
@@ -674,7 +682,7 @@ export default function FeesManagement() {
 
           <DialogFooter className="mt-6">
             <Button onClick={closeModal} className="w-full sm:w-auto">
-              Fermer
+              {t('school.fee.close')}
             </Button>
           </DialogFooter>
         </DialogContent>
