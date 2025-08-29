@@ -14,7 +14,7 @@ export interface SchoolClass {
   level: string;
   capacity?: number|string|'';
   amountFee?: number|"";
-  subjects?: SubjectInfo[];
+  subjects?: any[];
   studentList?: any[]; // Array of Student ObjectIds
   mainTeacherInfo?: string; // MongoDB ObjectId of User
   year?: string; // Format: YYYY-YYYY

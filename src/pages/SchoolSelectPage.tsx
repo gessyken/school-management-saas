@@ -234,7 +234,7 @@ const SchoolSelectPage = () => {
               </div>
             </div>
 
-            {pendingValidationSchools.length > 0 && (
+            {/* {pendingValidationSchools.length > 0 && (
               <section>
                 <h3 className="text-xl font-semibold text-primary mb-4">
                   {t('school.pendingValidationTitle')}
@@ -280,7 +280,7 @@ const SchoolSelectPage = () => {
                   ))}
                 </div>
               </section>
-            )}
+            )} */}
 
             {/* Member Schools */}
             {memberSchools.length > 0 && (

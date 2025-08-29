@@ -48,24 +48,24 @@ const getSidebarTabs = (t: (key: string) => string): SidebarItem[] => [
     label: t("academic"),
     children: [
       {
-        label: t("class"),
-        path: "/school-dashboard/academic/classes",
-        icon: School,
-      },
-      {
         label: t("subjects"),
         path: "/school-dashboard/academic/subjects",
         icon: BookMarked,
       },
       {
-        label: t("results"),
-        path: "/school-dashboard/academic/results",
-        icon: ScrollText,
+        label: t("class"),
+        path: "/school-dashboard/academic/classes",
+        icon: School,
       },
       {
         label: t("students"),
         path: "/school-dashboard/academic/students",
         icon: Users,
+      },
+      {
+        label: t("results"),
+        path: "/school-dashboard/academic/results",
+        icon: ScrollText,
       },
       {
         label: t("classesList"),

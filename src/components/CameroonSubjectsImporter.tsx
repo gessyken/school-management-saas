@@ -19,12 +19,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { BookOpen, Download, Loader2, CheckCircle } from 'lucide-react';
-import { 
-  getAllCameroonSubjects, 
-  getSubjectsByLevel, 
-  getAllLevels,
-  getLevelsByCycle,
-  SubjectData 
+import {
+  getAllCameroonSubjects,
+  getSubjectsByLevel, // Still useful if needing to filter by a single level
+  getAllLevelsStructured, // Use the new structured function
+  SubjectData
 } from '@/data/cameroonSubjects';
 import { subjectService } from '@/lib/services/subjectService';
 
@@ -32,8 +31,8 @@ interface CameroonSubjectsImporterProps {
   onImportComplete?: () => void;
 }
 
-const CameroonSubjectsImporter: React.FC<CameroonSubjectsImporterProps> = ({ 
-  onImportComplete 
+const CameroonSubjectsImporter: React.FC<CameroonSubjectsImporterProps> = ({
+  onImportComplete
 }) => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -43,27 +42,42 @@ const CameroonSubjectsImporter: React.FC<CameroonSubjectsImporterProps> = ({
   const [isImporting, setIsImporting] = useState(false);
   const [importMode, setImportMode] = useState<'all' | 'by-level' | 'custom'>('all');
 
-  const allSubjects = getAllCameroonSubjects();
-  const allLevels = getAllLevels();
-  const levelsByCycle = getLevelsByCycle();
+  const allCameroonSubjects = getAllCameroonSubjects(); // Changed name to avoid conflict with allSubjects (local var)
+  const allLevelsStructured = getAllLevelsStructured(); // Use the structured levels
+
+  // Helper to get subjects for the currently selected system
+  const currentSystemSubjects = selectedSystem === 'francophone'
+    ? allCameroonSubjects.francophone
+    : selectedSystem === 'anglophone'
+      ? allCameroonSubjects.anglophone
+      : [];
+
+  // Helper to get levels for the currently selected system
+  const currentSystemLevels = selectedSystem === 'francophone'
+    ? allLevelsStructured.francophone
+    : selectedSystem === 'anglophone'
+      ? allLevelsStructured.anglophone
+      : [];
 
   const handleSystemChange = (system: 'francophone' | 'anglophone') => {
     setSelectedSystem(system);
+    // Reset selections when system changes
     setSelectedLevels([]);
     setSelectedSubjects([]);
+    setImportMode('all'); // Reset import mode to 'all' as a default
   };
 
   const handleLevelToggle = (level: string) => {
-    setSelectedLevels(prev => 
-      prev.includes(level) 
+    setSelectedLevels(prev =>
+      prev.includes(level)
         ? prev.filter(l => l !== level)
         : [...prev, level]
     );
   };
 
   const handleSubjectToggle = (subjectCode: string) => {
-    setSelectedSubjects(prev => 
-      prev.includes(subjectCode) 
+    setSelectedSubjects(prev =>
+      prev.includes(subjectCode)
         ? prev.filter(s => s !== subjectCode)
         : [...prev, subjectCode]
     );
@@ -72,25 +86,21 @@ const CameroonSubjectsImporter: React.FC<CameroonSubjectsImporterProps> = ({
   const getSubjectsToImport = (): SubjectData[] => {
     if (!selectedSystem) return [];
 
-    const systemSubjects = selectedSystem === 'francophone' 
-      ? allSubjects.francophone 
-      : allSubjects.anglophone;
-
     switch (importMode) {
       case 'all':
-        return systemSubjects;
-      
+        return currentSystemSubjects;
+
       case 'by-level':
         if (selectedLevels.length === 0) return [];
-        return systemSubjects.filter(subject => 
+        return currentSystemSubjects.filter(subject =>
           subject.levels.some(level => selectedLevels.includes(level))
         );
-      
+
       case 'custom':
-        return systemSubjects.filter(subject => 
+        return currentSystemSubjects.filter(subject =>
           selectedSubjects.includes(subject.subjectCode)
         );
-      
+
       default:
         return [];
     }
@@ -98,7 +108,7 @@ const CameroonSubjectsImporter: React.FC<CameroonSubjectsImporterProps> = ({
 
   const handleImport = async () => {
     const subjectsToImport = getSubjectsToImport();
-    
+
     if (subjectsToImport.length === 0) {
       toast({
         title: "Aucune matière sélectionnée",
@@ -109,33 +119,43 @@ const CameroonSubjectsImporter: React.FC<CameroonSubjectsImporterProps> = ({
     }
 
     setIsImporting(true);
-    
+
     try {
-      // Préparer les données pour l'API
+      // Prepare data for the API, matching the Mongoose Subject schema
       const subjectsData = subjectsToImport.map(subject => ({
         subjectCode: subject.subjectCode,
         subjectName: subject.subjectName,
         description: subject.description,
-        isActive: true
+        isActive: true // Default to active upon import
       }));
 
-      // Importer via l'API
-      await subjectService.bulkImport(subjectsData);
-      
-      toast({
-        title: "Import réussi",
-        description: `${subjectsToImport.length} matière(s) ont été ajoutées avec succès.`,
-      });
-      
+      // Import via the API
+      // The backend (SubjectController.createManySubjects) handles partial success/failures
+      const response = await subjectService.bulkImport(subjectsData);
+
+      if (response.data.errors && response.data.errors.length > 0) {
+        toast({
+          title: "Import partiel",
+          description: `${response.data.savedSubjects.length} matières importées, ${response.data.errors.length} erreurs.`,
+          variant: "warning"
+        });
+        console.warn('Partial import errors:', response.data.errors);
+      } else {
+        toast({
+          title: "Import réussi",
+          description: `${subjectsToImport.length} matière(s) ont été ajoutées avec succès.`,
+        });
+      }
+
       setIsOpen(false);
-      onImportComplete?.();
-      
+      onImportComplete?.(); // Trigger refresh in parent component
+
       // Reset form
       setSelectedSystem('');
       setSelectedLevels([]);
       setSelectedSubjects([]);
       setImportMode('all');
-      
+
     } catch (error: any) {
       console.error('Import error:', error);
       toast({
@@ -148,7 +168,7 @@ const CameroonSubjectsImporter: React.FC<CameroonSubjectsImporterProps> = ({
     }
   };
 
-  const subjectsToImport = getSubjectsToImport();
+  const subjectsToPreview = getSubjectsToImport();
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -165,7 +185,7 @@ const CameroonSubjectsImporter: React.FC<CameroonSubjectsImporterProps> = ({
             Importer les Matières du Système Scolaire Camerounais
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* Sélection du système */}
           <div className="space-y-2">
@@ -187,24 +207,27 @@ const CameroonSubjectsImporter: React.FC<CameroonSubjectsImporterProps> = ({
               <div className="space-y-2">
                 <label className="text-sm font-medium">Mode d'Import</label>
                 <div className="flex gap-2">
-                  <Button 
+                  <Button
                     variant={importMode === 'all' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setImportMode('all')}
+                    disabled={isImporting}
                   >
                     Toutes les matières
                   </Button>
-                  <Button 
+                  <Button
                     variant={importMode === 'by-level' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setImportMode('by-level')}
+                    disabled={isImporting}
                   >
                     Par niveau
                   </Button>
-                  <Button 
+                  <Button
                     variant={importMode === 'custom' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setImportMode('custom')}
+                    disabled={isImporting}
                   >
                     Sélection personnalisée
                   </Button>
@@ -215,17 +238,22 @@ const CameroonSubjectsImporter: React.FC<CameroonSubjectsImporterProps> = ({
               {importMode === 'by-level' && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Niveaux</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {allLevels[selectedSystem].map(level => (
-                      <div key={level} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={level}
-                          checked={selectedLevels.includes(level)}
-                          onCheckedChange={() => handleLevelToggle(level)}
-                        />
-                        <label htmlFor={level} className="text-sm">{level}</label>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto border p-3 rounded">
+                    {currentSystemLevels.length > 0 ? (
+                      currentSystemLevels.map(level => (
+                        <div key={level} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={level}
+                            checked={selectedLevels.includes(level)}
+                            onCheckedChange={() => handleLevelToggle(level)}
+                            disabled={isImporting}
+                          />
+                          <label htmlFor={level} className="text-sm cursor-pointer">{level}</label>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="col-span-3 text-sm text-muted-foreground">Aucun niveau disponible pour ce système.</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -234,42 +262,47 @@ const CameroonSubjectsImporter: React.FC<CameroonSubjectsImporterProps> = ({
               {importMode === 'custom' && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Matières</label>
-                  <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
-                    {(selectedSystem === 'francophone' ? allSubjects.francophone : allSubjects.anglophone).map(subject => (
-                      <div key={subject.subjectCode} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={subject.subjectCode}
-                          checked={selectedSubjects.includes(subject.subjectCode)}
-                          onCheckedChange={() => handleSubjectToggle(subject.subjectCode)}
-                        />
-                        <label htmlFor={subject.subjectCode} className="text-sm">
-                          {subject.subjectName}
-                        </label>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto border p-3 rounded">
+                    {currentSystemSubjects.length > 0 ? (
+                      currentSystemSubjects.map(subject => (
+                        <div key={subject.subjectCode} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={subject.subjectCode}
+                            checked={selectedSubjects.includes(subject.subjectCode)}
+                            onCheckedChange={() => handleSubjectToggle(subject.subjectCode)}
+                            disabled={isImporting}
+                          />
+                          <label htmlFor={subject.subjectCode} className="text-sm cursor-pointer">
+                            {subject.subjectName} ({subject.subjectCode})
+                          </label>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="col-span-2 text-sm text-muted-foreground">Aucune matière disponible pour ce système.</p>
+                    )}
                   </div>
                 </div>
               )}
 
               {/* Aperçu des matières à importer */}
-              {subjectsToImport.length > 0 && (
+              {subjectsToPreview.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                       <CheckCircle className="h-5 w-5 text-green-600" />
-                      Aperçu de l'Import ({subjectsToImport.length} matières)
+                      Aperçu de l'Import ({subjectsToPreview.length} matières)
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-                      {subjectsToImport.map(subject => (
+                      {subjectsToPreview.map(subject => (
                         <div key={subject.subjectCode} className="flex items-center justify-between p-2 border rounded">
                           <div>
                             <span className="font-medium">{subject.subjectName}</span>
                             <span className="text-xs text-muted-foreground ml-2">({subject.subjectCode})</span>
                           </div>
                           <Badge variant="secondary">
-                            Coef. {subject.coefficient || 'N/A'}
+                            Coef. {subject.coefficient ?? 'N/A'}
                           </Badge>
                         </div>
                       ))}
@@ -280,12 +313,12 @@ const CameroonSubjectsImporter: React.FC<CameroonSubjectsImporterProps> = ({
 
               {/* Boutons d'action */}
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsOpen(false)}>
+                <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isImporting}>
                   Annuler
                 </Button>
-                <Button 
-                  onClick={handleImport} 
-                  disabled={isImporting || subjectsToImport.length === 0}
+                <Button
+                  onClick={handleImport}
+                  disabled={isImporting || subjectsToPreview.length === 0}
                   className="gap-2"
                 >
                   {isImporting ? (
@@ -293,7 +326,7 @@ const CameroonSubjectsImporter: React.FC<CameroonSubjectsImporterProps> = ({
                   ) : (
                     <Download className="h-4 w-4" />
                   )}
-                  {isImporting ? 'Import en cours...' : `Importer ${subjectsToImport.length} matière(s)`}
+                  {isImporting ? 'Import en cours...' : `Importer ${subjectsToPreview.length} matière(s)`}
                 </Button>
               </div>
             </>

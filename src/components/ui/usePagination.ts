@@ -1,8 +1,9 @@
-import {  useState } from "react";
+import { useState } from "react";
 // usePagination.js or inside your component
 export const usePagination = (data, itemsPerPage) => {
     const [currentPage, setCurrentPage] = useState(1);
-
+    if (itemsPerPage === "all")
+        itemsPerPage = data.length
     const totalPages = Math.ceil(data.length / itemsPerPage);
 
     const currentData = data.slice(

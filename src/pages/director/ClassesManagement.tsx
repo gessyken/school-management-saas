@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
@@ -46,14 +46,21 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
+  SelectGroup,
+  SelectLabel,
 } from "@/components/ui/select";
 import { subjectService } from "@/lib/services/subjectService";
 import { userService } from "@/lib/services/userService";
 import ClassesGroupedView from "@/components/ClassesGroupedView";
+import {
+  getAllLevelsStructured, // Use the structured levels from cameroonSubjects
+  SubjectData as CameroonSubjectData // Alias to avoid conflict with local SubjectItem
+} from "@/data/cameroonSubjects";
 
 interface SubjectItem {
   _id: string;
   subjectName: string;
+  subjectCode: string; // Add subjectCode for lookup
 }
 interface TeacherItem {
   _id: string;
@@ -62,10 +69,42 @@ interface TeacherItem {
 interface ClassSubject {
   subjectInfo: string;
   coefficient: number | "";
-  teacherInfo: string;
+  teacherInfo?: string; // teacherInfo is optional in schema
 }
 
 const itemsPerPage = 5;
+
+// Simple custom confirmation modal component (already translated)
+const ConfirmationModal = ({
+  isOpen,
+  message,
+  onConfirm,
+  onCancel,
+}: {
+  isOpen: boolean;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) => {
+  const { t } = useTranslation();
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 px-4">
+      <div className="bg-background rounded-lg p-6 max-w-sm w-full shadow-lg">
+        <p className="mb-4">{message}</p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={onCancel}>
+            {t('common.cancel')}
+          </Button>
+          <Button variant="destructive" onClick={onConfirm}>
+            {t('common.delete')}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 const ClassesManagement = () => {
   const { t } = useTranslation();
@@ -73,35 +112,40 @@ const ClassesManagement = () => {
 
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [search, setSearch] = useState("");
+  const [filterYear, setFilterYear] = useState<string>('all'); // New state for year filter
 
-  const [subjects, setSubjects] = useState<SubjectItem[]>([]);
-  const [teachers, setTeachers] = useState<TeacherItem[]>([]);
+  const [subjects, setSubjects] = useState<SubjectItem[]>([]); // All subjects available in the school
+  const [teachers, setTeachers] = useState<TeacherItem[]>([]); // All teachers available in the school
 
-  const defaultSubjects = {
+  const allCameroonLevels = getAllLevelsStructured(); // Get structured levels from data file
+
+  // Default subjects for quick creation, using translation keys
+  const defaultSubjects: Record<'francophone' | 'anglophone', { name: string, code: string, coefficient: number }[]> = useMemo(() => ({
     francophone: [
-      { name: t('classes.french'), coefficient: 4 },
-      { name: t('classes.math'), coefficient: 4 },
-      { name: t('classes.english'), coefficient: 3 },
-      { name: t('classes.history_geo'), coefficient: 3 },
-      { name: t('classes.physics'), coefficient: 3 },
-      { name: t('classes.biology'), coefficient: 3 },
-      { name: t('classes.pe'), coefficient: 2 },
-      { name: t('classes.arts'), coefficient: 2 },
-      { name: t('classes.music'), coefficient: 2 }
+      { name: t('classes.subjects.french'), code: 'FR', coefficient: 4 },
+      { name: t('classes.subjects.math'), code: 'MATH', coefficient: 4 },
+      { name: t('classes.subjects.english'), code: 'ANG', coefficient: 3 },
+      { name: t('classes.subjects.history_geo'), code: 'HG', coefficient: 3 },
+      { name: t('classes.subjects.physics_chem'), code: 'PC', coefficient: 3 },
+      { name: t('classes.subjects.biology_geology'), code: 'SVT', coefficient: 3 },
+      { name: t('classes.subjects.pe'), code: 'EPS', coefficient: 2 },
+      { name: t('classes.subjects.arts'), code: 'AP', coefficient: 2 },
+      { name: t('classes.subjects.music'), code: 'MUS', coefficient: 2 }
     ],
     anglophone: [
-      { name: t('classes.english_lang'), coefficient: 4 },
-      { name: t('classes.math'), coefficient: 4 },
-      { name: t('classes.french'), coefficient: 3 },
-      { name: t('classes.history'), coefficient: 3 },
-      { name: t('classes.geography'), coefficient: 3 },
-      { name: t('classes.physics'), coefficient: 3 },
-      { name: t('classes.chemistry'), coefficient: 3 },
-      { name: t('classes.biology'), coefficient: 3 },
-      { name: t('classes.pe'), coefficient: 2 },
-      { name: t('classes.arts'), coefficient: 2 }
+      { name: t('classes.subjects.english_lang'), code: 'ENG', coefficient: 4 },
+      { name: t('classes.subjects.math'), code: 'MATHS', coefficient: 4 },
+      { name: t('classes.subjects.french'), code: 'FRENCH', coefficient: 3 },
+      { name: t('classes.subjects.history'), code: 'HIST', coefficient: 3 },
+      { name: t('classes.subjects.geography'), code: 'GEOG', coefficient: 3 },
+      { name: t('classes.subjects.biology'), code: 'BIO', coefficient: 3 },
+      { name: t('classes.subjects.chemistry'), code: 'CHEM', coefficient: 3 },
+      { name: t('classes.subjects.physics'), code: 'PHYS', coefficient: 3 },
+      { name: t('classes.subjects.pe'), code: 'PE', coefficient: 2 },
+      { name: t('classes.subjects.arts'), code: 'ART', coefficient: 2 }
     ]
-  };
+  }), [t]);
+
 
   const [form, setForm] = useState<Omit<SchoolClass, "_id"> & { subjects: ClassSubject[] }>({
     classesName: "",
@@ -111,8 +155,8 @@ const ClassesManagement = () => {
     amountFee: "",
     level: "",
     subjects: [],
-    studentList: [],
-    mainTeacherInfo: "",
+    studentList: [], // studentList is managed by separate endpoints
+    mainTeacherInfo: undefined, // ensure it's undefined initially if not set
     year: "",
   });
   const [educationSystem, setEducationSystem] = useState<'francophone' | 'anglophone'>('francophone');
@@ -127,30 +171,56 @@ const ClassesManagement = () => {
 
   const [quickCreateForm, setQuickCreateForm] = useState({
     level: '',
-    sections: ['A', 'B', 'C', 'D'],
+    sections: ['A', 'B'], // Default sections
     year: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
     capacity: 30,
     amountFee: 0,
     addDefaultSubjects: true
   });
+  const educationSystemForLevel = allCameroonLevels.francophone.includes(quickCreateForm.level) ? 'francophone' : 'anglophone';
 
-  const generateClassName = () => {
-    const levels = educationSystem === 'francophone' 
-      ? ['6e', '5e', '4e', '3e', '2nde', '1ère A', '1ère C', '1ère D', '1ère TI', 'Terminale A', 'Terminale C', 'Terminale D', 'Terminale TI']
-      : ['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth A', 'Lower Sixth C', 'Lower Sixth D', 'Lower Sixth TI', 'Upper Sixth A', 'Upper Sixth C', 'Upper Sixth D', 'Upper Sixth TI'];
-    const randomLevel = levels[Math.floor(Math.random() * levels.length)];
-    const section = String.fromCharCode(65 + Math.floor(Math.random() * 3));
-    return `${randomLevel} ${section}`;
-  };
-
+  // Helper to generate a default academic year
   const generateAcademicYear = () => {
     const currentYear = new Date().getFullYear();
-    return `${currentYear}-${currentYear + 1}`;
+    const nextYear = currentYear + 1;
+    return `${currentYear}-${nextYear}`;
   };
 
-  const filtered = classes.filter((cls) =>
-    `${cls.classesName} ${cls.description ?? ""}`.toLowerCase().includes(search.toLowerCase())
-  );
+  // Memoized list of unique academic years for the filter dropdown
+  const uniqueAcademicYears = useMemo(() => {
+    const years = new Set<string>();
+    classes.forEach(cls => {
+      if (cls.year) {
+        years.add(cls.year);
+      }
+    });
+    return Array.from(years).sort((a, b) => b.localeCompare(a)); // Sort descending for most recent first
+  }, [classes]);
+
+
+  // Frontend filtering logic
+  const filteredClasses = useMemo(() => {
+    let result = classes;
+
+    // Apply search filter
+    if (search) {
+      const lowerCaseSearch = search.toLowerCase();
+      result = result.filter((cls) =>
+        cls.classesName.toLowerCase().includes(lowerCaseSearch) ||
+        cls.level.toLowerCase().includes(lowerCaseSearch) ||
+        cls.year.toLowerCase().includes(lowerCaseSearch) ||
+        cls.description?.toLowerCase().includes(lowerCaseSearch)
+      );
+    }
+
+    // Apply year filter
+    if (filterYear !== 'all' && filterYear) {
+      result = result.filter(cls => cls.year === filterYear);
+    }
+
+    return result;
+  }, [classes, search, filterYear]); // Add filterYear to dependencies
+
   const {
     currentPage,
     totalPages,
@@ -158,20 +228,26 @@ const ClassesManagement = () => {
     goToNextPage,
     goToPreviousPage,
     goToPage,
-  } = usePagination(filtered, itemsPerPage);
+  } = usePagination(filteredClasses, "all");
+  console.log(currentData)
+  // Reset pagination when filters change
+  useEffect(() => {
+    goToPage(1);
+  }, [filteredClasses, goToPage]);
+
 
   const fetchClasses = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await classService.getAll({});
+      const res = await classService.getAll(); // No params here, frontend filters
       setClasses(res.data.classes || []);
     } catch (error) {
       console.error("Failed to fetch classes:", error);
-      setError(t('classes.errors.load_classes'));
+      setError(t('classes.errors.load_classes_failed'));
       toast({
         title: t('common.error'),
-        description: t('classes.errors.load_classes'),
+        description: t('classes.errors.load_classes_toast'),
         variant: "destructive",
       });
     } finally {
@@ -181,14 +257,14 @@ const ClassesManagement = () => {
 
   const fetchSubjects = useCallback(async () => {
     try {
-      const res = await subjectService.getAll({});
+      const res = await subjectService.getAll(); // No params needed if frontend filters
       setSubjects(res.data.subjects || []);
     } catch (error) {
       console.error("Failed to fetch subjects:", error);
       setSubjects([]);
       toast({
         title: t('common.error'),
-        description: t('classes.errors.load_subjects'),
+        description: t('classes.errors.load_subjects_toast'),
         variant: "destructive",
       });
     }
@@ -196,14 +272,18 @@ const ClassesManagement = () => {
 
   const fetchTeachers = useCallback(async () => {
     try {
-      const res = await userService.getAll({ roles: "TEACHER" });
-      setTeachers(res.data.users || []);
+      const res = await userService.getAll({ roles: "TEACHER" }); // Assuming backend can filter by roles
+      // Format teacher names for display if needed
+      setTeachers(res.data.users?.map((user: any) => ({
+        _id: user._id,
+        fullName: `${user.firstName} ${user.lastName}` // Assuming User model has firstName, lastName
+      })) || []);
     } catch (error) {
       console.error("Failed to fetch teachers:", error);
       setTeachers([]);
       toast({
         title: t('common.error'),
-        description: t('classes.errors.load_teachers'),
+        description: t('classes.errors.load_teachers_toast'),
         variant: "destructive",
       });
     }
@@ -217,7 +297,7 @@ const ClassesManagement = () => {
 
   const resetForm = () => {
     setForm({
-      classesName: generateClassName(),
+      classesName: "", // No random generation for specific classes anymore, user inputs
       description: "",
       status: "Open",
       capacity: 30,
@@ -225,7 +305,7 @@ const ClassesManagement = () => {
       level: "",
       subjects: [],
       studentList: [],
-      mainTeacherInfo: "",
+      mainTeacherInfo: undefined,
       year: generateAcademicYear(),
     });
     setEducationSystem('francophone');
@@ -237,28 +317,54 @@ const ClassesManagement = () => {
     setSubmitting(true);
     setError(null);
 
+    // Frontend validation
     if (!form.classesName.trim()) {
       setError(t('classes.errors.class_name_required'));
       setSubmitting(false);
       return;
     }
-    if (form.subjects.some((s) => !s.subjectInfo || !s.teacherInfo)) {
-      setError(t('classes.errors.subject_teacher_required'));
+    if (!form.level) {
+      setError(t('classes.errors.level_required'));
+      setSubmitting(false);
+      return;
+    }
+    if (!form.year || !/^\d{4}-\d{4}$/.test(form.year)) {
+      setError(t('classes.errors.year_format_invalid'));
+      setSubmitting(false);
+      return;
+    }
+    if (form.subjects.some((s) => !s.subjectInfo || s.coefficient === "" || s.coefficient === undefined || !s.teacherInfo)) {
+      setError(t('classes.errors.subject_details_required'));
       setSubmitting(false);
       return;
     }
 
+    // Prepare data, ensuring numbers are parsed
+    const classDataToSend = {
+      ...form,
+      capacity: form.capacity === "" ? undefined : Number(form.capacity),
+      amountFee: form.amountFee === "" ? undefined : Number(form.amountFee),
+      subjects: form.subjects.map(s => ({
+        ...s,
+        coefficient: s.coefficient === "" ? 1 : Number(s.coefficient), // Default to 1 if empty
+        teacherInfo: s.teacherInfo || undefined // ensure empty string becomes undefined
+      })),
+      mainTeacherInfo: form.mainTeacherInfo || undefined // ensure empty string becomes undefined
+    };
+
     try {
       if (editingId) {
-        await classService.update(editingId, form);
-        toast({ 
-          title: t('classes.success.update'),
+        await classService.update(editingId, classDataToSend);
+        toast({
+          title: t('classes.success.update_title'),
+          description: t('classes.success.update_description'),
           variant: "default"
         });
       } else {
-        await classService.create(form);
-        toast({ 
-          title: t('classes.success.create'),
+        await classService.create(classDataToSend);
+        toast({
+          title: t('classes.success.create_title'),
+          description: t('classes.success.create_description'),
           variant: "default"
         });
       }
@@ -266,12 +372,18 @@ const ClassesManagement = () => {
       setEditingId(null);
       resetForm();
       fetchClasses();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save class:", error);
-      setError(editingId ? t('classes.errors.update_failed') : t('classes.errors.create_failed'));
-      toast({ 
+      let errorMessage = t('classes.errors.save_failed_generic');
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      setError(errorMessage);
+      toast({
         title: t('common.error'),
-        description: t('classes.errors.save_failed'),
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -281,95 +393,154 @@ const ClassesManagement = () => {
 
   const handleQuickCreate = async () => {
     if (!quickCreateForm.level) {
-      toast({ 
-        title: t('classes.errors.level_required'),
-        variant: "destructive" 
+      toast({
+        title: t('common.error'),
+        description: t('classes.errors.level_required_qc'),
+        variant: "destructive"
+      });
+      return;
+    }
+    if (!quickCreateForm.year || !/^\d{4}-\d{4}$/.test(quickCreateForm.year)) {
+      toast({
+        title: t('common.error'),
+        description: t('classes.errors.year_format_invalid_qc'),
+        variant: "destructive"
       });
       return;
     }
 
     setSubmitting(true);
+    let createdCount = 0;
+    let failedCount = 0;
+    const errors: string[] = [];
+
     try {
-      const educationSystem = ['6e', '5e', '4e', '3e', '2nde', '1ère A', '1ère C', '1ère D', '1ère TI', 'Terminale A', 'Terminale C', 'Terminale D', 'Terminale TI'].includes(quickCreateForm.level) ? 'francophone' : 'anglophone';
-      
+
       let subjectsToAdd: ClassSubject[] = [];
       if (quickCreateForm.addDefaultSubjects) {
-        const defaultSubjectsForSystem = defaultSubjects[educationSystem];
-        
-        for (const defaultSubject of defaultSubjectsForSystem) {
-          let existingSubject = subjects.find(s => s.subjectName === defaultSubject.name);
-          
+        const defaultSubjectsForSystem = defaultSubjects[educationSystemForLevel];
+
+        for (const defaultSubj of defaultSubjectsForSystem) {
+          // Try to find existing subject by name or code first
+          let existingSubject = subjects.find(s =>
+            s.subjectName === defaultSubj.name || s.subjectCode === defaultSubj.code
+          );
+
           if (!existingSubject) {
             try {
-              const newSubject = await subjectService.create({
-                subjectName: defaultSubject.name,
-                subjectCode: defaultSubject.name.substring(0, 3).toUpperCase(),
-                description: `${t('classes.subject')} ${defaultSubject.name}`,
+              // If not found, create it
+              const newSubjectRes = await subjectService.create({
+                subjectName: defaultSubj.name,
+                subjectCode: defaultSubj.code,
+                description: `${t('classes.subjects.default_desc', { subjectName: defaultSubj.name })}`,
                 isActive: true
               });
-              existingSubject = newSubject;
-              setSubjects(prev => [...prev, newSubject]);
-            } catch (error) {
-              console.warn(`Failed to create subject ${defaultSubject.name}:`, error);
-              continue;
+              existingSubject = {
+                _id: newSubjectRes.subject._id, // Assuming newSubjectRes.subject is the created subject
+                subjectName: newSubjectRes.subject.subjectName,
+                subjectCode: newSubjectRes.subject.subjectCode
+              };
+              // Update local subjects list
+              setSubjects(prev => [...prev, existingSubject!]);
+            } catch (err: any) {
+              // If subject creation fails (e.g., duplicate code on backend)
+              if (err.response?.data?.message?.includes('E11000 duplicate key error') || err.response?.data?.message?.includes('duplicate subject code')) {
+                // Try to find it again, assuming it was created by another process or concurrent request
+                const foundAgain = await subjectService.getAll({ search: defaultSubj.name });
+                if (foundAgain.data.subjects && foundAgain.data.subjects.length > 0) {
+                  existingSubject = foundAgain.data.subjects[0];
+                  // Update local subjects list if it's new to us
+                  if (!subjects.some(s => s._id === existingSubject!._id)) {
+                    setSubjects(prev => [...prev, existingSubject!]);
+                  }
+                } else {
+                  console.warn(`Failed to create/find subject ${defaultSubj.name}:`, err);
+                  errors.push(t('classes.errors.add_default_subject_failed', { name: defaultSubj.name }));
+                  continue; // Skip this subject
+                }
+              } else {
+                console.warn(`Failed to create subject ${defaultSubj.name}:`, err);
+                errors.push(t('classes.errors.add_default_subject_failed', { name: defaultSubj.name }));
+                continue; // Skip this subject
+              }
             }
           }
-          
           subjectsToAdd.push({
-            subjectInfo: existingSubject._id,
-            coefficient: defaultSubject.coefficient
+            subjectInfo: existingSubject!._id,
+            coefficient: defaultSubj.coefficient,
+            teacherInfo: undefined // No teacher assigned by default during quick create
           });
         }
       }
 
-      const createdClasses = [];
       for (const section of quickCreateForm.sections) {
         const className = `${quickCreateForm.level}${section}`;
-        
-        const classData = {
+        const classDataToSend: Omit<SchoolClass, "_id"> = {
           classesName: className,
           description: `${t('classes.class_of')} ${quickCreateForm.level} ${t('classes.section')} ${section}`,
           status: "Open",
-          capacity: quickCreateForm.capacity,
+          capacity: Number(quickCreateForm.capacity),
           level: quickCreateForm.level,
-          amountFee: quickCreateForm.amountFee,
+          amountFee: Number(quickCreateForm.amountFee),
           year: quickCreateForm.year,
           subjects: subjectsToAdd,
-          studentList: []
+          studentList: [], // Initially empty
+          mainTeacherInfo: undefined, // Initially no main teacher
         };
 
         try {
-          const createdClass = await classService.create(classData);
-          createdClasses.push(createdClass);
-        } catch (error) {
-          console.error(`Failed to create class ${className}:`, error);
-          toast({ 
-            title: t('classes.errors.create_class_failed', { className }),
-            variant: "destructive"
-          });
+          console.log(classDataToSend)
+          await classService.create(classDataToSend);
+          createdCount++;
+        } catch (error: any) {
+          failedCount++;
+          let errorMessage = `Failed to create class ${className}.`;
+          if (error.response?.data?.message?.includes('E11000 duplicate key error') || error.response?.data?.message?.includes('duplicate class name')) {
+            errorMessage = t('classes.errors.duplicate_class_entry', { className, year: quickCreateForm.year });
+          } else if (error.response?.data?.message) {
+            errorMessage = `Failed to create class ${className}: ${error.response.data.message}`;
+          }
+          errors.push(errorMessage);
+          console.error(errorMessage, error);
         }
       }
 
-      if (createdClasses.length > 0) {
-        toast({ 
-          title: t('classes.success.quick_create', { count: createdClasses.length }),
-          variant: "default"
+      if (createdCount > 0) {
+        toast({
+          title: t('classes.success.quick_create_title', { count: createdCount }),
+          description: t('classes.success.quick_create_description', { created: createdCount, failed: failedCount }),
+          variant: failedCount > 0 ? "warning" : "default"
         });
-        fetchClasses();
-        setShowQuickCreateModal(false);
-        setQuickCreateForm({
-          level: '',
-          sections: ['A', 'B', 'C', 'D'],
-          year: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
-          capacity: 30,
-          amountFee: 0,
-          addDefaultSubjects: true
+        fetchClasses(); // Refresh the class list
+      } else {
+        toast({
+          title: t('common.error'),
+          description: t('classes.errors.quick_create_all_failed'),
+          variant: "destructive"
         });
       }
+
+      if (errors.length > 0) {
+        setError(errors.join('\n')); // Display all aggregated errors
+      }
+
+      setShowQuickCreateModal(false);
+      // Reset quick create form
+      setQuickCreateForm({
+        level: '',
+        sections: ['A', 'B'],
+        year: generateAcademicYear(),
+        capacity: 30,
+        amountFee: 0,
+        addDefaultSubjects: true
+      });
+
     } catch (error) {
-      console.error("Quick create error:", error);
-      toast({ 
-        title: t('classes.errors.quick_create_failed'),
+      console.error("Quick create overall error:", error);
+      setError(t('classes.errors.quick_create_overall_failed'));
+      toast({
+        title: t('common.error'),
+        description: t('classes.errors.quick_create_overall_failed_toast'),
         variant: "destructive"
       });
     } finally {
@@ -377,9 +548,13 @@ const ClassesManagement = () => {
     }
   };
 
+
   const addSection = () => {
-    const nextSection = String.fromCharCode(65 + quickCreateForm.sections.length);
-    if (quickCreateForm.sections.length < 10) {
+    // Generate next section letter (A, B, C...)
+    const lastSectionCode = quickCreateForm.sections[quickCreateForm.sections.length - 1].charCodeAt(0);
+    const nextSection = String.fromCharCode(lastSectionCode + 1);
+
+    if (quickCreateForm.sections.length < 10 && nextSection <= 'Z') { // Limit to Z or 10 sections
       setQuickCreateForm(prev => ({
         ...prev,
         sections: [...prev.sections, nextSection]
@@ -398,19 +573,22 @@ const ClassesManagement = () => {
 
   const handleOpenModal = (cls?: SchoolClass) => {
     if (cls) {
-      const francophonesLevels = ['6e', '5e', '4e', '3e', '2nde', '1ère A', '1ère C', '1ère D', '1ère TI', 'Terminale A', 'Terminale C', 'Terminale D', 'Terminale TI'];
-      const detectedSystem = francophonesLevels.includes(cls.level) ? 'francophone' : 'anglophone';
-      
+      // Determine education system for existing class
+      const detectedSystem = allCameroonLevels.francophone.includes(cls.level) ? 'francophone' : 'anglophone';
+
       setForm({
         ...cls,
         capacity: cls.capacity ?? "",
         amountFee: cls.amountFee ?? "",
         description: cls.description ?? "",
+        // Ensure subjectInfo and teacherInfo are strings (ObjectIds)
         subjects: cls.subjects?.map((item: any) => ({
           subjectInfo: item.subjectInfo?._id || item.subjectInfo,
-          coefficient: item.coefficient || "",
-          teacherInfo: item.teacherInfo?._id || item.teacherInfo?.id || "",
+          coefficient: item.coefficient ?? "", // Handle null/undefined coefficient
+          teacherInfo: item.teacherInfo?._id || item.teacherInfo, // Handle null/undefined teacherInfo
         })) || [],
+        mainTeacherInfo: cls.mainTeacherInfo || undefined, // Ensure empty string becomes undefined
+        year: cls.year || generateAcademicYear(), // Ensure year is present
       });
       setEducationSystem(detectedSystem);
       setEditingId(cls._id || null);
@@ -432,17 +610,19 @@ const ClassesManagement = () => {
     setError(null);
     try {
       await classService.remove(id);
-      toast({ 
-        title: t('classes.success.delete'),
+      toast({
+        title: t('classes.success.delete_title'),
+        description: t('classes.success.delete_description'),
         variant: "default"
       });
       fetchClasses();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete class:", error);
-      setError(t('classes.errors.delete_failed'));
-      toast({ 
+      const errorMessage = error.response?.data?.message || t('classes.errors.delete_failed_generic');
+      setError(errorMessage);
+      toast({
         title: t('common.error'),
-        description: t('classes.errors.delete_failed'),
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -453,15 +633,21 @@ const ClassesManagement = () => {
   const toggleStatus = async (cls: SchoolClass) => {
     setLoading(true);
     try {
-      await classService.update(cls._id!, {
-        ...cls,
-        status: cls.status === "Open" ? "Closed" : "Open",
+      // Ensure the status is 'Open' or 'Closed' explicitly for the API
+      const newStatus = cls.status === "Open" || cls.status === "Ouvert" ? "Closed" : "Open";
+      await classService.update(cls._id!, { status: newStatus });
+      toast({
+        title: t('classes.success.toggle_status_title'),
+        description: t('classes.success.toggle_status_description', { name: cls.classesName, status: newStatus }),
+        variant: "default"
       });
       fetchClasses();
-    } catch {
-      toast({ 
+    } catch (error: any) {
+      console.error("Failed to toggle class status:", error);
+      const errorMessage = error.response?.data?.message || t('classes.errors.toggle_status_failed_generic');
+      toast({
         title: t('common.error'),
-        description: t('classes.errors.toggle_status'),
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -470,32 +656,80 @@ const ClassesManagement = () => {
   };
 
   const handleImport = (file: File) => {
+    setLoading(true);
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
-        const wb = XLSX.read(e.target?.result, { type: "binary" });
+        const bstr = e.target?.result;
+        if (!bstr) throw new Error(t('classes.errors.file_read_failed'));
+        const wb = XLSX.read(bstr, { type: "binary" });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const data = XLSX.utils.sheet_to_json(ws);
-        classService.bulkImport(data as SchoolClass[]).then(() => {
-          toast({ 
-            title: t('classes.success.import'),
+
+        // Convert data to SchoolClass[] and ensure numeric fields are numbers
+        const classesToImport: SchoolClass[] = data.map((item: any) => ({
+          classesName: item.classesName,
+          description: item.description,
+          status: item.status || 'Open',
+          capacity: Number(item.capacity),
+          amountFee: Number(item.amountFee),
+          level: item.level,
+          year: item.year,
+          mainTeacherInfo: item.mainTeacherInfo || undefined,
+          subjects: item.subjects ? JSON.parse(item.subjects).map((subj: any) => ({
+            subjectInfo: subj.subjectInfo,
+            coefficient: Number(subj.coefficient),
+            teacherInfo: subj.teacherInfo || undefined
+          })) : [],
+          studentList: [], // Assume students are added separately
+        }));
+
+        const res = await classService.bulkImport(classesToImport);
+        let importMessage = t('classes.success.import_success_description', { count: res.savedClasses.length });
+        if (res.errors && res.errors.length > 0) {
+          importMessage += ` ${t('classes.errors.import_with_errors', { count: res.errors.length })}`;
+          setError(t('classes.errors.import_errors_list', { errors: res.errors.map((err: any) => err.error).join(', ') }));
+          toast({
+            title: t('classes.success.import_partial_title'),
+            description: importMessage,
+            variant: "warning"
+          });
+        } else {
+          toast({
+            title: t('classes.success.import_title'),
+            description: importMessage,
             variant: "default"
           });
-          fetchClasses();
-        });
-      } catch {
-        toast({ 
+        }
+        fetchClasses();
+      } catch (error: any) {
+        console.error("Failed to import classes:", error);
+        const errorMessage = error.message || t('classes.errors.import_failed_generic');
+        setError(errorMessage);
+        toast({
           title: t('common.error'),
-          description: t('classes.errors.import_failed'),
+          description: errorMessage,
           variant: "destructive"
         });
+      } finally {
+        setLoading(false);
       }
     };
     reader.readAsBinaryString(file);
   };
 
+
   const exportExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(classes);
+    const dataToExport = classes.map(cls => ({
+      ...cls,
+      subjects: JSON.stringify(cls.subjects?.map((s: any) => ({
+        subjectInfo: s.subjectInfo?._id || s.subjectInfo, // ensure just ID is exported
+        coefficient: s.coefficient,
+        teacherInfo: s.teacherInfo?._id || s.teacherInfo
+      })) || []),
+      studentList: JSON.stringify(cls.studentList?.map((s: any) => s._id || s) || []) // ensure just IDs are exported
+    }));
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Classes");
     XLSX.writeFile(wb, "classes.xlsx");
@@ -513,12 +747,14 @@ const ClassesManagement = () => {
       startY: 35,
       head: [[
         t('classes.table.name'),
+        t('classes.table.level'), // Added level to PDF export
         t('classes.table.status'),
         t('classes.table.capacity'),
         t('classes.table.year')
       ]],
       body: classes.map((cls) => [
         cls.classesName,
+        cls.level, // Added level to PDF export
         cls.status,
         cls.capacity ?? "",
         cls.year ?? "",
@@ -565,7 +801,7 @@ const ClassesManagement = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">{t('classes.title')}</h1>
       </div>
-      
+
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
           <div className="flex items-center">
@@ -580,24 +816,39 @@ const ClassesManagement = () => {
           </button>
         </div>
       )}
-      
-      <div className="flex justify-between mb-4">
+
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
         <Input
           placeholder={t('classes.search_placeholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-64"
+          className="w-full md:w-64"
           disabled={loading}
         />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+            {/* New Year Filter */}
+            {uniqueAcademicYears.length > 0 && (
+              <Select value={filterYear} onValueChange={setFilterYear} disabled={loading}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder={t('classes.filter_year_placeholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('classes.filter_year_all')}</SelectItem>
+                  {uniqueAcademicYears.map(year => (
+                    <SelectItem key={year} value={year}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
           <Button
             onClick={() => handleOpenModal()}
             disabled={loading || submitting}
           >
             <FilePlus className="mr-2 h-4 w-4" /> {t('classes.add_button')}
           </Button>
-          <Button 
-            onClick={() => setShowQuickCreateModal(true)} 
+          <Button
+            onClick={() => setShowQuickCreateModal(true)}
             disabled={loading || submitting}
             variant="secondary"
           >
@@ -616,6 +867,7 @@ const ClassesManagement = () => {
               hidden
               onChange={(e) => e.target.files && handleImport(e.target.files[0])}
               disabled={loading || submitting}
+              accept=".xls,.xlsx"
             />
           </label>
         </div>
@@ -628,15 +880,15 @@ const ClassesManagement = () => {
             <p className="text-muted-foreground">{t('classes.loading')}</p>
           </div>
         </div>
-      ) : currentData.length === 0 ? (
+      ) : filteredClasses.length === 0 ? ( // Use filteredClasses for empty state check
         <div className="text-center py-8">
           <div className="flex flex-col items-center justify-center space-y-4">
             <GraduationCap className="h-12 w-12 text-muted-foreground" />
             <div className="space-y-2">
               <p className="text-lg font-medium text-muted-foreground">
-                {search ? t('classes.no_results') : t('classes.no_classes')}
+                {search || filterYear !== 'all' ? t('classes.no_results') : t('classes.no_classes')}
               </p>
-              {!search && (
+              {!search && filterYear === 'all' && (
                 <Button onClick={() => handleOpenModal()} className="mt-4">
                   <FilePlus className="h-4 w-4 mr-2" />
                   {t('classes.add_first')}
@@ -646,20 +898,20 @@ const ClassesManagement = () => {
           </div>
         </div>
       ) : (
-          <ClassesGroupedView 
-            currentData={currentData}
-            expandedLevels={expandedLevels}
-            setExpandedLevels={setExpandedLevels}
-            loading={loading}
-            submitting={submitting}
-            handleEdit={handleEdit}
-            toggleStatus={toggleStatus}
-            handleDelete={handleDelete}
-            t={t}
-          />
+        <ClassesGroupedView
+          currentData={currentData}
+          expandedLevels={expandedLevels}
+          setExpandedLevels={setExpandedLevels}
+          loading={loading}
+          submitting={submitting}
+          handleEdit={handleEdit}
+          toggleStatus={toggleStatus}
+          handleDelete={handleDelete}
+          t={t} // Pass translation function
+        />
       )}
 
-      {!loading && currentData.length > 0 && (
+      {!loading && filteredClasses.length > 0 && ( // Use filteredClasses for pagination visibility
         <div className="flex justify-between items-center mt-4">
           <button
             className="px-4 py-2 bg-muted rounded disabled:opacity-50"
@@ -673,11 +925,10 @@ const ClassesManagement = () => {
             {Array.from({ length: totalPages }, (_, index) => (
               <button
                 key={index + 1}
-                className={`px-3 py-1 rounded ${
-                  currentPage === index + 1
+                className={`px-3 py-1 rounded ${currentPage === index + 1
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-foreground"
-                }`}
+                  }`}
                 onClick={() => goToPage(index + 1)}
                 disabled={loading}
               >
@@ -798,39 +1049,12 @@ const ClassesManagement = () => {
                       <SelectValue placeholder={t('classes.form.select_level')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {educationSystem === 'francophone' ? (
-                        <>
-                          <SelectItem value="6e">6e ({t('classes.levels.sixth')})</SelectItem>
-                          <SelectItem value="5e">5e ({t('classes.levels.fifth')})</SelectItem>
-                          <SelectItem value="4e">4e ({t('classes.levels.fourth')})</SelectItem>
-                          <SelectItem value="3e">3e ({t('classes.levels.third')})</SelectItem>
-                          <SelectItem value="2nde">2nde ({t('classes.levels.second')})</SelectItem>
-                          <SelectItem value="1ère A">1ère A ({t('classes.levels.first_literary')})</SelectItem>
-                          <SelectItem value="1ère C">1ère C ({t('classes.levels.first_science')})</SelectItem>
-                          <SelectItem value="1ère D">1ère D ({t('classes.levels.first_experimental')})</SelectItem>
-                          <SelectItem value="1ère TI">1ère TI ({t('classes.levels.first_technical')})</SelectItem>
-                          <SelectItem value="Terminale A">Terminale A ({t('classes.levels.final_literary')})</SelectItem>
-                          <SelectItem value="Terminale C">Terminale C ({t('classes.levels.final_science')})</SelectItem>
-                          <SelectItem value="Terminale D">Terminale D ({t('classes.levels.final_experimental')})</SelectItem>
-                          <SelectItem value="Terminale TI">Terminale TI ({t('classes.levels.final_technical')})</SelectItem>
-                        </>
-                      ) : (
-                        <>
-                          <SelectItem value="Form 1">Form 1</SelectItem>
-                          <SelectItem value="Form 2">Form 2</SelectItem>
-                          <SelectItem value="Form 3">Form 3</SelectItem>
-                          <SelectItem value="Form 4">Form 4</SelectItem>
-                          <SelectItem value="Form 5">Form 5</SelectItem>
-                          <SelectItem value="Lower Sixth A">Lower Sixth A ({t('classes.levels.arts')})</SelectItem>
-                          <SelectItem value="Lower Sixth C">Lower Sixth C ({t('classes.levels.science')})</SelectItem>
-                          <SelectItem value="Lower Sixth D">Lower Sixth D ({t('classes.levels.biology')})</SelectItem>
-                          <SelectItem value="Lower Sixth TI">Lower Sixth TI ({t('classes.levels.technical')})</SelectItem>
-                          <SelectItem value="Upper Sixth A">Upper Sixth A ({t('classes.levels.arts')})</SelectItem>
-                          <SelectItem value="Upper Sixth C">Upper Sixth C ({t('classes.levels.science')})</SelectItem>
-                          <SelectItem value="Upper Sixth D">Upper Sixth D ({t('classes.levels.biology')})</SelectItem>
-                          <SelectItem value="Upper Sixth TI">Upper Sixth TI ({t('classes.levels.technical')})</SelectItem>
-                        </>
-                      )}
+                      {educationSystem === 'francophone' && allCameroonLevels.francophone.map((level) => (
+                        <SelectItem key={level} value={level}>{level}</SelectItem>
+                      ))}
+                      {educationSystem === 'anglophone' && allCameroonLevels.anglophone.map((level) => (
+                        <SelectItem key={level} value={level}>{level}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -880,67 +1104,72 @@ const ClassesManagement = () => {
                     + {t('classes.form.add_subject')}
                   </Button>
                 </div>
-                {form.subjects.length === 0 && <p>{t('classes.form.no_subjects')}</p>}
+                {form.subjects.length === 0 && <p className="text-sm text-muted-foreground">{t('classes.form.no_subjects')}</p>}
                 {form.subjects.map((subject, index) => (
-                  <div key={index} className="grid grid-cols-3 gap-2 mb-2 items-center">
-                    <Select
-                      value={subject.subjectInfo}
-                      onValueChange={(value) => handleSubjectChange(index, "subjectInfo", value)}
-                      disabled={submitting}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('classes.form.subject')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableSubjectsForIndex(index).map((subj) => (
-                          <SelectItem key={subj._id} value={subj._id}>
-                            {subj.subjectName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Input
-                      type="number"
-                      placeholder={t('classes.form.coefficient')}
-                      min={0}
-                      value={subject.coefficient}
-                      onChange={(e) =>
-                        handleSubjectChange(
-                          index,
-                          "coefficient",
-                          e.target.value === "" ? "" : Number(e.target.value)
-                        )
-                      }
-                      disabled={submitting}
-                    />
-
-                    <Select
-                      value={subject.teacherInfo}
-                      onValueChange={(value) => handleSubjectChange(index, "teacherInfo", value)}
-                      disabled={submitting}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('classes.form.teacher')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {teachers.map((t) => (
-                          <SelectItem key={t._id} value={t._id}>
-                            {t.fullName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="self-center"
-                      onClick={() => removeSubject(index)}
-                      disabled={submitting}
-                    >
-                      {t('common.delete')}
-                    </Button>
+                  <div key={index} className="grid grid-cols-4 gap-2 mb-2 items-center">
+                    <div className="col-span-1">
+                      <Select
+                        value={subject.subjectInfo}
+                        onValueChange={(value) => handleSubjectChange(index, "subjectInfo", value)}
+                        disabled={submitting}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('classes.form.subject')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableSubjectsForIndex(index).map((subj) => (
+                            <SelectItem key={subj._id} value={subj._id}>
+                              {subj.subjectName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-1">
+                      <Input
+                        type="number"
+                        placeholder={t('classes.form.coefficient_placeholder')}
+                        min={0}
+                        value={subject.coefficient}
+                        onChange={(e) =>
+                          handleSubjectChange(
+                            index,
+                            "coefficient",
+                            e.target.value === "" ? "" : Number(e.target.value)
+                          )
+                        }
+                        disabled={submitting}
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <Select
+                        value={subject.teacherInfo ?? ""}
+                        onValueChange={(value) => handleSubjectChange(index, "teacherInfo", value)}
+                        disabled={submitting}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('classes.form.teacher')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {teachers.map((t) => (
+                            <SelectItem key={t._id} value={t._id}>
+                              {t.fullName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="self-center"
+                        onClick={() => removeSubject(index)}
+                        disabled={submitting}
+                      >
+                        {t('common.delete')}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -965,7 +1194,7 @@ const ClassesManagement = () => {
                   {submitting ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {editingId ? t('classes.updating') : t('classes.creating')}
+                      {editingId ? t('common.updating') : t('common.creating')}
                     </>
                   ) : (
                     editingId ? t('common.update') : t('common.create')
@@ -995,32 +1224,18 @@ const ClassesManagement = () => {
                     <SelectValue placeholder={t('classes.form.select_level')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="6e">6e ({t('classes.levels.sixth')})</SelectItem>
-                    <SelectItem value="5e">5e ({t('classes.levels.fifth')})</SelectItem>
-                    <SelectItem value="4e">4e ({t('classes.levels.fourth')})</SelectItem>
-                    <SelectItem value="3e">3e ({t('classes.levels.third')})</SelectItem>
-                    <SelectItem value="2nde">2nde ({t('classes.levels.second')})</SelectItem>
-                    <SelectItem value="1ère A">1ère A ({t('classes.levels.first_literary')})</SelectItem>
-                    <SelectItem value="1ère C">1ère C ({t('classes.levels.first_science')})</SelectItem>
-                    <SelectItem value="1ère D">1ère D ({t('classes.levels.first_experimental')})</SelectItem>
-                    <SelectItem value="1ère TI">1ère TI ({t('classes.levels.first_technical')})</SelectItem>
-                    <SelectItem value="Terminale A">Terminale A ({t('classes.levels.final_literary')})</SelectItem>
-                    <SelectItem value="Terminale C">Terminale C ({t('classes.levels.final_science')})</SelectItem>
-                    <SelectItem value="Terminale D">Terminale D ({t('classes.levels.final_experimental')})</SelectItem>
-                    <SelectItem value="Terminale TI">Terminale TI ({t('classes.levels.final_technical')})</SelectItem>
-                    <SelectItem value="Form 1">Form 1</SelectItem>
-                    <SelectItem value="Form 2">Form 2</SelectItem>
-                    <SelectItem value="Form 3">Form 3</SelectItem>
-                    <SelectItem value="Form 4">Form 4</SelectItem>
-                    <SelectItem value="Form 5">Form 5</SelectItem>
-                    <SelectItem value="Lower Sixth A">Lower Sixth A ({t('classes.levels.arts')})</SelectItem>
-                    <SelectItem value="Lower Sixth C">Lower Sixth C ({t('classes.levels.science')})</SelectItem>
-                    <SelectItem value="Lower Sixth D">Lower Sixth D ({t('classes.levels.biology')})</SelectItem>
-                    <SelectItem value="Lower Sixth TI">Lower Sixth TI ({t('classes.levels.technical')})</SelectItem>
-                    <SelectItem value="Upper Sixth A">Upper Sixth A ({t('classes.levels.arts')})</SelectItem>
-                    <SelectItem value="Upper Sixth C">Upper Sixth C ({t('classes.levels.science')})</SelectItem>
-                    <SelectItem value="Upper Sixth D">Upper Sixth D ({t('classes.levels.biology')})</SelectItem>
-                    <SelectItem value="Upper Sixth TI">Upper Sixth TI ({t('classes.levels.technical')})</SelectItem>
+                    <SelectGroup>
+                      <SelectLabel>{t('classes.system.francophone')}</SelectLabel>
+                      {allCameroonLevels.francophone.map((level) => (
+                        <SelectItem key={level} value={level}>{level}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>{t('classes.system.anglophone')}</SelectLabel>
+                      {allCameroonLevels.anglophone.map((level) => (
+                        <SelectItem key={level} value={level}>{level}</SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -1030,15 +1245,15 @@ const ClassesManagement = () => {
                 <div className="space-y-2">
                   {quickCreateForm.sections.map((section, index) => (
                     <div key={index} className="flex items-center space-x-2">
-                      <Input 
-                        value={`${quickCreateForm.level}${section}`} 
-                        readOnly 
+                      <Input
+                        value={`${quickCreateForm.level ? quickCreateForm.level + ' ' : ''}${section}`}
+                        readOnly
                         className="flex-1"
                       />
                       {quickCreateForm.sections.length > 1 && (
-                        <Button 
-                          type="button" 
-                          variant="outline" 
+                        <Button
+                          type="button"
+                          variant="outline"
                           size="sm"
                           onClick={() => removeSection(index)}
                           disabled={submitting}
@@ -1048,10 +1263,10 @@ const ClassesManagement = () => {
                       )}
                     </div>
                   ))}
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={addSection}
                     disabled={submitting || quickCreateForm.sections.length >= 10}
                   >
@@ -1066,6 +1281,7 @@ const ClassesManagement = () => {
                   <Input
                     value={quickCreateForm.year}
                     onChange={(e) => setQuickCreateForm(prev => ({ ...prev, year: e.target.value }))}
+                    pattern="\d{4}-\d{4}"
                     placeholder="2024-2025"
                     disabled={submitting}
                   />
@@ -1110,13 +1326,13 @@ const ClassesManagement = () => {
                 <div className="bg-muted p-3 rounded">
                   <p className="text-sm font-medium mb-2">{t('classes.form.subjects_to_add')}:</p>
                   <div className="text-xs space-y-1">
-                    {((['6e', '5e', '4e', '3e', '2nde', '1ère', 'Terminale'].includes(quickCreateForm.level) 
-                      ? defaultSubjects.francophone 
-                      : defaultSubjects.anglophone
-                    )).map((subject, index) => (
+                    {(educationSystemForLevel
+                      ? defaultSubjects[educationSystemForLevel]
+                      : []
+                    ).map((subject, index) => (
                       <div key={index} className="flex justify-between">
                         <span>{subject.name}</span>
-                        <span className="text-muted-foreground">{t('classes.coefficient')} {subject.coefficient}</span>
+                        <span className="text-muted-foreground">{t('classes.form.coefficient_short')} {subject.coefficient}</span>
                       </div>
                     ))}
                   </div>
@@ -1125,21 +1341,21 @@ const ClassesManagement = () => {
             </div>
 
             <div className="flex justify-end space-x-2 mt-6">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setShowQuickCreateModal(false)}
                 disabled={submitting}
               >
                 {t('common.cancel')}
               </Button>
-              <Button 
+              <Button
                 onClick={handleQuickCreate}
                 disabled={submitting || !quickCreateForm.level}
               >
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('classes.creating')}
+                    {t('common.creating')}
                   </>
                 ) : (
                   <>

@@ -60,12 +60,19 @@ const Header = () => {
       .slice(0, 2)
       .toUpperCase();
   };
-
+  const handleSchoolDashboard = () => {
+    navigate("/school-dashboard");
+  }
   return (
     <header className="w-full bg-white/90 backdrop-blur-md border-b border-skyblue/20 shadow-lg px-6 py-3 flex justify-between items-center transition-all duration-300 hover:shadow-xl">
       <div className="flex items-center gap-4">
         <h1 className="text-xl font-bold bg-gradient-to-r from-skyblue to-mustard bg-clip-text text-transparent">
-          {currentSchool?.name || t('header.noSchoolSelected')}
+          {/* {currentSchool?.name || t('header.noSchoolSelected')} */}
+          {currentSchool?.name ? (
+            <span style={{ cursor: "pointer" }} onClick={handleSchoolDashboard}>{currentSchool?.name}</span>
+          ) :(
+             <span style={{ cursor: "pointer" }} onClick={handleSchoolChange}>{t('header.noSchoolSelected')}</span>
+          )}
         </h1>
         <LanguageSwitcher className="hidden md:flex" />
       </div>

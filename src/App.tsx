@@ -73,10 +73,10 @@ const App = () => (
                 <Route path="/school-dashboard" element={<SchoolDashboardLayout />}>
                   <Route index element={<DirectorStatistics />} />
                   <Route path="academic" element={<Outlet />}>
-                    <Route path="classes" element={<ClassesManagement />} />
                     <Route path="subjects" element={<SubjectManagement />} />
-                    <Route path="results" element={<ResultManagement />} />
+                    <Route path="classes" element={<ClassesManagement />} />
                     <Route path="students" element={<DirectorStudents />} />
+                    <Route path="results" element={<ResultManagement />} />
                     <Route path="classes-list" element={<ClassesList />} />
                     <Route path="settings" element={<SettingManagement />} />
                     <Route path="payments" element={<FeesManagement />} />
