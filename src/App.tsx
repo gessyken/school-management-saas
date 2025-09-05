@@ -8,6 +8,13 @@ import { Sidebar } from "./components/layout/Sidebar";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
+import Subjects from "./pages/Subjects";
+import Classes from "./pages/Classes";
+import AcademicYears from "./pages/AcademicYears";
+import Reports from "./pages/Reports";
+import Finances from "./pages/Finances";
+import Administration from "./pages/Administration";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +65,62 @@ const AppRoutes = () => {
         element={
           <ProtectedLayout>
             <Students />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/subjects"
+        element={
+          <ProtectedLayout>
+            <Subjects />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/classes"
+        element={
+          <ProtectedLayout>
+            <Classes />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/academic-years"
+        element={
+          <ProtectedLayout>
+            <AcademicYears />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedLayout>
+            <Reports />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/finances"
+        element={
+          <ProtectedLayout>
+            <Finances />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/administration"
+        element={
+          <ProtectedLayout>
+            <Administration />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedLayout>
+            <Settings />
           </ProtectedLayout>
         }
       />
