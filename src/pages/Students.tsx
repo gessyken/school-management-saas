@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import StudentModal from '@/components/modals/StudentModal';
+import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal';
+import { useToast } from '@/hooks/use-toast';
 
 interface Student {
   id: string;
@@ -14,15 +17,39 @@ interface Student {
   average: number;
   status: 'active' | 'inactive' | 'graduated';
   enrollmentDate: string;
+  address?: string;
+  parentName?: string;
+  parentPhone?: string;
+  parentEmail?: string;
+  birthDate?: string;
   avatar?: string;
 }
 
 const Students: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClass, setSelectedClass] = useState('all');
+  const [studentModal, setStudentModal] = useState<{
+    isOpen: boolean;
+    mode: 'create' | 'edit' | 'view';
+    student?: Student | null;
+  }>({
+    isOpen: false,
+    mode: 'create',
+    student: null
+  });
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    student?: Student | null;
+  }>({
+    isOpen: false,
+    student: null
+  });
+  const [students, setStudents] = useState<Student[]>([]);
+  const { toast } = useToast();
 
-  // Données de démonstration
-  const students: Student[] = [
+  // Initialiser les données de démonstration
+  React.useEffect(() => {
+    setStudents([
     {
       id: '1',
       name: 'Marie Dubois',
@@ -63,7 +90,8 @@ const Students: React.FC = () => {
       status: 'active',
       enrollmentDate: '2020-09-01',
     },
-  ];
+    ]);
+  }, []);
 
   const classes = ['Toutes les classes', '6ème A', '6ème B', '5ème A', '5ème B', '4ème A', '3ème C'];
 
@@ -95,6 +123,53 @@ const Students: React.FC = () => {
     return matchesSearch && matchesClass;
   });
 
+  const handleOpenModal = (mode: 'create' | 'edit' | 'view', student?: Student) => {
+    setStudentModal({ isOpen: true, mode, student });
+  };
+
+  const handleCloseModal = () => {
+    setStudentModal({ isOpen: false, mode: 'create', student: null });
+  };
+
+  const handleSaveStudent = (studentData: Student) => {
+    if (studentModal.mode === 'create') {
+      const newStudent = {
+        ...studentData,
+        id: Date.now().toString(),
+        average: 0,
+      };
+      setStudents(prev => [...prev, newStudent]);
+      toast({
+        title: "Étudiant ajouté",
+        description: `${studentData.name} a été ajouté avec succès.`,
+      });
+    } else if (studentModal.mode === 'edit') {
+      setStudents(prev => prev.map(s => 
+        s.id === studentData.id ? { ...studentData } : s
+      ));
+      toast({
+        title: "Étudiant modifié",
+        description: `Les informations de ${studentData.name} ont été mises à jour.`,
+      });
+    }
+  };
+
+  const handleDeleteStudent = (student: Student) => {
+    setDeleteModal({ isOpen: true, student });
+  };
+
+  const confirmDeleteStudent = () => {
+    if (deleteModal.student) {
+      setStudents(prev => prev.filter(s => s.id !== deleteModal.student!.id));
+      toast({
+        title: "Étudiant supprimé",
+        description: `${deleteModal.student.name} a été supprimé.`,
+        variant: "destructive"
+      });
+    }
+    setDeleteModal({ isOpen: false, student: null });
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* En-tête */}
@@ -110,7 +185,10 @@ const Students: React.FC = () => {
             <Download className="w-4 h-4 mr-2" />
             Exporter
           </Button>
-          <Button className="bg-gradient-primary hover:bg-primary-hover">
+          <Button 
+            className="bg-gradient-primary hover:bg-primary-hover"
+            onClick={() => handleOpenModal('create')}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Ajouter un étudiant
           </Button>
@@ -206,13 +284,29 @@ const Students: React.FC = () => {
 
                 {/* Actions */}
                 <div className="flex items-center space-x-2 ml-6">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleOpenModal('view', student)}
+                    title="Voir les détails"
+                  >
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleOpenModal('edit', student)}
+                    title="Modifier"
+                  >
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDeleteStudent(student)}
+                    title="Supprimer"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
@@ -236,6 +330,24 @@ const Students: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modales */}
+      <StudentModal
+        isOpen={studentModal.isOpen}
+        onClose={handleCloseModal}
+        onSave={handleSaveStudent}
+        student={studentModal.student}
+        mode={studentModal.mode}
+      />
+
+      <DeleteConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, student: null })}
+        onConfirm={confirmDeleteStudent}
+        title="Supprimer l'étudiant"
+        message="Êtes-vous sûr de vouloir supprimer cet étudiant ?"
+        itemName={deleteModal.student?.name}
+      />
     </div>
   );
 };
