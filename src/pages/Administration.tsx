@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import MemberModal from '@/components/modals/MemberModal';
+import { useToast } from '@/hooks/use-toast';
 
 interface Member {
   id: string;
@@ -37,6 +39,8 @@ interface ActivityLog {
 
 const Administration: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('members');
+  const [memberModal, setMemberModal] = useState({ isOpen: false, mode: 'create' as 'create' | 'edit' | 'view', member: null as any });
+  const { toast } = useToast();
 
   const members: Member[] = [
     {
@@ -185,7 +189,10 @@ const Administration: React.FC = () => {
             <Mail className="w-4 h-4 mr-2" />
             Inviter un membre
           </Button>
-          <Button className="bg-gradient-primary hover:bg-primary-hover">
+          <Button 
+            className="bg-gradient-primary hover:bg-primary-hover"
+            onClick={() => setMemberModal({ isOpen: true, mode: 'create', member: null })}
+          >
             <UserPlus className="w-4 h-4 mr-2" />
             Ajouter un utilisateur
           </Button>
@@ -441,6 +448,18 @@ const Administration: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modales */}
+      <MemberModal
+        isOpen={memberModal.isOpen}
+        onClose={() => setMemberModal({ isOpen: false, mode: 'create', member: null })}
+        onSave={(member) => {
+          toast({ title: "Membre ajouté", description: `${member.name} a été ajouté avec succès.` });
+          setMemberModal({ isOpen: false, mode: 'create', member: null });
+        }}
+        member={memberModal.member}
+        mode={memberModal.mode}
+      />
     </div>
   );
 };

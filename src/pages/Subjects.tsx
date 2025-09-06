@@ -4,25 +4,48 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import SubjectModal from '@/components/modals/SubjectModal';
+import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal';
+import { useToast } from '@/hooks/use-toast';
 
 interface Subject {
-  id: string;
+  id?: string;
   name: string;
   code: string;
-  description: string;
+  description?: string;
   coefficient: number;
+  weeklyHours: number;
+  teacher: string;
+  level: string[];
+  isActive: boolean;
   color: string;
-  classCount: number;
-  teacherName: string;
-  status: 'active' | 'inactive';
-  totalHours: number;
 }
 
 const Subjects: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjectModal, setSubjectModal] = useState<{
+    isOpen: boolean;
+    mode: 'create' | 'edit' | 'view';
+    subject?: Subject | null;
+  }>({
+    isOpen: false,
+    mode: 'create',
+    subject: null
+  });
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    subject?: Subject | null;
+  }>({
+    isOpen: false,
+    subject: null
+  });
+  const { toast } = useToast();
 
-  const subjects: Subject[] = [
+  // Initialiser les données
+  React.useEffect(() => {
+    setSubjects([
     {
       id: '1',
       name: 'Mathématiques',
@@ -30,10 +53,10 @@ const Subjects: React.FC = () => {
       description: 'Algèbre, géométrie et analyse mathématique',
       coefficient: 4,
       color: '#A8D8EA',
-      classCount: 8,
-      teacherName: 'M. Dubois',
-      status: 'active',
-      totalHours: 120,
+      weeklyHours: 4,
+      teacher: 'M. Dubois',
+      level: ['6ème', '5ème', '4ème', '3ème'],
+      isActive: true,
     },
     {
       id: '2',
@@ -42,10 +65,10 @@ const Subjects: React.FC = () => {
       description: 'Langue française, littérature et expression écrite',
       coefficient: 4,
       color: '#D4AC0D',
-      classCount: 8,
-      teacherName: 'Mme Martin',
-      status: 'active',
-      totalHours: 100,
+      weeklyHours: 4,
+      teacher: 'Mme Martin',
+      level: ['6ème', '5ème', '4ème', '3ème'],
+      isActive: true,
     },
     {
       id: '3',
@@ -54,10 +77,10 @@ const Subjects: React.FC = () => {
       description: 'Histoire contemporaine et géographie mondiale',
       coefficient: 3,
       color: '#28A745',
-      classCount: 6,
-      teacherName: 'M. Bernard',
-      status: 'active',
-      totalHours: 80,
+      weeklyHours: 3,
+      teacher: 'M. Bernard',
+      level: ['6ème', '5ème', '4ème', '3ème'],
+      isActive: true,
     },
     {
       id: '4',
@@ -66,10 +89,10 @@ const Subjects: React.FC = () => {
       description: 'Physique et chimie expérimentale',
       coefficient: 3,
       color: '#FD7E14',
-      classCount: 5,
-      teacherName: 'Mme Petit',
-      status: 'active',
-      totalHours: 90,
+      weeklyHours: 3,
+      teacher: 'Mme Petit',
+      level: ['5ème', '4ème', '3ème'],
+      isActive: true,
     },
     {
       id: '5',
@@ -78,15 +101,62 @@ const Subjects: React.FC = () => {
       description: 'Langue vivante étrangère - Anglais',
       coefficient: 3,
       color: '#DC3545',
-      classCount: 7,
-      teacherName: 'M. Wilson',
-      status: 'inactive',
-      totalHours: 60,
+      weeklyHours: 3,
+      teacher: 'M. Wilson',
+      level: ['6ème', '5ème', '4ème', '3ème'],
+      isActive: false,
     },
-  ];
+    ]);
+  }, []);
 
-  const getStatusBadge = (status: string) => {
-    return status === 'active' ? (
+  const handleOpenModal = (mode: 'create' | 'edit' | 'view', subject?: Subject) => {
+    setSubjectModal({ isOpen: true, mode, subject });
+  };
+
+  const handleCloseModal = () => {
+    setSubjectModal({ isOpen: false, mode: 'create', subject: null });
+  };
+
+  const handleSaveSubject = (subjectData: Subject) => {
+    if (subjectModal.mode === 'create') {
+      const newSubject = {
+        ...subjectData,
+        id: Date.now().toString(),
+      };
+      setSubjects(prev => [...prev, newSubject]);
+      toast({
+        title: "Matière créée",
+        description: `La matière ${subjectData.name} a été créée avec succès.`,
+      });
+    } else if (subjectModal.mode === 'edit') {
+      setSubjects(prev => prev.map(s => 
+        s.id === subjectData.id ? { ...subjectData } : s
+      ));
+      toast({
+        title: "Matière modifiée",
+        description: `La matière ${subjectData.name} a été mise à jour.`,
+      });
+    }
+  };
+
+  const handleDeleteSubject = (subject: Subject) => {
+    setDeleteModal({ isOpen: true, subject });
+  };
+
+  const confirmDeleteSubject = () => {
+    if (deleteModal.subject) {
+      setSubjects(prev => prev.filter(s => s.id !== deleteModal.subject!.id));
+      toast({
+        title: "Matière supprimée",
+        description: `La matière ${deleteModal.subject.name} a été supprimée.`,
+        variant: "destructive"
+      });
+    }
+    setDeleteModal({ isOpen: false, subject: null });
+  };
+
+  const getStatusBadge = (isActive: boolean) => {
+    return isActive ? (
       <Badge variant="default" className="bg-success">Actif</Badge>
     ) : (
       <Badge variant="destructive">Inactif</Badge>
@@ -96,8 +166,10 @@ const Subjects: React.FC = () => {
   const filteredSubjects = subjects.filter((subject) => {
     const matchesSearch = subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          subject.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         subject.teacherName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || subject.status === filterStatus;
+                         subject.teacher.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || 
+                         (filterStatus === 'active' && subject.isActive) ||
+                         (filterStatus === 'inactive' && !subject.isActive);
     return matchesSearch && matchesStatus;
   });
 
@@ -115,7 +187,10 @@ const Subjects: React.FC = () => {
           <Button variant="outline" size="sm">
             Import CSV
           </Button>
-          <Button className="bg-gradient-primary hover:bg-primary-hover">
+          <Button 
+            className="bg-gradient-primary hover:bg-primary-hover"
+            onClick={() => handleOpenModal('create')}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Nouvelle matière
           </Button>
@@ -166,13 +241,26 @@ const Subjects: React.FC = () => {
                   {subject.code}
                 </div>
                 <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleOpenModal('view', subject)}
+                  >
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleOpenModal('edit', subject)}
+                  >
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDeleteSubject(subject)}
+                  >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
@@ -189,18 +277,18 @@ const Subjects: React.FC = () => {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center space-x-2">
                   <Users className="w-4 h-4 text-muted-foreground" />
-                  <span>{subject.classCount} classes</span>
+                  <span>{subject.level.length} niveaux</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span>{subject.totalHours}h/an</span>
+                  <span>{subject.weeklyHours}h/semaine</span>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Enseignant :</span>
-                  <span className="font-medium">{subject.teacherName}</span>
+                  <span className="font-medium">{subject.teacher}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Coefficient :</span>
@@ -208,7 +296,7 @@ const Subjects: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Statut :</span>
-                  {getStatusBadge(subject.status)}
+                  {getStatusBadge(subject.isActive)}
                 </div>
               </div>
             </CardContent>
@@ -230,6 +318,24 @@ const Subjects: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modales */}
+      <SubjectModal
+        isOpen={subjectModal.isOpen}
+        onClose={handleCloseModal}
+        onSave={handleSaveSubject}
+        subject={subjectModal.subject}
+        mode={subjectModal.mode}
+      />
+
+      <DeleteConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, subject: null })}
+        onConfirm={confirmDeleteSubject}
+        title="Supprimer la matière"
+        message="Êtes-vous sûr de vouloir supprimer cette matière ?"
+        itemName={deleteModal.subject?.name}
+      />
     </div>
   );
 };

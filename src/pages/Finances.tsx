@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from 'recharts';
+import FeeModal from '@/components/modals/FeeModal';
+import { useToast } from '@/hooks/use-toast';
 
 interface Payment {
   id: string;
@@ -20,6 +22,8 @@ interface Payment {
 const Finances: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterMonth, setFilterMonth] = useState('all');
+  const [feeModal, setFeeModal] = useState({ isOpen: false, mode: 'create' as 'create' | 'edit' | 'view', fee: null as any });
+  const { toast } = useToast();
 
   const payments: Payment[] = [
     {
@@ -141,9 +145,12 @@ const Finances: React.FC = () => {
           <Button variant="outline" size="sm">
             Exporter rapports
           </Button>
-          <Button className="bg-gradient-primary hover:bg-primary-hover">
+          <Button 
+            className="bg-gradient-primary hover:bg-primary-hover"
+            onClick={() => setFeeModal({ isOpen: true, mode: 'create', fee: null })}
+          >
             <Plus className="w-4 h-4 mr-2" />
-            Nouveau paiement
+            Nouveau frais
           </Button>
         </div>
       </div>
@@ -408,6 +415,18 @@ const Finances: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modales */}
+      <FeeModal
+        isOpen={feeModal.isOpen}
+        onClose={() => setFeeModal({ isOpen: false, mode: 'create', fee: null })}
+        onSave={(fee) => {
+          toast({ title: "Frais créés", description: `Les frais ${fee.name} ont été créés avec succès.` });
+          setFeeModal({ isOpen: false, mode: 'create', fee: null });
+        }}
+        fee={feeModal.fee}
+        mode={feeModal.mode}
+      />
     </div>
   );
 };
