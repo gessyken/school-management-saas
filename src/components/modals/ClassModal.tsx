@@ -10,14 +10,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Users, BookOpen } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { BookOpen, Users, GraduationCap, Globe } from 'lucide-react';
+import { EDUCATION_SYSTEMS, FRANCOPHONE_LEVELS, ANGLOPHONE_LEVELS, getAvailableSpecialties } from '@/constants/cameroonEducation';
+import { subjectSeedService } from '@/services/subjectSeedService';
 
 interface Class {
   id?: string;
   name: string;
   level: string;
   section: string;
+  specialty?: string;
+  educationSystem: 'francophone' | 'anglophone';
   capacity: number;
   currentStudents: number;
   teacher: string;
@@ -45,6 +51,8 @@ const ClassModal: React.FC<ClassModalProps> = ({
     name: '',
     level: '',
     section: '',
+    specialty: '',
+    educationSystem: 'francophone',
     capacity: 30,
     currentStudents: 0,
     teacher: '',
@@ -53,9 +61,50 @@ const ClassModal: React.FC<ClassModalProps> = ({
     subjects: [],
   });
 
-  const levels = ['6ème', '5ème', '4ème', '3ème'];
-  const sections = ['A', 'B', 'C', 'D'];
-  const availableSubjects = ['Mathématiques', 'Français', 'Histoire-Géographie', 'Sciences', 'Anglais', 'Espagnol', 'Arts plastiques', 'Musique', 'EPS'];
+  // Niveaux dynamiques selon le système éducatif
+  const getCurrentLevels = () => {
+    return formData.educationSystem === 'francophone' ? FRANCOPHONE_LEVELS : ANGLOPHONE_LEVELS;
+  };
+
+  // Sections dynamiques
+  const getSections = () => {
+    if (formData.educationSystem === 'francophone') {
+      return ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    } else {
+      return ['A', 'B', 'C', 'D'];
+    }
+  };
+
+  // Spécialités disponibles selon le niveau
+  const availableSpecialties = getAvailableSpecialties(formData.educationSystem, formData.level);
+  
+  // Matières suggérées depuis la base de données
+  const [suggestedSubjects, setSuggestedSubjects] = useState<any[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+
+  // Charger les matières suggérées quand le système, niveau ou spécialité change
+  useEffect(() => {
+    const loadSuggestedSubjects = async () => {
+      if (!formData.educationSystem || !formData.level) return;
+      
+      setLoadingSubjects(true);
+      try {
+        const subjects = await subjectSeedService.getSuggestedSubjects({
+          educationSystem: formData.educationSystem,
+          level: formData.level,
+          specialty: formData.specialty
+        });
+        setSuggestedSubjects(subjects);
+      } catch (error) {
+        console.error('Erreur lors du chargement des matières suggérées:', error);
+        setSuggestedSubjects([]);
+      } finally {
+        setLoadingSubjects(false);
+      }
+    };
+
+    loadSuggestedSubjects();
+  }, [formData.educationSystem, formData.level, formData.specialty]);
 
   useEffect(() => {
     if (classData) {
@@ -65,6 +114,8 @@ const ClassModal: React.FC<ClassModalProps> = ({
         name: '',
         level: '',
         section: '',
+        specialty: '',
+        educationSystem: 'francophone',
         capacity: 30,
         currentStudents: 0,
         teacher: '',
@@ -77,24 +128,69 @@ const ClassModal: React.FC<ClassModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    let className = `${formData.level} ${formData.section}`;
+    if (formData.specialty) {
+      className += ` (${formData.specialty})`;
+    }
+    
     const finalData = {
       ...formData,
-      name: `${formData.level} ${formData.section}`.trim(),
+      name: className.trim(),
+      // Ajouter les champs requis par le backend
+      year: '2024-2025', // Année académique par défaut
+      status: 'Open',
+      amountFee: 0
     };
     onSave(finalData);
-    onClose();
   };
 
   const handleChange = (field: keyof Class, value: string | number | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubjectToggle = (subject: string) => {
+  const handleSubjectToggle = (subject: any) => {
+    const subjectName = typeof subject === 'string' ? subject : subject.name;
     setFormData(prev => ({
       ...prev,
-      subjects: prev.subjects.includes(subject)
-        ? prev.subjects.filter(s => s !== subject)
-        : [...prev.subjects, subject]
+      subjects: prev.subjects.includes(subjectName)
+        ? prev.subjects.filter(s => s !== subjectName)
+        : [...prev.subjects, subjectName]
+    }));
+  };
+
+  const handleSystemChange = (system: 'francophone' | 'anglophone') => {
+    setFormData(prev => ({
+      ...prev,
+      educationSystem: system,
+      level: '',
+      section: '',
+      specialty: '',
+      subjects: []
+    }));
+  };
+
+  const handleLevelChange = (level: string) => {
+    setFormData(prev => ({
+      ...prev,
+      level,
+      specialty: '',
+      subjects: []
+    }));
+  };
+
+  const handleSpecialtyChange = (specialty: string) => {
+    setFormData(prev => ({
+      ...prev,
+      specialty,
+      subjects: []
+    }));
+  };
+
+  const addAllSuggestedSubjects = () => {
+    const subjectNames = suggestedSubjects.map(s => s.name);
+    setFormData(prev => ({
+      ...prev,
+      subjects: [...new Set([...prev.subjects, ...subjectNames])]
     }));
   };
 
@@ -146,8 +242,16 @@ const ClassModal: React.FC<ClassModalProps> = ({
                   Informations générales
                 </h4>
                 <div className="space-y-2 pl-6">
+                  <p><span className="font-medium">Système :</span> 
+                    <Badge variant={formData.educationSystem === 'francophone' ? 'default' : 'secondary'} className="ml-2">
+                      {formData.educationSystem === 'francophone' ? 'Francophone' : 'Anglophone'}
+                    </Badge>
+                  </p>
                   <p><span className="font-medium">Niveau :</span> {formData.level}</p>
                   <p><span className="font-medium">Section :</span> {formData.section}</p>
+                  {formData.specialty && (
+                    <p><span className="font-medium">Spécialité :</span> {formData.specialty}</p>
+                  )}
                   <p><span className="font-medium">Professeur principal :</span> {formData.teacher}</p>
                   <p><span className="font-medium">Salle :</span> {formData.room}</p>
                 </div>
@@ -209,9 +313,44 @@ const ClassModal: React.FC<ClassModalProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Système éducatif */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-foreground flex items-center">
+              <Globe className="w-4 h-4 mr-2" />
+              Système éducatif
+            </h4>
+            <div className="flex gap-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="educationSystem"
+                  value="francophone"
+                  checked={formData.educationSystem === 'francophone'}
+                  onChange={(e) => handleSystemChange(e.target.value as 'francophone')}
+                  className="rounded border-input"
+                />
+                <span>Système Francophone</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="educationSystem"
+                  value="anglophone"
+                  checked={formData.educationSystem === 'anglophone'}
+                  onChange={(e) => handleSystemChange(e.target.value as 'anglophone')}
+                  className="rounded border-input"
+                />
+                <span>Système Anglophone</span>
+              </label>
+            </div>
+          </div>
+
           {/* Informations de base */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-foreground">Informations de base</h4>
+            <h4 className="font-semibold text-foreground flex items-center">
+              <GraduationCap className="w-4 h-4 mr-2" />
+              Informations de base
+            </h4>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -219,19 +358,39 @@ const ClassModal: React.FC<ClassModalProps> = ({
                 <select
                   id="level"
                   value={formData.level}
-                  onChange={(e) => handleChange('level', e.target.value)}
+                  onChange={(e) => handleLevelChange(e.target.value)}
                   className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                 >
                   <option value="">Sélectionner un niveau</option>
-                  {levels.map((level) => (
-                    <option key={level} value={level}>
-                      {level}
+                  {getCurrentLevels().map((level) => (
+                    <option key={level.id} value={level.id}>
+                      {level.name} ({level.cycle})
                     </option>
                   ))}
                 </select>
               </div>
               
+              {availableSpecialties.length > 0 && (
+                <div>
+                  <Label htmlFor="specialty">Spécialité *</Label>
+                  <select
+                    id="specialty"
+                    value={formData.specialty}
+                    onChange={(e) => handleSpecialtyChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    required
+                  >
+                    <option value="">Sélectionner une spécialité</option>
+                    {availableSpecialties.map((specialty) => (
+                      <option key={specialty.id} value={specialty.id}>
+                        {specialty.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <Label htmlFor="section">Section *</Label>
                 <select
@@ -242,7 +401,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
                   required
                 >
                   <option value="">Sélectionner une section</option>
-                  {sections.map((section) => (
+                  {getSections().map((section) => (
                     <option key={section} value={section}>
                       {section}
                     </option>
@@ -314,20 +473,97 @@ const ClassModal: React.FC<ClassModalProps> = ({
 
           {/* Matières */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-foreground">Matières enseignées</h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {availableSubjects.map((subject) => (
-                <label key={subject} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.subjects.includes(subject)}
-                    onChange={() => handleSubjectToggle(subject)}
-                    className="rounded border-input"
-                  />
-                  <span className="text-sm">{subject}</span>
-                </label>
-              ))}
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-foreground flex items-center">
+                <BookOpen className="w-4 h-4 mr-2" />
+                Matières enseignées
+              </h4>
+              {suggestedSubjects.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addAllSuggestedSubjects}
+                >
+                  Ajouter matières suggérées
+                </Button>
+              )}
             </div>
+            
+            {loadingSubjects ? (
+              <div className="bg-muted/50 p-4 rounded-lg text-center">
+                <p className="text-sm text-muted-foreground">Chargement des matières...</p>
+              </div>
+            ) : suggestedSubjects.length > 0 ? (
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h5 className="text-sm font-medium mb-3 text-muted-foreground">
+                  Matières disponibles pour {formData.educationSystem === 'francophone' ? 'le système francophone' : 'le système anglophone'}
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {suggestedSubjects.map((subject) => (
+                    <label key={subject.id} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.subjects.includes(subject.name)}
+                        onChange={() => handleSubjectToggle(subject)}
+                        className="rounded border-input"
+                      />
+                      <span className="text-sm flex-1">{subject.name}</span>
+                      <Badge variant={subject.required ? 'default' : 'secondary'} className="text-xs">
+                        Coef. {subject.coefficient}
+                      </Badge>
+                      {subject.required && (
+                        <Badge variant="destructive" className="text-xs">
+                          Obligatoire
+                        </Badge>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-muted/50 p-4 rounded-lg text-center">
+                <p className="text-sm text-muted-foreground">
+                  Aucune matière disponible pour ce niveau.
+                  <br />
+                  <Button 
+                    type="button" 
+                    variant="link" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={async () => {
+                      try {
+                        await subjectSeedService.seedCameroonianSubjects();
+                        // Recharger les matières après création
+                        const subjects = await subjectSeedService.getSuggestedSubjects({
+                          educationSystem: formData.educationSystem,
+                          level: formData.level,
+                          specialty: formData.specialty
+                        });
+                        setSuggestedSubjects(subjects);
+                      } catch (error) {
+                        console.error('Erreur lors de la création des matières:', error);
+                      }
+                    }}
+                  >
+                    Créer les matières du système camerounais
+                  </Button>
+                </p>
+              </div>
+            )}
+            
+            {formData.subjects.length > 0 && (
+              <div className="mt-4">
+                <h5 className="text-sm font-medium mb-2">Matières sélectionnées ({formData.subjects.length})</h5>
+                <div className="flex flex-wrap gap-2">
+                  {formData.subjects.map((subject) => (
+                    <Badge key={subject} variant="outline" className="cursor-pointer" onClick={() => handleSubjectToggle(subject)}>
+                      {subject} ×
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>

@@ -242,12 +242,13 @@ const StudentModal: React.FC<StudentModalProps> = ({
               </div>
               
               <div>
-                <Label htmlFor="birthDate">Date de naissance</Label>
+                <Label htmlFor="birthDate">Date de naissance *</Label>
                 <Input
                   id="birthDate"
                   type="date"
                   value={formData.birthDate}
                   onChange={(e) => handleChange('birthDate', e.target.value)}
+                  required
                 />
               </div>
 

@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FileText, Download, Eye, Filter, Users, BarChart3, PieChart, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { reportsService } from '@/services/reportsService';
+import { useToast } from '@/hooks/use-toast';
 
 interface ReportTemplate {
   id: string;
@@ -19,90 +21,60 @@ interface ReportTemplate {
 const Reports: React.FC = () => {
   const [selectedTerm, setSelectedTerm] = useState('2');
   const [selectedClass, setSelectedClass] = useState('all');
+  const { toast } = useToast();
 
-  const reportTemplates: ReportTemplate[] = [
-    {
-      id: '1',
-      name: 'Bulletin individuel',
-      description: 'Bulletin de notes personnalisé pour chaque étudiant',
-      type: 'bulletin',
-      icon: FileText,
-      color: '#A8D8EA',
-      generated: 847,
-      lastGenerated: '2024-02-15',
-    },
-    {
-      id: '2',
-      name: 'Rapport de classe',
-      description: 'Synthèse des performances par classe',
-      type: 'class',
-      icon: Users,
-      color: '#D4AC0D',
-      generated: 42,
-      lastGenerated: '2024-02-10',
-    },
-    {
-      id: '3',
-      name: 'Statistiques école',
-      description: 'Vue d\'ensemble des performances de l\'établissement',
-      type: 'school',
-      icon: BarChart3,
-      color: '#28A745',
-      generated: 12,
-      lastGenerated: '2024-02-01',
-    },
-    {
-      id: '4',
-      name: 'Analyse comparative',
-      description: 'Comparaison des résultats par matière et niveau',
-      type: 'statistics',
-      icon: PieChart,
-      color: '#FD7E14',
-      generated: 8,
-      lastGenerated: '2024-01-28',
-    },
-  ];
+  // States for real data (initially empty)
+  const [reportTemplates, setReportTemplates] = useState<ReportTemplate[]>([]);
+  const [terms, setTerms] = useState<any[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [recentReports, setRecentReports] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const terms = [
-    { id: '1', name: '1er Trimestre' },
-    { id: '2', name: '2e Trimestre' },
-    { id: '3', name: '3e Trimestre' },
-  ];
+  // Resolve an icon value that may come as a component, a string key, or be undefined
+  const resolveIcon = (icon: any) => {
+    if (typeof icon === 'function') return icon; // already a component
+    if (typeof icon === 'object' && icon && typeof icon.type === 'function') return icon.type;
+    if (typeof icon === 'string') {
+      const key = icon.toLowerCase();
+      const map: Record<string, any> = {
+        file: FileText,
+        filetext: FileText,
+        document: FileText,
+        pie: PieChart,
+        piechart: PieChart,
+        chart: BarChart3,
+        barchart: BarChart3,
+        users: Users,
+      };
+      return map[key] || FileText;
+    }
+    return FileText;
+  };
 
-  const classes = [
-    { id: 'all', name: 'Toutes les classes' },
-    { id: '6a', name: '6ème A' },
-    { id: '6b', name: '6ème B' },
-    { id: '5a', name: '5ème A' },
-    { id: '5b', name: '5ème B' },
-  ];
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const [templatesRes, termsRes, classesRes, recentRes] = await Promise.all([
+          reportsService.getTemplates().catch(() => []),
+          reportsService.getTerms().catch(() => []),
+          reportsService.getClasses().catch(() => []),
+          reportsService.getRecentReports().catch(() => []),
+        ]);
 
-  const recentReports = [
-    {
-      id: '1',
-      name: 'Bulletins 6ème A - 2e Trimestre',
-      type: 'bulletin',
-      generated: '2024-02-15 14:30',
-      size: '2.4 MB',
-      studentCount: 28,
-    },
-    {
-      id: '2',
-      name: 'Rapport classe 5ème B',
-      type: 'class',
-      generated: '2024-02-14 09:15',
-      size: '856 KB',
-      studentCount: 27,
-    },
-    {
-      id: '3',
-      name: 'Statistiques établissement - Février',
-      type: 'school',
-      generated: '2024-02-10 16:45',
-      size: '1.2 MB',
-      studentCount: 1247,
-    },
-  ];
+        setReportTemplates(Array.isArray(templatesRes) ? templatesRes : []);
+        setTerms(Array.isArray(termsRes) ? termsRes : []);
+        setClasses(Array.isArray(classesRes) ? classesRes : []);
+        setRecentReports(Array.isArray(recentRes) ? recentRes : []);
+      } catch (e) {
+        console.error(e);
+        toast({ title: 'Données de rapports indisponibles', description: 'Les données seront affichées dès qu\'elles seront disponibles.', variant: 'destructive' });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [toast]);
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -178,7 +150,7 @@ const Reports: React.FC = () => {
                 onChange={(e) => setSelectedClass(e.target.value)}
                 className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                {classes.map((cls) => (
+                {Array.isArray(classes) && classes.map((cls) => (
                   <option key={cls.id} value={cls.id}>
                     {cls.name}
                   </option>
@@ -200,8 +172,8 @@ const Reports: React.FC = () => {
       <div>
         <h2 className="text-xl font-semibold mb-4">Types de rapports</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {reportTemplates.map((template) => {
-            const Icon = template.icon;
+          {(Array.isArray(reportTemplates) ? reportTemplates : []).map((template) => {
+            const Icon = resolveIcon(template.icon);
             return (
               <Card key={template.id} className="shadow-card hover:shadow-elevated transition-all duration-200 group">
                 <CardContent className="p-6">

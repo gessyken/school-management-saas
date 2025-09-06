@@ -17,7 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 
 const navigation = [
   { name: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Étudiants', href: '/students', icon: Users },
+  { name: 'Élèves', href: '/students', icon: Users },
   { name: 'Classes', href: '/classes', icon: BookOpen },
   { name: 'Matières', href: '/subjects', icon: GraduationCap },
   { name: 'Années académiques', href: '/academic-years', icon: Calendar },

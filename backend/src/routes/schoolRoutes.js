@@ -1,0 +1,47 @@
+import express from 'express';
+import {
+  registerSchool,
+  getAllSchools,
+  getUserSchools,
+  updateSchoolAccess,
+  switchSchool,
+  requestJoinSchool,
+  getJoinRequests,
+  approveJoinRequest,
+  rejectJoinRequest,
+  getSchoolById,
+  updateSchool,
+  getSchoolMembers,
+  updateMemberRoles,
+} from '../controllers/schoolController.js';
+import { getUserRolesForSchool, protect } from '../middleware/auth.middleware.js';
+
+const router = express.Router();
+
+// Create a new school (logged-in user becomes admin)
+router.post('/register', protect, registerSchool);
+
+// Create a new school (alternative endpoint)
+router.post('/', protect, registerSchool);
+
+// Get list of all schools (admin panel) - moved after POST to avoid conflict
+// router.get('/', protect, getAllSchools);
+
+// Get current user's schools only
+router.get('/mine', protect, getUserSchools);
+
+// Block or unblock a school by ID
+router.put('/:id/access', protect, updateSchoolAccess);
+
+// Switch current active school for logged-in user
+router.post('/switch', protect, switchSchool);
+router.post("/:schoolId/request-join", protect, requestJoinSchool);
+router.get("/:schoolId/join-requests", protect, getJoinRequests);
+router.post("/:schoolId/join-requests/:userId/approve", protect,getUserRolesForSchool, approveJoinRequest);
+router.delete("/:schoolId/join-requests/:userId/reject", protect, rejectJoinRequest);
+router.get("/:schoolId", protect, getSchoolById);
+router.put("/:schoolId", protect,getUserRolesForSchool, updateSchool);
+router.get("/:schoolId/members", protect, getSchoolMembers);
+router.patch("/:schoolId/members/:memberId/roles", protect,getUserRolesForSchool, updateMemberRoles);
+
+export default router;

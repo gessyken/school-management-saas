@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Search, Users, BookOpen, TrendingUp, Calendar, Eye, Edit, Settings, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,17 +7,20 @@ import { Badge } from '@/components/ui/badge';
 import ClassModal from '@/components/modals/ClassModal';
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal';
 import { useToast } from '@/hooks/use-toast';
+import { classesService } from '@/services/classesService';
+import { mapBackendToFrontend, mapFrontendToBackend } from '@/utils/classMapping';
 
 interface ClassRoom {
   id: string;
   name: string;
   level: string;
   section: string;
+  specialty?: string;
+  educationSystem: 'francophone' | 'anglophone';
   capacity: number;
   currentStudents: number;
   teacher: string;
   room: string;
-  description?: string;
   subjects: string[];
   averageGrade?: number;
   attendanceRate?: number;
@@ -28,6 +31,7 @@ const Classes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('all');
   const [classes, setClasses] = useState<ClassRoom[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [classModal, setClassModal] = useState<{
     isOpen: boolean;
     mode: 'create' | 'edit' | 'view';
@@ -46,83 +50,33 @@ const Classes: React.FC = () => {
   });
   const { toast } = useToast();
 
-  // Initialiser les données
-  React.useEffect(() => {
-    setClasses([
-    {
-      id: '1',
-      name: '6ème A',
-      level: '6ème',
-      section: 'A',
-      currentStudents: 28,
-      capacity: 30,
-      teacher: 'Mme Dubois',
-      subjects: ['Mathématiques', 'Français', 'Histoire-Géo', 'Sciences', 'Anglais'],
-      averageGrade: 14.2,
-      attendanceRate: 94,
-      room: 'Salle 201',
-      schedule: 'Lun-Ven 8h-16h',
-    },
-    {
-      id: '2',
-      name: '6ème B',
-      level: '6ème',
-      section: 'B',
-      currentStudents: 25,
-      capacity: 30,
-      teacher: 'M. Martin',
-      subjects: ['Mathématiques', 'Français', 'Histoire-Géo', 'Sciences', 'Anglais'],
-      averageGrade: 13.8,
-      attendanceRate: 91,
-      room: 'Salle 202',
-      schedule: 'Lun-Ven 8h-16h',
-    },
-    {
-      id: '3',
-      name: '5ème A',
-      level: '5ème',
-      section: 'A',
-      currentStudents: 30,
-      capacity: 32,
-      teacher: 'Mme Bernard',
-      subjects: ['Mathématiques', 'Français', 'Histoire-Géo', 'Sciences Physiques', 'Anglais', 'Espagnol'],
-      averageGrade: 15.1,
-      attendanceRate: 96,
-      room: 'Salle 301',
-      schedule: 'Lun-Ven 8h-17h',
-    },
-    {
-      id: '4',
-      name: '5ème B',
-      level: '5ème',
-      section: 'B',
-      currentStudents: 27,
-      capacity: 32,
-      teacher: 'M. Petit',
-      subjects: ['Mathématiques', 'Français', 'Histoire-Géo', 'Sciences Physiques', 'Anglais', 'Allemand'],
-      averageGrade: 14.6,
-      attendanceRate: 93,
-      room: 'Salle 302',
-      schedule: 'Lun-Ven 8h-17h',
-    },
-    {
-      id: '5',
-      name: '4ème A',
-      level: '4ème',
-      section: 'A',
-      currentStudents: 24,
-      capacity: 28,
-      teacher: 'Mme Moreau',
-      subjects: ['Mathématiques', 'Français', 'Histoire-Géo', 'Sciences Physiques', 'Anglais', 'Latin'],
-      averageGrade: 13.9,
-      attendanceRate: 89,
-      room: 'Salle 401',
-      schedule: 'Lun-Ven 8h-17h',
-    },
-    ]);
-  }, []);
+  useEffect(() => {
+    const loadClasses = async () => {
+      try {
+        setIsLoading(true);
+        const backendData = await classesService.getClasses();
+        
+        // Mapper les données backend vers l'interface ClassRoom
+        const mappedClasses = (backendData || []).map(mapBackendToFrontend);
+        
+        setClasses(mappedClasses);
+      } catch (e) {
+        console.error(e);
+        toast({ title: 'Données classes indisponibles', description: 'Les données seront affichées dès qu\'elles seront disponibles.', variant: 'destructive' });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadClasses();
+  }, [toast]);
 
-  const levels = ['Tous les niveaux', '6ème', '5ème', '4ème', '3ème'];
+  const levels = [
+    'Tous les niveaux',
+    // Francophone
+    '6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Terminale',
+    // Anglophone
+    'Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth', 'Upper Sixth'
+  ];
 
   const handleOpenModal = (mode: 'create' | 'edit' | 'view', classData?: ClassRoom) => {
     setClassModal({ isOpen: true, mode, classData });
@@ -132,26 +86,45 @@ const Classes: React.FC = () => {
     setClassModal({ isOpen: false, mode: 'create', classData: null });
   };
 
-  const handleSaveClass = (classData: any) => {
-    if (classModal.mode === 'create') {
-      const newClass = {
-        ...classData,
-        id: Date.now().toString(),
-        averageGrade: 0,
-        attendanceRate: 0,
-      };
-      setClasses(prev => [...prev, newClass]);
+  const handleSaveClass = async (classData: any) => {
+    try {
+      // Mapper les données frontend vers le format backend
+      const backendData = mapFrontendToBackend(classData);
+
+      if (classModal.mode === 'create') {
+        const response = await classesService.createClass(backendData);
+        const newClass = response.class;
+        
+        // Mapper la réponse backend vers ClassRoom
+        const mappedClass = mapBackendToFrontend(newClass);
+        
+        setClasses(prev => [...prev, mappedClass]);
+        toast({
+          title: "Classe créée",
+          description: `La classe ${classData.name} a été créée avec succès.`,
+        });
+      } else if (classModal.mode === 'edit') {
+        const response = await classesService.updateClass(classData.id, backendData);
+        const updatedClass = response.class;
+        
+        // Mapper la réponse backend vers ClassRoom
+        const mappedClass = mapBackendToFrontend(updatedClass);
+        
+        setClasses(prev => prev.map(c => 
+          c.id === classData.id ? mappedClass : c
+        ));
+        toast({
+          title: "Classe modifiée",
+          description: `La classe ${classData.name} a été mise à jour.`,
+        });
+      }
+      handleCloseModal();
+    } catch (error) {
+      console.error('Erreur sauvegarde classe:', error);
       toast({
-        title: "Classe créée",
-        description: `La classe ${classData.name} a été créée avec succès.`,
-      });
-    } else if (classModal.mode === 'edit') {
-      setClasses(prev => prev.map(c => 
-        c.id === classData.id ? { ...classData } : c
-      ));
-      toast({
-        title: "Classe modifiée",
-        description: `La classe ${classData.name} a été mise à jour.`,
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la sauvegarde.",
+        variant: "destructive"
       });
     }
   };
@@ -160,14 +133,23 @@ const Classes: React.FC = () => {
     setDeleteModal({ isOpen: true, classData });
   };
 
-  const confirmDeleteClass = () => {
+  const confirmDeleteClass = async () => {
     if (deleteModal.classData) {
-      setClasses(prev => prev.filter(c => c.id !== deleteModal.classData!.id));
-      toast({
-        title: "Classe supprimée",
-        description: `La classe ${deleteModal.classData.name} a été supprimée.`,
-        variant: "destructive"
-      });
+      try {
+        await classesService.deleteClass(deleteModal.classData.id);
+        setClasses(prev => prev.filter(c => c.id !== deleteModal.classData!.id));
+        toast({
+          title: "Classe supprimée",
+          description: `La classe ${deleteModal.classData.name} a été supprimée.`,
+          variant: "destructive"
+        });
+      } catch (error) {
+        toast({
+          title: "Erreur",
+          description: "Une erreur est survenue lors de la suppression.",
+          variant: "destructive"
+        });
+      }
     }
     setDeleteModal({ isOpen: false, classData: null });
   };
@@ -201,7 +183,7 @@ const Classes: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Gestion des classes</h1>
           <p className="text-muted-foreground mt-2">
-            {classes.length} classes • {classes.reduce((acc, c) => acc + c.currentStudents, 0)} étudiants au total
+            {classes.length} classes • {classes.reduce((acc, c) => acc + c.currentStudents, 0)} élèves au total
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -237,7 +219,7 @@ const Classes: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Étudiants</p>
+                <p className="text-sm text-muted-foreground">Élèves</p>
                 <p className="text-2xl font-bold text-secondary">
                   {classes.reduce((acc, c) => acc + c.currentStudents, 0)}
                 </p>
@@ -312,100 +294,100 @@ const Classes: React.FC = () => {
 
       {/* Grille des classes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredClasses.map((classroom) => (
-          <Card key={classroom.id} className="shadow-card hover:shadow-elevated transition-all duration-200">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
+        {filteredClasses.map((classRoom) => (
+          <Card key={classRoom.id} className="shadow-card hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between mb-4">
                 <div>
-                  <CardTitle className="text-xl">{classroom.name}</CardTitle>
-                  <CardDescription>
-                    Professeur principal : {classroom.teacher}
-                  </CardDescription>
-                </div>
-                {getCapacityBadge(classroom.currentStudents, classroom.capacity)}
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              {/* Statistiques */}
-              <div className="grid grid-cols-3 gap-4 py-3 border-y border-border">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{classroom.currentStudents}</p>
-                  <p className="text-xs text-muted-foreground">Étudiants</p>
-                </div>
-                <div className="text-center">
-                  <p className={`text-2xl font-bold ${getGradeColor(classroom.averageGrade || 0)}`}>
-                    {(classroom.averageGrade || 0).toFixed(1)}
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-xl font-semibold text-foreground">
+                      {classRoom.name}
+                    </h3>
+                    <Badge variant={classRoom.educationSystem === 'francophone' ? 'default' : 'secondary'} className="text-xs">
+                      {classRoom.educationSystem === 'francophone' ? 'FR' : 'EN'}
+                    </Badge>
+                    {classRoom.specialty && (
+                      <Badge variant="outline" className="text-xs">
+                        {classRoom.specialty}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-muted-foreground">
+                    {classRoom.teacher} • Salle {classRoom.room}
                   </p>
-                  <p className="text-xs text-muted-foreground">Moyenne</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-success">{classroom.attendanceRate || 0}%</p>
-                  <p className="text-xs text-muted-foreground">Présence</p>
-                </div>
-              </div>
-
-              {/* Informations */}
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Salle :</span>
-                  <span className="font-medium">{classroom.room}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Horaires :</span>
-                  <span className="font-medium">{classroom.schedule || 'Non défini'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Capacité :</span>
-                  <span className="font-medium">{classroom.currentStudents}/{classroom.capacity}</span>
-                </div>
-              </div>
-
-              {/* Matières */}
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Matières enseignées :</p>
-                <div className="flex flex-wrap gap-1">
-                  {classroom.subjects.slice(0, 3).map((subject) => (
-                    <Badge key={subject} variant="outline" className="text-xs">
-                      {subject}
-                    </Badge>
-                  ))}
-                  {classroom.subjects.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{classroom.subjects.length - 3}
-                    </Badge>
-                  )}
+                <div className="flex space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleOpenModal('view', classRoom)}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleOpenModal('edit', classRoom)}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteClass(classRoom)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex space-x-2 pt-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => handleOpenModal('view', classroom)}
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  Voir
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => handleOpenModal('edit', classroom)}
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Modifier
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDeleteClass(classroom)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="text-center p-3 bg-primary/10 rounded-lg">
+                  <p className="text-2xl font-bold text-primary">
+                    {classRoom.currentStudents}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Élèves</p>
+                </div>
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <p className="text-2xl font-bold">
+                    {classRoom.capacity}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Capacité</p>
+                </div>
+              </div>
+
+              {classRoom.averageGrade && (
+                <div className="flex items-center justify-between text-sm mb-3">
+                  <span className="text-muted-foreground">Moyenne générale</span>
+                  <span className={`font-semibold ${getGradeColor(classRoom.averageGrade)}`}>
+                    {classRoom.averageGrade.toFixed(1)}/20
+                  </span>
+                </div>
+              )}
+
+              {classRoom.attendanceRate && (
+                <div className="flex items-center justify-between text-sm mb-3">
+                  <span className="text-muted-foreground">Taux de présence</span>
+                  <span className="font-semibold text-success">
+                    {classRoom.attendanceRate}%
+                  </span>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-1 mt-3">
+                {classRoom.subjects.slice(0, 3).map((subject) => (
+                  <span 
+                    key={subject}
+                    className="px-2 py-1 bg-secondary/20 text-secondary text-xs rounded"
+                  >
+                    {subject}
+                  </span>
+                ))}
+                {classRoom.subjects.length > 3 && (
+                  <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded">
+                    +{classRoom.subjects.length - 3}
+                  </span>
+                )}
               </div>
             </CardContent>
           </Card>

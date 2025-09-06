@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Plus, Filter, Download, Eye, Edit, Trash2, Mail, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import StudentModal from '@/components/modals/StudentModal';
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal';
 import { useToast } from '@/hooks/use-toast';
+import { studentsService } from '@/services/studentsService';
 
 interface Student {
   id: string;
@@ -45,55 +46,25 @@ const Students: React.FC = () => {
     student: null
   });
   const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
+  const classes = ['Toutes les classes'];
 
-  // Initialiser les données de démonstration
-  React.useEffect(() => {
-    setStudents([
-    {
-      id: '1',
-      name: 'Marie Dubois',
-      email: 'marie.dubois@email.fr',
-      phone: '06 12 34 56 78',
-      class: '6ème A',
-      average: 15.2,
-      status: 'active',
-      enrollmentDate: '2023-09-01',
-    },
-    {
-      id: '2',
-      name: 'Thomas Martin',
-      email: 'thomas.martin@email.fr',
-      phone: '06 87 65 43 21',
-      class: '5ème B',
-      average: 13.8,
-      status: 'active',
-      enrollmentDate: '2022-09-01',
-    },
-    {
-      id: '3',
-      name: 'Sophie Bernard',
-      email: 'sophie.bernard@email.fr',
-      phone: '06 55 44 33 22',
-      class: '4ème A',
-      average: 16.5,
-      status: 'active',
-      enrollmentDate: '2021-09-01',
-    },
-    {
-      id: '4',
-      name: 'Lucas Petit',
-      email: 'lucas.petit@email.fr',
-      phone: '06 99 88 77 66',
-      class: '3ème C',
-      average: 11.2,
-      status: 'active',
-      enrollmentDate: '2020-09-01',
-    },
-    ]);
-  }, []);
-
-  const classes = ['Toutes les classes', '6ème A', '6ème B', '5ème A', '5ème B', '4ème A', '3ème C'];
+  useEffect(() => {
+    const loadStudents = async () => {
+      try {
+        setIsLoading(true);
+        const data = await studentsService.getStudents();
+        setStudents(data || []);
+      } catch (e) {
+        console.error(e);
+        toast({ title: 'Données élèves indisponibles', description: 'Les données seront affichées dès qu\'elles seront disponibles.', variant: 'destructive' });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadStudents();
+  }, [toast]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -131,25 +102,35 @@ const Students: React.FC = () => {
     setStudentModal({ isOpen: false, mode: 'create', student: null });
   };
 
-  const handleSaveStudent = (studentData: Student) => {
-    if (studentModal.mode === 'create') {
-      const newStudent = {
-        ...studentData,
-        id: Date.now().toString(),
-        average: 0,
-      };
-      setStudents(prev => [...prev, newStudent]);
+  const handleSaveStudent = async (studentData: Student) => {
+    try {
+      if (studentModal.mode === 'create') {
+        const newStudent = await studentsService.createStudent(studentData);
+        setStudents(prev => [...prev, newStudent]);
+        toast({
+          title: "Élève ajouté",
+          description: `${studentData.name} a été ajouté avec succès.`,
+        });
+      } else if (studentModal.mode === 'edit') {
+        const updatedStudent = await studentsService.updateStudent(studentData.id!, studentData);
+        setStudents(prev => prev.map(s => 
+          s.id === studentData.id ? updatedStudent : s
+        ));
+        toast({
+          title: "Élève modifié",
+          description: `Les informations de ${studentData.name} ont été mises à jour.`,
+        });
+      }
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || 'Une erreur est survenue lors de la sauvegarde.';
+      const missing = error?.response?.data?.missingFields;
+      const details = Array.isArray(missing) && missing.length
+        ? `Champs requis manquants: ${missing.join(', ')}`
+        : undefined;
       toast({
-        title: "Étudiant ajouté",
-        description: `${studentData.name} a été ajouté avec succès.`,
-      });
-    } else if (studentModal.mode === 'edit') {
-      setStudents(prev => prev.map(s => 
-        s.id === studentData.id ? { ...studentData } : s
-      ));
-      toast({
-        title: "Étudiant modifié",
-        description: `Les informations de ${studentData.name} ont été mises à jour.`,
+        title: "Erreur",
+        description: details ? `${msg}. ${details}` : msg,
+        variant: "destructive"
       });
     }
   };
@@ -158,14 +139,23 @@ const Students: React.FC = () => {
     setDeleteModal({ isOpen: true, student });
   };
 
-  const confirmDeleteStudent = () => {
+  const confirmDeleteStudent = async () => {
     if (deleteModal.student) {
-      setStudents(prev => prev.filter(s => s.id !== deleteModal.student!.id));
-      toast({
-        title: "Étudiant supprimé",
-        description: `${deleteModal.student.name} a été supprimé.`,
-        variant: "destructive"
-      });
+      try {
+        await studentsService.deleteStudent(deleteModal.student.id);
+        setStudents(prev => prev.filter(s => s.id !== deleteModal.student!.id));
+        toast({
+          title: "Élève supprimé",
+          description: `${deleteModal.student.name} a été supprimé.`,
+          variant: "destructive"
+        });
+      } catch (error) {
+        toast({
+          title: "Erreur",
+          description: "Une erreur est survenue lors de la suppression.",
+          variant: "destructive"
+        });
+      }
     }
     setDeleteModal({ isOpen: false, student: null });
   };
@@ -175,9 +165,9 @@ const Students: React.FC = () => {
       {/* En-tête */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Gestion des étudiants</h1>
+          <h1 className="text-3xl font-bold text-foreground">Gestion des élèves</h1>
           <p className="text-muted-foreground mt-2">
-            {students.length} étudiants inscrits • {filteredStudents.length} affichés
+            {students.length} élèves inscrits • {filteredStudents.length} affichés
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -190,7 +180,7 @@ const Students: React.FC = () => {
             onClick={() => handleOpenModal('create')}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Ajouter un étudiant
+            Ajouter un élève
           </Button>
         </div>
       </div>
@@ -203,7 +193,7 @@ const Students: React.FC = () => {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher un étudiant..."
+                placeholder="Rechercher un élève..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -232,7 +222,7 @@ const Students: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Liste des étudiants */}
+      {/* Liste des élèves */}
       <div className="grid gap-4">
         {filteredStudents.map((student) => (
           <Card key={student.id} className="shadow-card hover:shadow-elevated transition-all duration-200">
@@ -323,9 +313,9 @@ const Students: React.FC = () => {
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <Search className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Aucun étudiant trouvé</h3>
+            <h3 className="text-lg font-semibold mb-2">Aucun élève trouvé</h3>
             <p className="text-muted-foreground">
-              Essayez de modifier vos critères de recherche ou ajoutez un nouvel étudiant.
+              Essayez de modifier vos critères de recherche ou ajoutez un nouvel élève.
             </p>
           </CardContent>
         </Card>
@@ -344,8 +334,8 @@ const Students: React.FC = () => {
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, student: null })}
         onConfirm={confirmDeleteStudent}
-        title="Supprimer l'étudiant"
-        message="Êtes-vous sûr de vouloir supprimer cet étudiant ?"
+        title="Supprimer l'élève"
+        message="Êtes-vous sûr de vouloir supprimer cet élève ?"
         itemName={deleteModal.student?.name}
       />
     </div>

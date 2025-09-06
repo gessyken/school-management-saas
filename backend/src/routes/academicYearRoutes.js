@@ -1,0 +1,35 @@
+import express from 'express';
+import AcademicYearController from '../controllers/AcademicYearController.js';
+import { protect, getUserRolesForSchool } from '../middleware/auth.middleware.js';
+
+const router = express.Router();
+router.use(protect);
+router.use(getUserRolesForSchool);
+
+// Academic year routes
+router.post('/assign', AcademicYearController.assignStudentsToClass);
+router.get('/', AcademicYearController.StudentsAcademic);
+router.get('/:id', AcademicYearController.getAcademicYearById);
+// router.put('/:id', authenticate, authorizeRoles(['admin']), AcademicYearController.updateAcademicYear);
+// router.delete('/:id', authenticate, authorizeRoles(['admin']), AcademicYearController.deleteAcademicYear);
+
+// Mark management routes
+router.put('/:id/marks', AcademicYearController.updateStudentMarks);
+router.put('/:id/calculate-averages', AcademicYearController.calculateAverages);
+
+// average and rank management
+router.put('/subject-rank', AcademicYearController.calculateSubjectRank);
+router.put('/sequence-rank', AcademicYearController.calculateSequenceRank);
+router.put('/term-rank', AcademicYearController.calculateTermRank);
+router.put('/academic-rank', AcademicYearController.calculateRanksForClassYear);
+router.put('/promo-student', AcademicYearController.promoteStudents);
+
+
+// Fee MAnagement
+router.get('/:academicYearId/fees', AcademicYearController.getFees);
+router.post('/:academicYearId/fees', AcademicYearController.addFee);
+router.put('/:academicYearId/fees/:billID', AcademicYearController.updateFee);
+router.delete('/:academicYearId/fees/:billID', AcademicYearController.deleteFee);
+
+
+export default router;

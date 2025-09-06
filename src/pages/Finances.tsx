@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DollarSign, Plus, TrendingUp, TrendingDown, CreditCard, AlertCircle, Eye, Edit, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from 'recharts';
 import FeeModal from '@/components/modals/FeeModal';
+import { financesService } from '@/services/financesService';
 import { useToast } from '@/hooks/use-toast';
 
 interface Payment {
@@ -25,69 +26,37 @@ const Finances: React.FC = () => {
   const [feeModal, setFeeModal] = useState({ isOpen: false, mode: 'create' as 'create' | 'edit' | 'view', fee: null as any });
   const { toast } = useToast();
 
-  const payments: Payment[] = [
-    {
-      id: '1',
-      studentName: 'Marie Dubois',
-      class: '6ème A',
-      feeType: 'Frais de scolarité',
-      amount: 850,
-      dueDate: '2024-02-15',
-      paidDate: '2024-02-10',
-      status: 'paid',
-    },
-    {
-      id: '2',
-      studentName: 'Thomas Martin',
-      class: '5ème B',
-      feeType: 'Frais de scolarité',
-      amount: 850,
-      dueDate: '2024-02-15',
-      status: 'pending',
-    },
-    {
-      id: '3',
-      studentName: 'Sophie Bernard',
-      class: '4ème A',
-      feeType: 'Frais d\'inscription',
-      amount: 200,
-      dueDate: '2024-01-30',
-      status: 'overdue',
-    },
-    {
-      id: '4',
-      studentName: 'Lucas Petit',
-      class: '3ème C',
-      feeType: 'Frais de scolarité',
-      amount: 850,
-      dueDate: '2024-02-15',
-      paidDate: '2024-02-12',
-      paidAmount: 500,
-      status: 'partial',
-    },
-  ];
+  // States for real data (initially empty)
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [financialOverview, setFinancialOverview] = useState<any[]>([]);
+  const [paymentDistribution, setPaymentDistribution] = useState<any[]>([]);
+  const [feeTypes, setFeeTypes] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const financialOverview = [
-    { name: 'Jan', revenus: 98500, objectif: 100000 },
-    { name: 'Fev', revenus: 87200, objectif: 100000 },
-    { name: 'Mar', revenus: 105300, objectif: 100000 },
-    { name: 'Avr', revenus: 92800, objectif: 100000 },
-    { name: 'Mai', revenus: 110200, objectif: 100000 },
-    { name: 'Jun', revenus: 95600, objectif: 100000 },
-  ];
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const [overviewRes, distributionRes, feeTypesRes, paymentsRes] = await Promise.all([
+          financesService.getOverview().catch(() => []),
+          financesService.getPaymentDistribution().catch(() => []),
+          financesService.getFeeTypes().catch(() => []),
+          financesService.getPayments().catch(() => []),
+        ]);
 
-  const paymentDistribution = [
-    { name: 'Payé', value: 75, color: '#28A745', amount: 956750 },
-    { name: 'En attente', value: 20, color: '#FD7E14', amount: 255400 },
-    { name: 'En retard', value: 5, color: '#DC3545', amount: 63850 },
-  ];
-
-  const feeTypes = [
-    { name: 'Frais de scolarité', amount: 850000, percentage: 65 },
-    { name: 'Frais d\'inscription', amount: 246000, percentage: 19 },
-    { name: 'Frais de cantine', amount: 156000, percentage: 12 },
-    { name: 'Activités extra-scolaires', amount: 54000, percentage: 4 },
-  ];
+        setFinancialOverview(Array.isArray(overviewRes) ? overviewRes : []);
+        setPaymentDistribution(Array.isArray(distributionRes) ? distributionRes : []);
+        setFeeTypes(Array.isArray(feeTypesRes) ? feeTypesRes : []);
+        setPayments(Array.isArray(paymentsRes) ? paymentsRes : []);
+      } catch (e) {
+        console.error(e);
+        toast({ title: 'Données financières indisponibles', description: 'Les données seront affichées dès qu\'elles seront disponibles.', variant: 'destructive' });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [toast]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -126,7 +95,8 @@ const Finances: React.FC = () => {
     }).format(amount);
   };
 
-  const filteredPayments = payments.filter((payment) => {
+  const basePayments = Array.isArray(payments) ? payments : [];
+  const filteredPayments = basePayments.filter((payment) => {
     const matchesStatus = filterStatus === 'all' || payment.status === filterStatus;
     return matchesStatus;
   });
@@ -228,36 +198,40 @@ const Finances: React.FC = () => {
             <CardDescription>Revenus mensuels vs objectifs</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={financialOverview}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                  formatter={(value) => [formatCurrency(Number(value)), '']}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="revenus" 
-                  stroke="hsl(var(--success))" 
-                  strokeWidth={3}
-                  name="Revenus réels"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="objectif" 
-                  stroke="hsl(var(--muted-foreground))" 
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  name="Objectif"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {isLoading ? (
+              <div className="text-center text-muted-foreground">...</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={Array.isArray(financialOverview) ? financialOverview : []}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value) => [formatCurrency(Number(value)), '']}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="revenus" 
+                    stroke="hsl(var(--success))" 
+                    strokeWidth={3}
+                    name="Revenus réels"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="objectif" 
+                    stroke="hsl(var(--muted-foreground))" 
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    name="Objectif"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -268,26 +242,30 @@ const Finances: React.FC = () => {
             <CardDescription>Répartition par statut</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={paymentDistribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  dataKey="value"
-                  label={({ name, value }) => `${name} (${value}%)`}
-                >
-                  {paymentDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [`${value}%`, '']} />
-              </PieChart>
-            </ResponsiveContainer>
+            {isLoading ? (
+              <div className="text-center text-muted-foreground">...</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={Array.isArray(paymentDistribution) ? paymentDistribution : []}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    dataKey="value"
+                    label={({ name, value }) => `${name} (${value}%)`}
+                  >
+                    {(Array.isArray(paymentDistribution) ? paymentDistribution : []).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value}%`, '']} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
             <div className="grid grid-cols-1 gap-2 mt-4">
-              {paymentDistribution.map((item) => (
+              {(Array.isArray(paymentDistribution) ? paymentDistribution : []).map((item) => (
                 <div key={item.name} className="flex items-center justify-between text-sm">
                   <div className="flex items-center space-x-2">
                     <div 
@@ -312,7 +290,7 @@ const Finances: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {feeTypes.map((fee) => (
+            {(Array.isArray(feeTypes) ? feeTypes : []).map((fee) => (
               <div key={fee.name} className="flex items-center justify-between p-4 border border-border rounded-lg">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">

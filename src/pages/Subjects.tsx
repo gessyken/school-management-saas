@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Search, BookOpen, Users, Clock, Edit, Trash2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import SubjectModal from '@/components/modals/SubjectModal';
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal';
 import { useToast } from '@/hooks/use-toast';
+import { subjectsService } from '@/services/subjectsService';
 
 interface Subject {
   id?: string;
@@ -25,6 +26,7 @@ const Subjects: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [subjectModal, setSubjectModal] = useState<{
     isOpen: boolean;
     mode: 'create' | 'edit' | 'view';
@@ -43,71 +45,21 @@ const Subjects: React.FC = () => {
   });
   const { toast } = useToast();
 
-  // Initialiser les données
-  React.useEffect(() => {
-    setSubjects([
-    {
-      id: '1',
-      name: 'Mathématiques',
-      code: 'MATH',
-      description: 'Algèbre, géométrie et analyse mathématique',
-      coefficient: 4,
-      color: '#A8D8EA',
-      weeklyHours: 4,
-      teacher: 'M. Dubois',
-      level: ['6ème', '5ème', '4ème', '3ème'],
-      isActive: true,
-    },
-    {
-      id: '2',
-      name: 'Français',
-      code: 'FR',
-      description: 'Langue française, littérature et expression écrite',
-      coefficient: 4,
-      color: '#D4AC0D',
-      weeklyHours: 4,
-      teacher: 'Mme Martin',
-      level: ['6ème', '5ème', '4ème', '3ème'],
-      isActive: true,
-    },
-    {
-      id: '3',
-      name: 'Histoire-Géographie',
-      code: 'HG',
-      description: 'Histoire contemporaine et géographie mondiale',
-      coefficient: 3,
-      color: '#28A745',
-      weeklyHours: 3,
-      teacher: 'M. Bernard',
-      level: ['6ème', '5ème', '4ème', '3ème'],
-      isActive: true,
-    },
-    {
-      id: '4',
-      name: 'Sciences Physiques',
-      code: 'SPC',
-      description: 'Physique et chimie expérimentale',
-      coefficient: 3,
-      color: '#FD7E14',
-      weeklyHours: 3,
-      teacher: 'Mme Petit',
-      level: ['5ème', '4ème', '3ème'],
-      isActive: true,
-    },
-    {
-      id: '5',
-      name: 'Anglais',
-      code: 'ANG',
-      description: 'Langue vivante étrangère - Anglais',
-      coefficient: 3,
-      color: '#DC3545',
-      weeklyHours: 3,
-      teacher: 'M. Wilson',
-      level: ['6ème', '5ème', '4ème', '3ème'],
-      isActive: false,
-    },
-    ]);
-  }, []);
+  useEffect(() => {
+    const loadSubjects = async () => {
+      try {
+        setIsLoading(true);
+        const data = await subjectsService.getSubjects();
+        setSubjects(data || []);
+      } catch (e) {
+        console.error(e);
+        toast({ title: 'Données matières indisponibles', description: 'Les données seront affichées dès qu\'elles seront disponibles.', variant: 'destructive' });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadSubjects();
+  }, [toast]);
 
   const handleOpenModal = (mode: 'create' | 'edit' | 'view', subject?: Subject) => {
     setSubjectModal({ isOpen: true, mode, subject });
@@ -117,24 +69,30 @@ const Subjects: React.FC = () => {
     setSubjectModal({ isOpen: false, mode: 'create', subject: null });
   };
 
-  const handleSaveSubject = (subjectData: Subject) => {
-    if (subjectModal.mode === 'create') {
-      const newSubject = {
-        ...subjectData,
-        id: Date.now().toString(),
-      };
-      setSubjects(prev => [...prev, newSubject]);
+  const handleSaveSubject = async (subjectData: Subject) => {
+    try {
+      if (subjectModal.mode === 'create') {
+        const newSubject = await subjectsService.createSubject(subjectData);
+        setSubjects(prev => [...prev, newSubject]);
+        toast({
+          title: "Matière créée",
+          description: `La matière ${subjectData.name} a été créée avec succès.`,
+        });
+      } else if (subjectModal.mode === 'edit') {
+        const updatedSubject = await subjectsService.updateSubject(subjectData.id!, subjectData);
+        setSubjects(prev => prev.map(s => 
+          s.id === subjectData.id ? updatedSubject : s
+        ));
+        toast({
+          title: "Matière modifiée",
+          description: `La matière ${subjectData.name} a été mise à jour.`,
+        });
+      }
+    } catch (error) {
       toast({
-        title: "Matière créée",
-        description: `La matière ${subjectData.name} a été créée avec succès.`,
-      });
-    } else if (subjectModal.mode === 'edit') {
-      setSubjects(prev => prev.map(s => 
-        s.id === subjectData.id ? { ...subjectData } : s
-      ));
-      toast({
-        title: "Matière modifiée",
-        description: `La matière ${subjectData.name} a été mise à jour.`,
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la sauvegarde.",
+        variant: "destructive"
       });
     }
   };
@@ -143,14 +101,23 @@ const Subjects: React.FC = () => {
     setDeleteModal({ isOpen: true, subject });
   };
 
-  const confirmDeleteSubject = () => {
+  const confirmDeleteSubject = async () => {
     if (deleteModal.subject) {
-      setSubjects(prev => prev.filter(s => s.id !== deleteModal.subject!.id));
-      toast({
-        title: "Matière supprimée",
-        description: `La matière ${deleteModal.subject.name} a été supprimée.`,
-        variant: "destructive"
-      });
+      try {
+        await subjectsService.deleteSubject(deleteModal.subject.id!);
+        setSubjects(prev => prev.filter(s => s.id !== deleteModal.subject!.id));
+        toast({
+          title: "Matière supprimée",
+          description: `La matière ${deleteModal.subject.name} a été supprimée.`,
+          variant: "destructive"
+        });
+      } catch (error) {
+        toast({
+          title: "Erreur",
+          description: "Une erreur est survenue lors de la suppression.",
+          variant: "destructive"
+        });
+      }
     }
     setDeleteModal({ isOpen: false, subject: null });
   };

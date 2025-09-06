@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Calendar, Users, BookOpen, TrendingUp, Edit, Eye, Archive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { academicYearsService } from '@/services/academicYearsService';
+import { useToast } from '@/hooks/use-toast';
 
 interface Term {
   id: string;
@@ -25,109 +27,29 @@ interface AcademicYear {
 }
 
 const AcademicYears: React.FC = () => {
-  const [selectedYear, setSelectedYear] = useState<string>('1');
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { toast } = useToast();
 
-  const academicYears: AcademicYear[] = [
-    {
-      id: '1',
-      name: '2023-2024',
-      startDate: '2023-09-01',
-      endDate: '2024-07-15',
-      status: 'active',
-      studentCount: 1247,
-      classCount: 42,
-      averageGrade: 14.2,
-      terms: [
-        {
-          id: '1',
-          name: '1er Trimestre',
-          startDate: '2023-09-01',
-          endDate: '2023-12-22',
-          isActive: false,
-        },
-        {
-          id: '2',
-          name: '2e Trimestre',
-          startDate: '2024-01-08',
-          endDate: '2024-04-05',
-          isActive: true,
-        },
-        {
-          id: '3',
-          name: '3e Trimestre',
-          startDate: '2024-04-22',
-          endDate: '2024-07-15',
-          isActive: false,
-        },
-      ],
-    },
-    {
-      id: '2',
-      name: '2024-2025',
-      startDate: '2024-09-01',
-      endDate: '2025-07-15',
-      status: 'upcoming',
-      studentCount: 0,
-      classCount: 0,
-      averageGrade: 0,
-      terms: [
-        {
-          id: '4',
-          name: '1er Trimestre',
-          startDate: '2024-09-01',
-          endDate: '2024-12-20',
-          isActive: false,
-        },
-        {
-          id: '5',
-          name: '2e Trimestre',
-          startDate: '2025-01-06',
-          endDate: '2025-04-11',
-          isActive: false,
-        },
-        {
-          id: '6',
-          name: '3e Trimestre',
-          startDate: '2025-04-28',
-          endDate: '2025-07-15',
-          isActive: false,
-        },
-      ],
-    },
-    {
-      id: '3',
-      name: '2022-2023',
-      startDate: '2022-09-01',
-      endDate: '2023-07-15',
-      status: 'completed',
-      studentCount: 1189,
-      classCount: 38,
-      averageGrade: 13.8,
-      terms: [
-        {
-          id: '7',
-          name: '1er Trimestre',
-          startDate: '2022-09-01',
-          endDate: '2022-12-23',
-          isActive: false,
-        },
-        {
-          id: '8',
-          name: '2e Trimestre',
-          startDate: '2023-01-09',
-          endDate: '2023-04-07',
-          isActive: false,
-        },
-        {
-          id: '9',
-          name: '3e Trimestre',
-          startDate: '2023-04-24',
-          endDate: '2023-07-15',
-          isActive: false,
-        },
-      ],
-    },
-  ];
+  useEffect(() => {
+    const loadAcademicYears = async () => {
+      try {
+        setIsLoading(true);
+        const data = await academicYearsService.getAcademicYears();
+        setAcademicYears(data || []);
+        if (data && data.length > 0) {
+          setSelectedYear(data[0].id);
+        }
+      } catch (e) {
+        console.error(e);
+        toast({ title: 'Données années académiques indisponibles', description: 'Les données seront affichées dès qu\'elles seront disponibles.', variant: 'destructive' });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadAcademicYears();
+  }, [toast]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -226,7 +148,7 @@ const AcademicYears: React.FC = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Étudiants</p>
+                    <p className="text-sm text-muted-foreground">Élèves</p>
                     <p className="text-3xl font-bold text-primary">{currentYear.studentCount}</p>
                   </div>
                   <Users className="w-10 h-10 text-primary" />
@@ -334,29 +256,7 @@ const AcademicYears: React.FC = () => {
                       </div>
                     </div>
 
-                    {term.isActive && (
-                      <div className="mt-4 p-3 bg-background rounded border">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground">Notes saisies</p>
-                            <p className="font-semibold">847 / 1247 élèves</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Bulletins générés</p>
-                            <p className="font-semibold">423 / 1247</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Progression</p>
-                            <div className="w-full bg-muted rounded-full h-2 mt-1">
-                              <div
-                                className="bg-success h-2 rounded-full transition-all duration-300"
-                                style={{ width: '68%' }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    {term.isActive && null}
                   </div>
                 ))}
               </div>

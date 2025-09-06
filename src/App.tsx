@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Sidebar } from "./components/layout/Sidebar";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import Subjects from "./pages/Subjects";
@@ -15,6 +16,9 @@ import Reports from "./pages/Reports";
 import Finances from "./pages/Finances";
 import Administration from "./pages/Administration";
 import Settings from "./pages/Settings";
+import SelectSchool from "./pages/SelectSchool";
+import CreateSchool from "./pages/CreateSchool";
+import SchoolSettings from "./pages/SchoolSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +56,10 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/select-school" element={<SelectSchool />} />
+      <Route path="/create-school" element={<CreateSchool />} />
+      <Route path="/school-settings" element={<SchoolSettings />} />
       <Route
         path="/dashboard"
         element={
