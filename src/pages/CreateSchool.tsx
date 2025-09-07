@@ -28,13 +28,14 @@ const schoolSchema = z.object({
   phone: z.string().min(8, { message: 'Numéro de téléphone invalide' }).optional().or(z.literal('')),
   website: z.string().url({ message: 'URL invalide' }).optional().or(z.literal('')),
   address: z.string().min(5, { message: 'L\'adresse doit contenir au moins 5 caractères' }).optional().or(z.literal('')),
+  system_type: z.enum(['francophone', 'anglophone']).default('francophone'),
 });
 
 type SchoolFormValues = z.infer<typeof schoolSchema>;
 
 const CreateSchool: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, dispatch } = useAuth();
   const navigate = useNavigate();
 
   const form = useForm<SchoolFormValues>({
@@ -45,6 +46,7 @@ const CreateSchool: React.FC = () => {
       phone: '',
       website: '',
       address: '',
+      system_type: 'francophone',
     },
   });
 
@@ -64,6 +66,7 @@ const CreateSchool: React.FC = () => {
         phone: values.phone || undefined,
         // Remove website property since it doesn't exist in School type
         address: values.address || undefined,
+        system_type: values.system_type,
       });
       
       toast({
@@ -71,8 +74,51 @@ const CreateSchool: React.FC = () => {
         description: `L'école ${values.name} a été créée avec succès.`,
       });
       
-      // Recharger les données utilisateur pour mettre à jour le contexte
-      window.location.reload();
+      // Mettre à jour le contexte d'authentification avec la nouvelle école
+      const authData = JSON.parse(localStorage.getItem('schoolAuth') || '{}');
+      const newSchool = response.data;
+      
+      // S'assurer que les écoles existent
+      if (!authData.schools) {
+        authData.schools = [];
+      }
+      
+      // Ajouter la nouvelle école à la liste des écoles si elle n'existe pas déjà
+      const schoolExists = authData.schools.some((school: any) => school._id === newSchool._id);
+      if (!schoolExists) {
+        authData.schools.push(newSchool);
+      }
+      
+      // Définir la nouvelle école comme école courante
+      authData.currentSchool = newSchool;
+      
+      // Mettre à jour le localStorage
+      localStorage.setItem('schoolAuth', JSON.stringify(authData));
+      
+      console.log('École créée avec succès:', newSchool);
+      console.log('Données d\'authentification mises à jour:', authData);
+      
+      // Mettre à jour le state du contexte d'authentification
+      dispatch({
+        type: 'LOGIN_SUCCESS',
+        payload: {
+          user: authData.user,
+          schools: authData.schools,
+          currentSchool: newSchool
+        }
+      });
+      
+      // Afficher un message de succès
+      toast({
+        title: 'Succès',
+        description: 'École créée avec succès. Redirection vers le tableau de bord...',
+      });
+      
+      // Rediriger vers le tableau de bord après un court délai pour s'assurer que le contexte est mis à jour
+      setTimeout(() => {
+        // Utiliser window.location.href pour forcer un rechargement complet de la page
+        window.location.href = '/dashboard';
+      }, 1000);
     } catch (error: any) {
       console.error('Erreur lors de la création de l\'école:', error);
       toast({
@@ -182,6 +228,27 @@ const CreateSchool: React.FC = () => {
                     <FormLabel>Adresse</FormLabel>
                     <FormControl>
                       <Textarea {...field} placeholder="Adresse complète de l'école" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Système scolaire */}
+              <FormField
+                control={form.control}
+                name="system_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Système scolaire</FormLabel>
+                    <FormControl>
+                      <select
+                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        {...field}
+                      >
+                        <option value="francophone">Francophone</option>
+                        <option value="anglophone">Anglophone</option>
+                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

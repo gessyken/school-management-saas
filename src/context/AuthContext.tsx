@@ -3,18 +3,24 @@ import api from '@/lib/api';
 import { User, School, AuthResponse } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 
+// SchoolWithId est un type qui permet d'utiliser soit 'id' soit '_id' pour identifier une école
+interface SchoolWithId extends Omit<School, 'id'> {
+  id: string;
+  _id?: string;
+}
+
 interface AuthState {
   user: User | null;
-  currentSchool: School | null;
-  userSchools: School[];
+  currentSchool: SchoolWithId | null;
+  userSchools: SchoolWithId[];
   isAuthenticated: boolean;
   isLoading: boolean;
 }
 
 type AuthAction =
-  | { type: 'LOGIN_SUCCESS'; payload: { user: User; schools: School[]; currentSchool: School } }
+  | { type: 'LOGIN_SUCCESS'; payload: { user: User; schools: SchoolWithId[]; currentSchool: SchoolWithId | null } }
   | { type: 'LOGOUT' }
-  | { type: 'SWITCH_SCHOOL'; payload: School }
+  | { type: 'SWITCH_SCHOOL'; payload: SchoolWithId }
   | { type: 'SET_LOADING'; payload: boolean };
 
 const initialState: AuthState = {
@@ -62,7 +68,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string, schoolId: string) => Promise<void>;
-  register: (name: string, email: string, phone: string, password: string, schoolId: string) => Promise<void>;
+  register: (name: string, email: string, phone: string, password: string) => Promise<void>;
   logout: () => void;
   switchSchool: (school: School) => void;
   updateProfile: (userData: Partial<User>) => Promise<void>;
@@ -116,25 +122,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await api.post<AuthResponse>('/auth/login', {
         email,
         password,
-        school_id: schoolId || undefined // Envoyer undefined si aucune école n'est sélectionnée
+        school_id: schoolId || undefined
       });
       
-      const { token, user, schools } = response.data;
+      const { token, user, schools = [] } = response.data;
+      
+      if (!token || !user) {
+        throw new Error('Réponse du serveur invalide');
+      }
       
       // Stocker le token JWT
       localStorage.setItem('token', token);
       
+      // Convertir les écoles en format SchoolWithId
+      const schoolsWithId: SchoolWithId[] = schools.map(school => {
+        // Type assertion pour accéder à _id si présent
+        const schoolWithId = school as unknown as { _id?: string } & School;
+        return {
+          ...school,
+          id: school.id || schoolWithId._id || '',
+        };
+      });
+      
       // Trouver l'école sélectionnée ou la première école disponible
-      let currentSchool = null;
+      let currentSchool: SchoolWithId | null = null;
       if (schoolId) {
-        currentSchool = schools.find(s => s.id === schoolId);
-      } else if (schools.length > 0) {
-        currentSchool = schools[0];
+        currentSchool = schoolsWithId.find(school => school.id === schoolId) || null;
+      } else if (schoolsWithId.length > 0) {
+        currentSchool = schoolsWithId[0];
       }
       
       const authData = {
         user,
-        schools,
+        schools: schoolsWithId,
         currentSchool,
       };
       
@@ -146,31 +166,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       // Vérifier si l'utilisateur a des écoles associées
-      if (schools.length === 0) {
-        // Aucune école associée, rediriger vers la page de création d'école
+      if (schoolsWithId.length === 0) {
         toast({
           title: 'Connexion réussie',
-          description: `Bienvenue, ${user.name}! Vous n'avez pas encore d'école associée. Vous pouvez en créer une maintenant.`,
+          description: `Bienvenue, ${user.firstName || user.name}! Vous n'avez pas encore d'école associée.`,
         });
-        
-        setTimeout(() => {
-          window.location.href = '/create-school';
-        }, 1500);
-      } else if (schools.length > 1) {
-        // Plusieurs écoles associées, rediriger vers la page de sélection d'école
+      } else if (schoolsWithId.length > 1 && !schoolId) {
         toast({
           title: 'Connexion réussie',
-          description: `Bienvenue, ${user.name}! Veuillez sélectionner une école.`,
+          description: `Bienvenue, ${user.firstName || user.name}! Veuillez sélectionner une école.`,
         });
-        
-        setTimeout(() => {
-          window.location.href = '/select-school';
-        }, 1500);
       } else {
-        // Une seule école associée, rediriger vers le tableau de bord
+        // Une seule école ou école déjà sélectionnée
         toast({
           title: 'Connexion réussie',
-          description: `Bienvenue, ${user.name}!`,
+          description: `Bienvenue, ${user.firstName || user.name}!`,
         });
       }
     } catch (error) {

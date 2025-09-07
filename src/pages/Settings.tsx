@@ -1,21 +1,35 @@
-import React, { useState } from 'react';
-import { Save, School, Users, Calendar, Bell, Shield, Database, Palette } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { School, Save, AlertCircle, Calendar, Bell, Database, Plus, Shield, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
+import { schoolService } from '@/services/schoolService';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const Settings: React.FC = () => {
-  const { currentSchool } = useAuth();
+  const { currentSchool, user, userSchools } = useAuth();
+  const { toast } = useToast();
+  const [isCreatingSchool, setIsCreatingSchool] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasNoSchool, setHasNoSchool] = useState(false);
+  
+  // Vérifier si l'utilisateur n'a pas d'école
+  useEffect(() => {
+    if (!currentSchool || !userSchools || userSchools.length === 0) {
+      setHasNoSchool(true);
+    }
+  }, [currentSchool, userSchools]);
+  
   const [schoolSettings, setSchoolSettings] = useState({
     name: currentSchool?.name || '',
-    address: '123 Rue de l\'École, 75001 Paris',
-    phone: '01 23 45 67 89',
-    email: 'contact@ecole-saintmichel.fr',
-    website: 'www.ecole-saintmichel.fr',
+    address: currentSchool?.address || '',
+    phone: currentSchool?.phone || '',
+    email: currentSchool?.email || '',
     logo: '',
   });
 
@@ -59,14 +73,53 @@ const Settings: React.FC = () => {
     setSystemSettings(prev => ({ ...prev, [field]: value }));
   };
 
-  const saveSettings = () => {
-    console.log('Saving settings...', {
-      school: schoolSettings,
-      academic: academicSettings,
-      notifications: notificationSettings,
-      system: systemSettings,
-    });
-    // Ici, on ferait un appel API pour sauvegarder
+  const saveSettings = async () => {
+    setIsLoading(true);
+    try {
+      if (hasNoSchool || isCreatingSchool) {
+        // Créer une nouvelle école
+        await schoolService.createSchool({
+          name: schoolSettings.name,
+          address: schoolSettings.address,
+          phone: schoolSettings.phone,
+          email: schoolSettings.email,
+        });
+        
+        toast({
+          title: 'École créée avec succès',
+          description: 'Votre école a été créée. Vous allez être redirigé vers le tableau de bord.',
+        });
+        
+        // Rediriger vers le tableau de bord après création
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1500);
+      } else {
+        // Mettre à jour l'école existante
+        if (currentSchool?.id) {
+          await schoolService.updateSchool(currentSchool.id, {
+            name: schoolSettings.name,
+            address: schoolSettings.address,
+            phone: schoolSettings.phone,
+            email: schoolSettings.email,
+          });
+          
+          toast({
+            title: 'Paramètres sauvegardés',
+            description: 'Les paramètres de votre école ont été mis à jour avec succès.',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde des paramètres:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de la sauvegarde des paramètres.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -74,18 +127,36 @@ const Settings: React.FC = () => {
       {/* En-tête */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Paramètres système</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            {hasNoSchool ? 'Créer votre école' : 'Paramètres système'}
+          </h1>
           <p className="text-muted-foreground mt-2">
-            Configuration de votre établissement scolaire
+            {hasNoSchool 
+              ? 'Configurez votre nouvel établissement scolaire' 
+              : 'Configuration de votre établissement scolaire'}
           </p>
         </div>
-        <Button onClick={saveSettings} className="bg-gradient-primary hover:bg-primary-hover">
+        <Button 
+          onClick={saveSettings} 
+          className="bg-gradient-primary hover:bg-primary-hover"
+          disabled={isLoading}
+        >
           <Save className="w-4 h-4 mr-2" />
-          Sauvegarder les modifications
+          {hasNoSchool ? 'Créer mon école' : 'Sauvegarder les modifications'}
         </Button>
       </div>
+      
+      {hasNoSchool && (
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-800">Vous n'avez pas encore d'école</AlertTitle>
+          <AlertDescription className="text-amber-700">
+            Veuillez créer votre établissement scolaire en remplissant le formulaire ci-dessous.
+          </AlertDescription>
+        </Alert>
+      )}
 
-      <Tabs defaultValue="school" className="space-y-6">
+      <Tabs defaultValue="school" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="school" className="flex items-center space-x-2">
             <School className="w-4 h-4" />
@@ -107,6 +178,30 @@ const Settings: React.FC = () => {
 
         {/* Paramètres de l'école */}
         <TabsContent value="school" className="space-y-6">
+          {/* Bouton pour créer une nouvelle école */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <School className="w-5 h-5" />
+                  <span>Gestion des écoles</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.location.href = '/create-school'}
+                  className="flex items-center space-x-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Nouvelle école</span>
+                </Button>
+              </CardTitle>
+              <CardDescription>
+                Créez une nouvelle école ou modifiez les informations de l'école actuelle
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -147,14 +242,6 @@ const Settings: React.FC = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="schoolWebsite">Site web</Label>
-                  <Input
-                    id="schoolWebsite"
-                    value={schoolSettings.website}
-                    onChange={(e) => handleSchoolSettingsChange('website', e.target.value)}
-                  />
-                </div>
               </div>
 
               <div className="space-y-2">
@@ -172,9 +259,30 @@ const Settings: React.FC = () => {
                   <div className="w-20 h-20 bg-gradient-primary rounded-lg flex items-center justify-center text-white font-bold">
                     {schoolSettings.name.split(' ').map(word => word[0]).join('').slice(0, 3)}
                   </div>
-                  <Button variant="outline">
-                    Changer le logo
-                  </Button>
+                  <div className="flex flex-col space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      id="logo-upload"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          // TODO: Implémenter l'upload du logo
+                          console.log('Logo sélectionné:', file);
+                        }
+                      }}
+                    />
+                    <Button 
+                      variant="outline" 
+                      onClick={() => document.getElementById('logo-upload')?.click()}
+                    >
+                      Changer le logo
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Format recommandé: PNG, JPG (max 2MB)
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>

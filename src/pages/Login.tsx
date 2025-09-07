@@ -6,26 +6,54 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+
+const loginSchema = z.object({
+  email: z.string()
+    .email({ message: 'Format d\'email invalide' })
+    .min(1, { message: 'L\'email est requis' })
+    .max(100, { message: 'L\'email ne peut pas dépasser 100 caractères' }),
+  password: z.string()
+    .min(1, { message: 'Le mot de passe est requis' })
+    .max(128, { message: 'Le mot de passe ne peut pas dépasser 128 caractères' }),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('demo@ecole.fr');
-  const [password, setPassword] = useState('password');
-  const [schoolId, setSchoolId] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   const { login, isAuthenticated } = useAuth();
 
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
     
     try {
-      await login(email, password, schoolId);
+      await login(values.email, values.password, '');
+      form.reset();
     } catch (error) {
       console.error('Login failed:', error);
     } finally {
@@ -33,10 +61,7 @@ const Login: React.FC = () => {
     }
   };
 
-  const schools = [
-    { id: '1', name: 'École Primaire Saint-Michel' },
-    { id: '2', name: 'Collège Victor Hugo' },
-  ];
+  // Plus besoin de la liste des écoles car la sélection se fait après la connexion
 
   return (
     <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
@@ -47,83 +72,79 @@ const Login: React.FC = () => {
           </div>
           <div>
             <CardTitle className="text-2xl font-bold text-foreground">
-              Système de Gestion Scolaire
+              Gestion d'Élèves
             </CardTitle>
             <CardDescription className="text-muted-foreground">
-              Connectez-vous à votre compte pour accéder au système
+              Connectez-vous pour gérer vos élèves et votre école
             </CardDescription>
           </div>
         </CardHeader>
         
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* École (optionnel) */}
-            <div className="space-y-2">
-              <Label htmlFor="school">École (optionnel)</Label>
-              <select
-                id="school"
-                value={schoolId}
-                onChange={(e) => setSchoolId(e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Email */}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          {...field}
+                          type="email"
+                          placeholder="votre@email.com"
+                          className="pl-10"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Mot de passe */}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mot de passe</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          {...field}
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Votre mot de passe"
+                          className="pl-10 pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button
+                type="submit"
+                className="w-full bg-gradient-primary hover:bg-primary-hover text-primary-foreground"
+                disabled={isLoading}
               >
-                <option value="">Sélectionner une école</option>
-                {schools.map((school) => (
-                  <option key={school.id} value={school.id}>
-                    {school.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="votre@email.com"
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Mot de passe */}
-            <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Votre mot de passe"
-                  className="pl-10 pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full bg-gradient-primary hover:bg-primary-hover text-primary-foreground"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Connexion...' : 'Se connecter'}
-            </Button>
-          </form>
+                {isLoading ? 'Connexion...' : 'Se connecter'}
+              </Button>
+            </form>
+          </Form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">

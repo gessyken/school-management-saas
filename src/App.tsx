@@ -2,11 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Sidebar } from "./components/layout/Sidebar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import SelectSchool from "./pages/SelectSchool";
+import CreateSchool from "./pages/CreateSchool";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import Subjects from "./pages/Subjects";
@@ -19,6 +22,25 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// Composant pour gérer les redirections via événements
+const AuthRedirectHandler = () => {
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    const handleRedirect = (event: CustomEvent<{ path: string }>) => {
+      navigate(event.detail.path);
+    };
+    
+    window.addEventListener('auth:redirect', handleRedirect as EventListener);
+    
+    return () => {
+      window.removeEventListener('auth:redirect', handleRedirect as EventListener);
+    };
+  }, [navigate]);
+  
+  return null;
+};
 
 // Layout protégé avec sidebar
 const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
@@ -51,9 +73,13 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
 
 const AppRoutes = () => {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
+    <>
+      <AuthRedirectHandler />
+      <Routes>
+        <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/select-school" element={<SelectSchool />} />
+      <Route path="/create-school" element={<CreateSchool />} />
       <Route
         path="/dashboard"
         element={
@@ -129,6 +155,7 @@ const AppRoutes = () => {
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </>
   );
 };
 
