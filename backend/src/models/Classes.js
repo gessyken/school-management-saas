@@ -130,7 +130,7 @@ const classSchema = new mongoose.Schema({
 });
 
 // Composite index to ensure uniqueness of class within the school and academic year
-classSchema.index({ school: 1, className: 1, year: 1 }, { unique: true });
+classSchema.index({ school: 1, classesName: 1, year: 1 }, { unique: true });
 
 const Classes = mongoose.model('Classes', classSchema);
 export default Classes;

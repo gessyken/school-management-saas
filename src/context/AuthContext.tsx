@@ -62,7 +62,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string, schoolId: string) => Promise<void>;
-  register: (name: string, email: string, phone: string, password: string) => Promise<void>;
+  register: (name: string, email: string, phone: string, password: string, schoolId: string) => Promise<void>;
   logout: () => void;
   switchSchool: (school: School) => void;
   updateProfile: (userData: Partial<User>) => Promise<void>;
@@ -108,19 +108,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkSession();
   }, []);
 
-  const login = async (email: string, password: string, schoolId: string = '') => {
+  const login = async (email: string, password: string, schoolId: string) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      // Appel à l'API d'authentification (backend n'attend que email et password)
+      // Appel à l'API d'authentification
       const response = await api.post<AuthResponse>('/auth/login', {
         email,
-        password
+        password,
+        school_id: schoolId || undefined // Envoyer undefined si aucune école n'est sélectionnée
       });
       
-      const { token, user } = response.data;
-      const memberships = user.memberships || [];
-      const schools = memberships.map(m => m.school);
+      const { token, user, schools } = response.data;
       
       // Stocker le token JWT
       localStorage.setItem('token', token);
@@ -151,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Aucune école associée, rediriger vers la page de création d'école
         toast({
           title: 'Connexion réussie',
-          description: `Bienvenue, ${user.name}! Créez votre école pour commencer à gérer vos élèves.`,
+          description: `Bienvenue, ${user.name}! Vous n'avez pas encore d'école associée. Vous pouvez en créer une maintenant.`,
         });
         
         setTimeout(() => {
@@ -173,10 +172,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: 'Connexion réussie',
           description: `Bienvenue, ${user.name}!`,
         });
-        
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1500);
       }
     } catch (error) {
       dispatch({ type: 'SET_LOADING', payload: false });

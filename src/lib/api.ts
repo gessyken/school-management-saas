@@ -11,13 +11,24 @@ const api = axios.create({
   },
 });
 
-// Intercepteur pour ajouter le token d'authentification à chaque requête
+// Intercepteur pour ajouter le token d'authentification et le contexte d'école à chaque requête
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Ajouter l'ID de l'école courante si disponible (nécessaire pour req.schoolId côté backend)
+    try {
+      const authRaw = localStorage.getItem('schoolAuth');
+      if (authRaw) {
+        const auth = JSON.parse(authRaw);
+        const schoolId = auth?.currentSchool?.id || auth?.currentSchool?._id;
+        if (schoolId) {
+          (config.headers as any)['X-School-Id'] = schoolId;
+        }
+      }
+    } catch {}
     return config;
   },
   (error) => {

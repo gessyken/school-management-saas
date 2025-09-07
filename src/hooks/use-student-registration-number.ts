@@ -89,14 +89,8 @@ export function useStudentRegistrationNumber({
     try {
       // Essayer jusqu'à 5 fois pour éviter une boucle infinie
       for (let attempt = 0; attempt < 5; attempt++) {
-        const params = { school_id: schoolId, academic_year_id: academicYearId };
-        if (schoolPrefix) {
-          Object.assign(params, { school_prefix: schoolPrefix });
-        }
-        
-        const response = await studentService.generateRegistrationNumber(params);
-        const number = response.registration_number;
-        const exists = await checkRegistrationNumberExists(number);
+        const number = await studentService.generateRegistrationNumber(schoolId, academicYearId, schoolPrefix);
+        const exists = await studentService.checkRegistrationNumberExists(number);
         
         if (!exists) {
           setRegistrationNumber(number);
@@ -112,7 +106,7 @@ export function useStudentRegistrationNumber({
     } finally {
       setIsLoading(false);
     }
-  }, [schoolId, academicYearId, schoolPrefix, checkRegistrationNumberExists]);
+  }, [schoolId, academicYearId, schoolPrefix]);
 
   return {
     registrationNumber,

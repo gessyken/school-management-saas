@@ -16,6 +16,7 @@ import dashboardRoutes from './src/routes/dashboardRoutes.js';
 import financesRoutes from './src/routes/financesRoutes.js';
 import reportsRoutes from './src/routes/reportsRoutes.js';
 import "express-async-errors";
+import { requestLogger } from "./src/middleware/requestLogger.js";
 
 // Create Express app
 const app = express();
@@ -34,7 +35,7 @@ app.use(
             "http://localhost:3002",
         ],
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH"],
-        allowedHeaders: ["Content-Type", "Authorization"],
+        allowedHeaders: ["Content-Type", "Authorization", "X-School-Id"],
         credentials: true,
     })
 );
@@ -67,7 +68,6 @@ app.use('/api/reports', reportsRoutes);
 
 import schoolRoutes from './src/routes/schoolRoutes.js';
 import authRoutes from './src/routes/authRoutes.js';
-import { requestLogger } from "./src/middleware/requestLogger.js";
 
 app.use('/api/schools', schoolRoutes);
 app.use('/api/auth', authRoutes);

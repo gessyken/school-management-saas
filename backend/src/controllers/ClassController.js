@@ -4,6 +4,238 @@ import Student from '../models/Student.js';
 import AcademicYear from '../models/AcademicYear.js';
 
 class ClassController {
+  // Helpers
+  levelAliasToName(alias) {
+    if (!alias) return alias;
+    const map = new Map([
+      // Francophone ids -> display
+      ['6eme', '6ème'], ['5eme', '5ème'], ['4eme', '4ème'], ['3eme', '3ème'],
+      ['2nde', '2nde'], ['1ere', '1ère'], ['terminale', 'Terminale'],
+      // Anglophone ids -> display
+      ['form1', 'Form 1'], ['form2', 'Form 2'], ['form3', 'Form 3'],
+      ['form4', 'Form 4'], ['form5', 'Form 5'], ['lower6', 'Lower Sixth'], ['upper6', 'Upper Sixth']
+    ]);
+    // If already one of the display names, keep it
+    const values = Array.from(map.values());
+    if (values.includes(alias)) return alias;
+    return map.get(String(alias)) || alias;
+  }
+
+  // Get subjects of a class (populated)
+  async getClassSubjects(req, res) {
+    try {
+      const schoolId = req.schoolId;
+      if (!schoolId) return res.status(403).json({ message: 'School context missing' });
+      const classId = req.params.id;
+      const classDoc = await Classes.findOne({ _id: classId, school: schoolId })
+        .populate('subjects.subjectInfo')
+        .populate('subjects.teacherInfo');
+      if (!classDoc) return res.status(404).json({ message: 'Class not found' });
+      return res.json({ subjects: classDoc.subjects });
+    } catch (error) {
+      console.error('Get class subjects error:', error);
+      return res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
+  // Replace entire subjects list for a class
+  async setClassSubjects(req, res) {
+    try {
+      const schoolId = req.schoolId;
+      if (!schoolId) return res.status(403).json({ message: 'School context missing' });
+      const classId = req.params.id;
+      const items = Array.isArray(req.body?.subjects) ? req.body.subjects : null;
+      if (!items) return res.status(400).json({ message: 'Body must include subjects array' });
+
+      const classDoc = await Classes.findOne({ _id: classId, school: schoolId });
+      if (!classDoc) return res.status(404).json({ message: 'Class not found' });
+
+      // Validate each subject exists in this school
+      const mapped = [];
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        const subjId = it.subjectInfo || it.subjectId || it.id;
+        if (!subjId) {
+          return res.status(400).json({ message: `subjects[${i}].subjectInfo is required` });
+        }
+        const subject = await Subject.findOne({ _id: subjId, school: schoolId });
+        if (!subject) {
+          return res.status(404).json({ message: `Subject ${subjId} not found in this school` });
+        }
+        const coefficient = Number(it.coefficient ?? subject.baseCoefficient ?? subject.coefficient ?? 1) || 1;
+        mapped.push({
+          subjectInfo: subject._id,
+          coefficient,
+          isActive: it.isActive !== undefined ? !!it.isActive : true,
+          teacherInfo: it.teacherInfo || undefined
+        });
+      }
+
+      classDoc.subjects = mapped;
+      await classDoc.save();
+
+      const populated = await Classes.findById(classDoc._id)
+        .populate('subjects.subjectInfo')
+        .populate('subjects.teacherInfo');
+
+      req.log = {
+        action: 'UPDATE',
+        module: 'Classes',
+        description: `Set ${mapped.length} subjects for class ${classDoc.classesName}`,
+        metadata: { count: mapped.length }
+      };
+
+      return res.json({ message: 'Subjects updated successfully', class: populated });
+    } catch (error) {
+      console.error('Set class subjects error:', error);
+      return res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
+  // Refresh subjects for a class based on current educationSystem, level, and specialty
+  async refreshSubjectsForClass(req, res) {
+    try {
+      const schoolId = req.schoolId;
+      if (!schoolId) return res.status(403).json({ message: 'School context missing' });
+
+      const classId = req.params.id;
+      const classDoc = await Classes.findOne({ _id: classId, school: schoolId });
+      if (!classDoc) {
+        return res.status(404).json({ message: 'Class not found' });
+      }
+
+      const { educationSystem, level, specialty } = classDoc;
+      // Build query to fetch subjects compatible with the class
+      const query = {
+        school: schoolId,
+        isActive: true,
+        $and: [
+          {
+            $or: [
+              { educationSystem: educationSystem },
+              { educationSystem: 'both' }
+            ]
+          },
+          {
+            $or: [
+              { levels: level },
+              { levels: 'Général' }
+            ]
+          }
+        ]
+      };
+
+      const subjects = await Subject.find(query).sort({ required: -1, subjectName: 1 });
+      if (!subjects || subjects.length === 0) {
+        return res.status(200).json({
+          message: 'No compatible subjects found for this class. Please create subjects first.',
+          class: classDoc
+        });
+      }
+
+      // Compute coefficients (prefer coefficient for specific level, then baseCoefficient, then legacy coefficient)
+      const computedSubjects = subjects.map(s => {
+        let coef = 0;
+        // Support Map type or plain object
+        const map = s.coefficientsByLevel;
+        const getFromMap = (k) => {
+          if (!map) return undefined;
+          if (typeof map.get === 'function') return map.get(k);
+          if (typeof map === 'object') return map[k];
+          return undefined;
+        };
+
+        // 1) Try specialty-specific override like "Terminale|C" or "Upper Sixth|Science"
+        if (specialty) {
+          const specKey = `${level}|${specialty}`;
+          const specVal = getFromMap(specKey);
+          if (specVal !== undefined) coef = Number(specVal) || 0;
+        }
+        // 2) Fallback to level-specific
+        if (!coef) {
+          const lvlVal = getFromMap(level);
+          if (lvlVal !== undefined) coef = Number(lvlVal) || 0;
+        }
+        // 3) Fallback to baseCoefficient or legacy coefficient or 1
+        if (!coef) coef = Number(s.baseCoefficient || s.coefficient || 1) || 1;
+
+        return {
+          subjectInfo: s._id,
+          coefficient: coef,
+          isActive: true
+        };
+      });
+
+      classDoc.subjects = computedSubjects;
+      await classDoc.save();
+
+      const populated = await Classes.findById(classDoc._id)
+        .populate('subjects.subjectInfo')
+        .populate('subjects.teacherInfo');
+
+      req.log = {
+        action: 'UPDATE',
+        module: 'Classes',
+        description: `Refreshed subjects for class ${classDoc.classesName}`,
+        metadata: { subjects: computedSubjects.length }
+      };
+
+      return res.json({ message: 'Subjects refreshed successfully', class: populated });
+    } catch (error) {
+      console.error('Refresh subjects error:', error);
+      return res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
+  computeDefaultAcademicYear() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // 1-12
+    if (month >= 8) {
+      return `${year}-${year + 1}`; // e.g., 2025-2026 starting in Aug
+    }
+    return `${year - 1}-${year}`; // e.g., 2024-2025 before Aug
+  }
+
+  normalizeAndValidate(payload) {
+    const result = { ...payload };
+    // Normalize level id -> display name
+    result.level = this.levelAliasToName(result.level);
+    // Ensure section default
+    if (!result.section) result.section = 'A';
+    // Ensure educationSystem
+    if (!result.educationSystem) result.educationSystem = 'francophone';
+    // Ensure status
+    if (!result.status) result.status = 'Open';
+    // Ensure year
+    if (!result.year) result.year = this.computeDefaultAcademicYear();
+    // Validate classesName
+    if (!result.classesName || typeof result.classesName !== 'string' || !result.classesName.trim()) {
+      return { error: 'classesName is required' };
+    }
+    // Validate level enum subset (rough check)
+    const allowedLevels = [
+      '6ème','5ème','4ème','3ème','2nde','1ère','Terminale',
+      'Form 1','Form 2','Form 3','Form 4','Form 5','Lower Sixth','Upper Sixth'
+    ];
+    if (!allowedLevels.includes(result.level)) {
+      return { error: `Invalid level '${result.level}'.` };
+    }
+    // Validate educationSystem
+    if (!['francophone','anglophone'].includes(result.educationSystem)) {
+      return { error: `Invalid educationSystem '${result.educationSystem}'.` };
+    }
+    // Validate specialty rule: only for Terminale (FR) or Upper Sixth (EN)
+    const isTerminalLevel = result.level === 'Terminale' || result.level === 'Upper Sixth';
+    if (!isTerminalLevel) {
+      delete result.specialty;
+    }
+    // Subjects optional: ensure array
+    if (result.subjects && !Array.isArray(result.subjects)) {
+      return { error: 'subjects must be an array if provided' };
+    }
+    return { data: result };
+  }
   // Get all classes for school
   async getAllClasses(req, res) {
     try {
@@ -28,7 +260,7 @@ class ClassController {
           filterStatus: status || 'all',
           count: classes.length
         }
-      }
+       };
       res.json({ classes });
     } catch (error) {
       console.error("Fetch classes error:", error);
@@ -38,6 +270,16 @@ class ClassController {
   // Create class
   async createClass(req, res) {
     try {
+      const body = req.body || {};
+      // Compute classesName if not provided from level/section/specialty
+      if (!body.classesName && body.level && body.section) {
+        const lvl = this.levelAliasToName(body.level);
+        body.classesName = `${lvl} ${body.section}${(body.specialty ? ` (${body.specialty})` : '')}`.trim();
+      }
+      const norm = this.normalizeAndValidate(body);
+      if (norm.error) {
+        return res.status(400).json({ message: norm.error });
+      }
       const {
         classesName,
         description,
@@ -51,8 +293,8 @@ class ClassController {
         subjects,
         mainTeacherInfo,
         year
-      } = req.body;
-      console.log(req.body)
+      } = norm.data;
+      console.log('createClass payload:', norm.data)
       const schoolId = req.schoolId;
 
       if (!schoolId) return res.status(403).json({ message: "School context missing" });
@@ -87,7 +329,7 @@ class ClassController {
       await newClass.save();
       await newClass.populate('school', 'name');
 
-      await req.log({
+      req.log = {
         action: 'CREATE',
         module: 'Classes',
         description: `Created new class '${classesName}' for school ${newClass.school.name}`,
@@ -96,15 +338,109 @@ class ClassController {
           level,
           year
         }
-      });
+      };
 
       res.status(201).json({
         message: 'Class created successfully',
         class: newClass
       });
     } catch (error) {
+      if (error && error.code === 11000) {
+        return res.status(409).json({ message: 'A class with the same name and year already exists in this school.' });
+      }
       console.error("Create class error:", error);
       res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
+  // Create many classes quickly
+  async createManyClasses(req, res) {
+    try {
+      const schoolId = req.schoolId;
+      if (!schoolId) return res.status(403).json({ message: "School context missing" });
+
+      const items = Array.isArray(req.body?.classes) ? req.body.classes : [];
+      if (items.length === 0) {
+        return res.status(400).json({ message: 'Request body must include a non-empty array in "classes"' });
+      }
+
+      const saved = [];
+      const errors = [];
+
+      for (let i = 0; i < items.length; i++) {
+        try {
+          const raw = { ...(items[i] || {}) };
+          if (!raw.classesName && raw.level && raw.section) {
+            const lvl = this.levelAliasToName(raw.level);
+            raw.classesName = `${lvl} ${raw.section}${(raw.specialty ? ` (${raw.specialty})` : '')}`.trim();
+          }
+          const norm = this.normalizeAndValidate(raw);
+          if (norm.error) {
+            errors.push({ index: i, message: norm.error });
+            continue;
+          }
+          const {
+            classesName,
+            description,
+            status,
+            capacity,
+            level,
+            educationSystem,
+            specialty,
+            section,
+            amountFee,
+            subjects,
+            mainTeacherInfo,
+            year
+          } = norm.data;
+
+          const newClass = new Classes({
+            school: schoolId,
+            classesName,
+            description,
+            status: status || 'Open',
+            capacity,
+            level,
+            educationSystem: educationSystem || 'francophone',
+            specialty,
+            section: section || 'A',
+            amountFee,
+            subjects: subjects || [],
+            studentList: [],
+            mainTeacherInfo,
+            year
+          });
+
+          try {
+            await newClass.save();
+            saved.push(newClass);
+          } catch (err) {
+            if (err && err.code === 11000) {
+              errors.push({ index: i, message: 'Duplicate: class with same name and year already exists' });
+            } else {
+              throw err;
+            }
+          }
+        } catch (err) {
+          errors.push({ index: i, message: err.message });
+        }
+      }
+
+      req.log = {
+        action: 'CREATE',
+        module: 'Classes',
+        description: `Bulk created classes: ${saved.length} success, ${errors.length} errors`,
+        metadata: { count: saved.length, errors: errors.length }
+      };
+
+      return res.status(207).json({
+        message: `${saved.length} classes created, ${errors.length} errors`,
+        savedClasses: saved,
+        errors
+      });
+    } catch (error) {
+      console.error('Bulk create classes error:', error);
+      return res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 
@@ -123,12 +459,12 @@ class ClassController {
         return res.status(404).json({ message: 'Class not found' });
       }
 
-      await req.log({
+      req.log = {
         action: 'VIEW',
         module: 'Classes',
         description: `Viewed class ${classData.classesName}`,
         metadata: { classId: req.params.id }
-      });
+      };
 
       res.json({ class: classData });
     } catch (error) {
@@ -140,6 +476,41 @@ class ClassController {
   // Update class
   async updateClass(req, res) {
     try {
+      const schoolId = req.schoolId;
+
+      const existingClass = await Classes.findOne({ _id: req.params.id, school: schoolId });
+      if (!existingClass) {
+        return res.status(404).json({ message: 'Class not found' });
+      }
+      // Build normalized payload
+      const body = req.body || {};
+      if (!body.classesName) {
+        const lvl = this.levelAliasToName(body.level || existingClass.level);
+        const sec = body.section || existingClass.section || 'A';
+        const spec = body.specialty || existingClass.specialty;
+        const isTerminal = (lvl === 'Terminale' || lvl === 'Upper Sixth');
+        body.classesName = `${lvl} ${sec}${(isTerminal && spec) ? ` (${spec})` : ''}`.trim();
+      }
+      // Merge existing class data with body, ensuring we don't lose required fields
+      const mergedData = {
+        classesName: body.classesName || existingClass.classesName,
+        description: body.description !== undefined ? body.description : existingClass.description,
+        status: body.status || existingClass.status,
+        capacity: body.capacity !== undefined ? body.capacity : existingClass.capacity,
+        level: body.level || existingClass.level,
+        educationSystem: body.educationSystem || existingClass.educationSystem,
+        specialty: body.specialty !== undefined ? body.specialty : existingClass.specialty,
+        section: body.section || existingClass.section,
+        amountFee: body.amountFee !== undefined ? body.amountFee : existingClass.amountFee,
+        mainTeacherInfo: body.mainTeacherInfo !== undefined ? body.mainTeacherInfo : existingClass.mainTeacherInfo,
+        subjects: body.subjects !== undefined ? body.subjects : existingClass.subjects,
+        year: body.year || existingClass.year
+      };
+      const norm = this.normalizeAndValidate(mergedData);
+      if (norm.error) {
+        return res.status(400).json({ message: norm.error });
+      }
+
       const {
         classesName,
         description,
@@ -153,24 +524,7 @@ class ClassController {
         mainTeacherInfo,
         subjects,
         year
-      } = req.body;
-
-      const schoolId = req.schoolId;
-
-      const existingClass = await Classes.findOne({ _id: req.params.id, school: schoolId });
-      if (!existingClass) {
-        return res.status(404).json({ message: 'Class not found' });
-      }
-
-      // Skip subject validation - subjects are now handled as simple strings
-      // if (subjects && subjects.length > 0) {
-      //   for (const subject of subjects) {
-      //     const validSubject = await Subject.findOne({ _id: subject.subjectInfo, school: schoolId });
-      //     if (!validSubject) {
-      //       return res.status(404).json({ message: `Invalid subject ID ${subject.subjectInfo} for this school` });
-      //     }
-      //   }
-      // }
+      } = norm.data;
 
       const updated = await Classes.findByIdAndUpdate(
         req.params.id,
@@ -193,15 +547,18 @@ class ClassController {
         .populate('subjects.subjectInfo')
         .populate('subjects.teacherInfo')
         .populate('mainTeacherInfo');
-      await req.log({
+      req.log = {
         action: 'UPDATE',
         module: 'Classes',
         description: `Updated class ${updated.classesName}`,
         metadata: { updatedFields: Object.keys(req.body) }
-      });
+      };
 
       res.json({ message: 'Class updated successfully', class: updated });
     } catch (error) {
+      if (error && error.code === 11000) {
+        return res.status(409).json({ message: 'A class with the same name and year already exists in this school.' });
+      }
       console.error("Update class error:", error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -222,12 +579,12 @@ class ClassController {
       );
 
       await classData.remove();
-      await req.log({
+      req.log = {
         action: 'DELETE',
         module: 'Class',
         description: `Deleted class ${classData.classesName}`,
         metadata: { classId: req.params.id }
-      });
+      };
 
       res.json({ message: 'Class deleted successfully' });
     } catch (error) {
@@ -295,12 +652,12 @@ class ClassController {
       }
 
       await classData.save();
-      await req.log({
+      req.log = {
         action: 'UPDATE',
         module: 'Class',
         description: `Updated subjects in class ${classData.classesName}`,
         metadata: req.body
-      });
+      };
 
       res.json({
         message: 'Subjects processed successfully',
@@ -350,12 +707,12 @@ class ClassController {
       }
 
       await classData.save();
-      await req.log({
+      req.log = {
         action: 'UPDATE',
         module: 'Class',
         description: `Updated subject ${subjectId} in class ${classData.classesName}`,
         metadata: { coefficient, teacherInfo }
-      });
+      };
 
       res.json({
         message: 'Subject updated successfully',
@@ -384,12 +741,12 @@ class ClassController {
       );
 
       await classData.save();
-      await req.log({
+      req.log = {
         action: 'DELETE',
         module: 'Class',
         description: `Removed subject ${subjectId} from class ${classId}`,
         metadata: {}
-      });
+      };
 
       res.json({
         message: 'Subject removed from class successfully',
@@ -432,12 +789,12 @@ class ClassController {
       // Update student with class reference
       student.classes = classId;
       await student.save();
-      await req.log({
+      req.log = {
         action: 'UPDATE',
         module: 'Class',
         description: `Added student ${studentId} to class ${classId}`,
         metadata: { studentId }
-      });
+      };
 
       res.json({
         message: 'Student added to class successfully',
@@ -473,12 +830,12 @@ class ClassController {
         { _id: studentId, school: schoolId },
         { $unset: { classes: "" } }
       );
-      await req.log({
+      req.log = {
         action: 'UPDATE',
         module: 'Class',
         description: `Removed student ${studentId} from class ${classId}`,
         metadata: { studentId }
-      });
+      };
 
       res.json({
         message: 'Student removed from class successfully',
@@ -637,7 +994,7 @@ class ClassController {
           };
         }
       }
-      await req.log({
+      req.log = {
         action: 'VIEW',
         module: 'Class',
         description: `Fetched performance analytics for class ${classId} - year ${year}`,
@@ -646,7 +1003,7 @@ class ClassController {
           classId,
           year
         }
-      });
+      };
 
       res.json({ classPerformance: classStats });
     } catch (error) {

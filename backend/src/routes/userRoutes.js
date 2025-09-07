@@ -8,6 +8,12 @@ router.use(protect);
 router.use(getUserRolesForSchool);
 
 router.get('/', UserController.getAllUsersPerSchool);
+// Dedicated teachers listing (filters by role via controller)
+router.get('/teachers', (req, res, next) => {
+  // Inject role=TEACHER into query for the controller
+  req.query.role = req.query.role || 'TEACHER';
+  return UserController.getAllUsersPerSchool(req, res, next);
+});
 
 // Authentication routes
 // router.post('/register', UserController.register);

@@ -20,7 +20,9 @@ export const protect = async (req, res, next) => {
     }
 
     req.userId = decoded.userId;
-    req.schoolId = decoded.schoolId;
+    // Prefer schoolId from JWT, but allow override via header (useful before a token with school is issued)
+    const headerSchoolId = req.headers['x-school-id'] || req.headers['x-school'];
+    req.schoolId = decoded.schoolId || headerSchoolId || null;
     req.user = user;
 
     next();

@@ -53,9 +53,40 @@ class SubjectController {
   // Get all subjects in current school
   async getAllSubjects(req, res) {
     try {
-      const subjects = await Subject.find({ school: req.schoolId });
-      req.result = "anderson"
-      res.json({ subjects });
+      const subjects = await Subject.find({ school: req.schoolId })
+        .populate('teachers', 'firstName lastName email');
+      
+      // Transform subjects to match frontend expectations
+      const transformedSubjects = subjects.map(subject => ({
+        id: subject._id,
+        name: subject.subjectName,
+        code: subject.subjectCode,
+        description: subject.description || '',
+        baseCoefficient: subject.baseCoefficient || subject.coefficient || 1,
+        coefficient: subject.baseCoefficient || subject.coefficient || 1, // Backward compatibility
+        coefficientsByLevel: subject.coefficientsByLevel
+          ? (typeof subject.coefficientsByLevel.get === 'function'
+              ? Object.fromEntries(subject.coefficientsByLevel.entries())
+              : subject.coefficientsByLevel)
+          : {},
+        weeklyHours: subject.weeklyHours || 0,
+        teacher: subject.teacher || 'Non assigné',
+        teachers: Array.isArray(subject.teachers) ? subject.teachers.map(t => ({
+          id: t?._id,
+          name: t ? `${t.firstName || ''} ${t.lastName || ''}`.trim() : 'Inconnu',
+          email: t?.email || ''
+        })) : [],
+        teacherNames: Array.isArray(subject.teachers) ? subject.teachers.map(t => `${t.firstName || ''} ${t.lastName || ''}`.trim()).filter(Boolean) : [],
+        levels: subject.levels || subject.level || ['Général'],
+        level: subject.levels || subject.level || ['Général'], // Backward compatibility
+        educationSystem: subject.educationSystem || 'both',
+        specialty: subject.specialty || [],
+        required: subject.required || false,
+        isActive: subject.isActive !== undefined ? subject.isActive : true,
+        color: subject.color || '#3B82F6'
+      }));
+      
+      res.json({ subjects: transformedSubjects });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -129,6 +160,35 @@ class SubjectController {
       res.json({ message: `Subject ${subject.isActive ? 'activated' : 'deactivated'}`, subject });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
+  // Delete all subjects for the current school, optionally removing references from classes
+  async purgeSubjects(req, res) {
+    try {
+      const schoolId = req.schoolId;
+      if (!schoolId) return res.status(403).json({ message: 'School context missing' });
+
+      // Delete all subjects for this school
+      const result = await Subject.deleteMany({ school: schoolId });
+
+      // Also remove subject references from classes.subjects for this school
+      // This avoids dangling references in classes
+      try {
+        const Classes = (await import('../models/Classes.js')).default;
+        await Classes.updateMany(
+          { school: schoolId },
+          { $set: { subjects: [] } }
+        );
+      } catch (e) {
+        // Log but do not fail purge if classes update fails
+        console.warn('Warning: failed to clear class subjects after purge:', e?.message || e);
+      }
+
+      return res.json({ message: 'All subjects purged for this school', deletedCount: result.deletedCount || 0 });
+    } catch (error) {
+      console.error('Purge subjects error:', error);
+      return res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 }

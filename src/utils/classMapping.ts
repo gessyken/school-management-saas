@@ -70,13 +70,27 @@ export const mapBackendToFrontend = (backendClass: BackendClass): FrontendClass 
 /**
  * Mappe les données du formulaire frontend vers le format attendu par le backend
  */
+import { FRANCOPHONE_LEVELS, ANGLOPHONE_LEVELS } from '@/constants/cameroonEducation';
+
+const resolveLevelName = (idOrName: string): string => {
+  if (!idOrName) return idOrName;
+  const all = [...FRANCOPHONE_LEVELS, ...ANGLOPHONE_LEVELS];
+  const byId = all.find(l => l.id === idOrName);
+  if (byId) return byId.name;
+  // if already a display name, return as-is
+  const byName = all.find(l => l.name === idOrName);
+  return byName ? byName.name : idOrName;
+};
+
 export const mapFrontendToBackend = (frontendClass: any) => {
+  const levelName = resolveLevelName(frontendClass.level);
+  const shouldIncludeSpecialty = levelName === 'Terminale' || levelName === 'Upper Sixth';
   return {
     classesName: frontendClass.name,
-    level: frontendClass.level,
+    level: levelName,
     section: frontendClass.section,
     educationSystem: frontendClass.educationSystem,
-    specialty: frontendClass.specialty,
+    specialty: shouldIncludeSpecialty ? frontendClass.specialty : undefined,
     capacity: frontendClass.capacity,
     description: frontendClass.description,
     status: frontendClass.status || 'Open',

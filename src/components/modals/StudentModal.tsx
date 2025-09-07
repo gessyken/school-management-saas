@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar, User, Mail, Phone, MapPin, Users, BookOpen } from 'lucide-react';
+import { classesService } from '@/services/classesService';
 
 interface Student {
   id?: string;
@@ -59,12 +60,25 @@ const StudentModal: React.FC<StudentModalProps> = ({
     parentEmail: '',
     birthDate: '',
   });
-
-  const classes = ['6ème A', '6ème B', '5ème A', '5ème B', '4ème A', '4ème B', '3ème A', '3ème B', '3ème C'];
+  const [availableClasses, setAvailableClasses] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
 
   useEffect(() => {
+    // load classes from API
+    const loadClasses = async () => {
+      try {
+        const cls = await classesService.getClasses();
+        const items = Array.isArray(cls) ? cls.map((c: any) => ({ id: c.id || c._id, name: c.name || c.classesName || c.className })) : [];
+        setAvailableClasses(items);
+      } catch {
+        setAvailableClasses([]);
+      }
+    };
+    loadClasses();
+
     if (student) {
       setFormData({ ...student });
+      setSelectedClassId('');
     } else {
       setFormData({
         name: '',
@@ -79,12 +93,21 @@ const StudentModal: React.FC<StudentModalProps> = ({
         parentEmail: '',
         birthDate: '',
       });
+      setSelectedClassId('');
     }
   }, [student, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    const selectedClassName = availableClasses.find(c => c.id === selectedClassId)?.name || '';
+    const payload = {
+      ...formData,
+      class: selectedClassName || formData.class,
+      // pass classesId to let caller link the student to a class after creation
+      // @ts-ignore
+      classesId: selectedClassId || undefined,
+    } as any;
+    onSave(payload);
     onClose();
   };
 
@@ -297,15 +320,15 @@ const StudentModal: React.FC<StudentModalProps> = ({
                 <Label htmlFor="class">Classe *</Label>
                 <select
                   id="class"
-                  value={formData.class}
-                  onChange={(e) => handleChange('class', e.target.value)}
+                  value={selectedClassId}
+                  onChange={(e) => setSelectedClassId(e.target.value)}
                   className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                 >
                   <option value="">Sélectionner une classe</option>
-                  {classes.map((className) => (
-                    <option key={className} value={className}>
-                      {className}
+                  {availableClasses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
                     </option>
                   ))}
                 </select>

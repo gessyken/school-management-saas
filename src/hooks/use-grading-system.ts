@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { useSchoolSystem } from '@/hooks/use-school-system';
+import { useSchoolSystem } from './use-school-system';
 
 type GradeMention = {
   min: number;

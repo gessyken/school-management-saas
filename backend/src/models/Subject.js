@@ -23,11 +23,16 @@ const subjectSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    coefficient: {
+    baseCoefficient: {
       type: Number,
       default: 1,
       min: 0.5,
       max: 10
+    },
+    coefficientsByLevel: {
+      type: Map,
+      of: Number,
+      default: new Map()
     },
     weeklyHours: {
       type: Number,
@@ -35,8 +40,13 @@ const subjectSchema = new mongoose.Schema(
       min: 1,
       max: 10
     },
-    level: {
-      type: String,
+    teachers: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: undefined
+    }],
+    levels: {
+      type: [String],
       enum: [
         // Francophone levels
         '6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Terminale',
@@ -45,7 +55,7 @@ const subjectSchema = new mongoose.Schema(
         // Général (pour toutes les classes)
         'Général'
       ],
-      default: 'Général'
+      default: ['Général']
     },
     educationSystem: {
       type: String,

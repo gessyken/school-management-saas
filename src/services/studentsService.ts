@@ -51,14 +51,27 @@ export const studentsService = {
         status: studentData.status,
       };
 
+      // Create student
       const res = await api.post('/students', payload);
-      const s = res.data?.student || res.data;
+      let s = res.data?.student || res.data;
+
+      // If a class was selected in UI, assign student to that class immediately
+      const classesId = studentData.classesId;
+      if (s && (classesId ?? '') !== '') {
+        try {
+          const assignRes = await api.put(`/students/${s.id || s._id}`, { classesId });
+          s = assignRes.data?.student || assignRes.data || s;
+        } catch (e) {
+          // Silently ignore class assignment failure here; UI toasts will handle via caller if needed
+        }
+      }
+
       // Normalize back to UI shape
       return {
         id: s.id || s._id,
         name: `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim(),
-        email: s.email,
-        phone: s.phoneNumber,
+        email: s.email || s.user?.email,
+        phone: s.phoneNumber || s.user?.phoneNumber,
         class: s.classInfo?.classesName,
         average: s.overallAverage ?? 0,
         status: s.status || 'active',
@@ -78,7 +91,23 @@ export const studentsService = {
   async updateStudent(id: string, studentData: any): Promise<any> {
     try {
       const res = await api.put(`/students/${id}`, studentData);
-      return res.data;
+      const s = res.data?.student || res.data;
+      return {
+        id: s.id || s._id,
+        name: `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim() || s.name,
+        email: s.email || s.user?.email,
+        phone: s.phoneNumber || s.user?.phoneNumber,
+        class: s.classInfo?.classesName || s.class,
+        average: s.overallAverage ?? s.average ?? 0,
+        status: s.status || 'active',
+        enrollmentDate: s.enrollmentDate || s.createdAt || new Date().toISOString(),
+        address: s.address,
+        parentName: s.parentName,
+        parentPhone: s.parentPhone,
+        parentEmail: s.parentEmail,
+        birthDate: s.dateOfBirth || s.birthDate,
+        avatar: s.avatar,
+      };
     } catch (error) {
       throw error;
     }

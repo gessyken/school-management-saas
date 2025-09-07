@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import locationService, { cameroonRegions, cameroonDepartments } from '@/services/locationService';
+import locationService, { cameroonRegions, cameroonDepartments } from '../services/locationService';
 
 // Types pour les régions et départements du Cameroun
 type Region = {

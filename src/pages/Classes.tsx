@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Users, BookOpen, TrendingUp, Calendar, Eye, Edit, Settings, Trash2 } from 'lucide-react';
+import { Plus, Search, Users, BookOpen, TrendingUp, Calendar, Eye, Edit, Settings, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,10 @@ import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal';
 import { useToast } from '@/hooks/use-toast';
 import { classesService } from '@/services/classesService';
 import { mapBackendToFrontend, mapFrontendToBackend } from '@/utils/classMapping';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import BulkClassModal from '@/components/modals/BulkClassModal';
 
 interface ClassRoom {
   id: string;
@@ -48,25 +52,33 @@ const Classes: React.FC = () => {
     isOpen: false,
     classData: null
   });
+  const [bulkModal, setBulkModal] = useState<{ isOpen: boolean; payload: string; isSubmitting: boolean; mode: 'simple' | 'json' }>({
+    isOpen: false,
+    payload: '6ème A; 6ème B; 5ème A',
+    isSubmitting: false,
+    mode: 'simple'
+  });
   const { toast } = useToast();
 
+  const loadClasses = async () => {
+    try {
+      setIsLoading(true);
+      const backendData = await classesService.getClasses();
+      const frontendData = backendData.map(mapBackendToFrontend);
+      setClasses(frontendData);
+    } catch (error) {
+      console.error('Error loading classes:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les classes.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadClasses = async () => {
-      try {
-        setIsLoading(true);
-        const backendData = await classesService.getClasses();
-        
-        // Mapper les données backend vers l'interface ClassRoom
-        const mappedClasses = (backendData || []).map(mapBackendToFrontend);
-        
-        setClasses(mappedClasses);
-      } catch (e) {
-        console.error(e);
-        toast({ title: 'Données classes indisponibles', description: 'Les données seront affichées dès qu\'elles seront disponibles.', variant: 'destructive' });
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadClasses();
   }, [toast]);
 
@@ -86,44 +98,52 @@ const Classes: React.FC = () => {
     setClassModal({ isOpen: false, mode: 'create', classData: null });
   };
 
-  const handleSaveClass = async (classData: any) => {
+  const handleSaveClass = async (classData: ClassRoom) => {
     try {
-      // Mapper les données frontend vers le format backend
       const backendData = mapFrontendToBackend(classData);
-
+      
       if (classModal.mode === 'create') {
-        const response = await classesService.createClass(backendData);
-        const newClass = response.class;
+        const newClass = await classesService.createClass(backendData);
+        const frontendClass = mapBackendToFrontend(newClass);
+        setClasses(prev => [...prev, frontendClass]);
         
-        // Mapper la réponse backend vers ClassRoom
-        const mappedClass = mapBackendToFrontend(newClass);
-        
-        setClasses(prev => [...prev, mappedClass]);
         toast({
           title: "Classe créée",
           description: `La classe ${classData.name} a été créée avec succès.`,
         });
       } else if (classModal.mode === 'edit') {
-        const response = await classesService.updateClass(classData.id, backendData);
-        const updatedClass = response.class;
-        
-        // Mapper la réponse backend vers ClassRoom
-        const mappedClass = mapBackendToFrontend(updatedClass);
-        
+        const updatedClass = await classesService.updateClass(classData.id, backendData);
+        const frontendClass = mapBackendToFrontend(updatedClass);
         setClasses(prev => prev.map(c => 
-          c.id === classData.id ? mappedClass : c
+          c.id === classData.id ? frontendClass : c
         ));
         toast({
           title: "Classe modifiée",
           description: `La classe ${classData.name} a été mise à jour.`,
         });
       }
-      handleCloseModal();
     } catch (error) {
-      console.error('Erreur sauvegarde classe:', error);
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de la sauvegarde.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRefreshSubjects = async (classId: string) => {
+    try {
+      await classesService.refreshClassSubjects(classId);
+      toast({
+        title: "Matières rafraîchies",
+        description: "Les matières de la classe ont été mises à jour selon le niveau et le système éducatif.",
+      });
+      // Optionally reload classes to show updated subject count
+      loadClasses();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de rafraîchir les matières de cette classe.",
         variant: "destructive"
       });
     }
@@ -196,7 +216,14 @@ const Classes: React.FC = () => {
             onClick={() => handleOpenModal('create')}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Nouvelle classe
+            Créer une classe
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => setBulkModal((s) => ({ ...s, isOpen: true }))}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Créer en masse
           </Button>
         </div>
       </div>
@@ -334,6 +361,14 @@ const Classes: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
+                    onClick={() => handleRefreshSubjects(classRoom.id)}
+                    title="Rafraîchir les matières selon le niveau/système"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleDeleteClass(classRoom)}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -425,6 +460,55 @@ const Classes: React.FC = () => {
         title="Supprimer la classe"
         message="Êtes-vous sûr de vouloir supprimer cette classe ?"
         itemName={deleteModal.classData?.name}
+      />
+
+      <BulkClassModal
+        isOpen={bulkModal.isOpen}
+        onClose={() => setBulkModal((s) => ({ ...s, isOpen: false }))}
+        onSave={async (items) => {
+          try {
+            // Resolve level id -> display name as required by backend enum
+            const ALL_LEVELS = [...(await import('@/constants/cameroonEducation')).FRANCOPHONE_LEVELS, ...(await import('@/constants/cameroonEducation')).ANGLOPHONE_LEVELS];
+            const resolveLevelName = (idOrName: string) => {
+              const byId = ALL_LEVELS.find((l: any) => l.id === idOrName);
+              if (byId) return byId.name;
+              const byName = ALL_LEVELS.find((l: any) => l.name === idOrName);
+              return byName ? byName.name : idOrName;
+            };
+
+            const backendItems = items.map((it) => {
+              const levelName = resolveLevelName(it.level);
+              const includeSpecialty = levelName === 'Terminale' || levelName === 'Upper Sixth';
+              return {
+                classesName: `${levelName} ${it.section}${includeSpecialty && it.specialty ? ` (${it.specialty})` : ''}`.trim(),
+                level: levelName,
+                section: it.section,
+                specialty: includeSpecialty ? it.specialty : undefined,
+                educationSystem: it.educationSystem,
+                capacity: it.capacity,
+                description: it.description,
+                status: 'Open',
+                amountFee: 0,
+                year: '2024-2025',
+              };
+            });
+            const result = await classesService.bulkCreateClasses(backendItems);
+            const newOnes = (result.savedClasses || []).map(mapBackendToFrontend);
+            setClasses((prev) => [...prev, ...newOnes]);
+            // Auto-refresh subjects for each created class
+            try {
+              await Promise.all((result.savedClasses || []).map((c: any) =>
+                classesService.refreshClassSubjects(c._id || c.id)
+              ));
+            } catch (e) {
+              console.warn('Failed to auto-refresh subjects for some classes:', e);
+            }
+            toast({ title: 'Création en masse terminée', description: `${newOnes.length} créées, ${result.errors?.length || 0} erreurs.` });
+            setBulkModal((s) => ({ ...s, isOpen: false }));
+          } catch (err: any) {
+            toast({ title: 'Erreur', description: err?.response?.data?.message || 'Création en masse échouée.', variant: 'destructive' });
+          }
+        }}
       />
     </div>
   );

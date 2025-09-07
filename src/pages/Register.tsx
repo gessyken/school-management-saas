@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { School, Mail, Lock, Eye, EyeOff, User, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,27 +19,15 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { schoolService } from '@/services/schoolService';
+import { School as SchoolType } from '@/types';
 
 const registerSchema = z.object({
-  name: z.string()
-    .min(2, { message: 'Le nom doit contenir au moins 2 caractères' })
-    .max(50, { message: 'Le nom ne peut pas dépasser 50 caractères' })
-    .regex(/^[a-zA-ZÀ-ÿ\s'-]+$/, { message: 'Le nom ne peut contenir que des lettres, espaces, apostrophes et tirets' }),
-  email: z.string()
-    .email({ message: 'Format d\'email invalide' })
-    .min(1, { message: 'L\'email est requis' })
-    .max(100, { message: 'L\'email ne peut pas dépasser 100 caractères' }),
-  phone: z.string()
-    .min(8, { message: 'Le numéro doit contenir au moins 8 chiffres' })
-    .max(15, { message: 'Le numéro ne peut pas dépasser 15 chiffres' })
-    .regex(/^[\d\s\-\+\(\)\.]+$/, { message: 'Format de téléphone invalide' }),
-  password: z.string()
-    .min(8, { message: 'Le mot de passe doit contenir au moins 8 caractères' })
-    .max(128, { message: 'Le mot de passe ne peut pas dépasser 128 caractères' })
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, { 
-      message: 'Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre' 
-    }),
-  confirmPassword: z.string().min(1, { message: 'La confirmation du mot de passe est requise' }),
+  name: z.string().min(3, { message: 'Le nom doit contenir au moins 3 caractères' }),
+  email: z.string().email({ message: 'Email invalide' }),
+  phone: z.string().min(8, { message: 'Numéro de téléphone invalide' }),
+  password: z.string().min(6, { message: 'Le mot de passe doit contenir au moins 6 caractères' }),
+  confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Les mots de passe ne correspondent pas',
   path: ['confirmPassword'],
@@ -52,6 +40,8 @@ const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { isAuthenticated, register } = useAuth();
+  const [schools, setSchools] = useState<SchoolType[]>([]);
+  const [isLoadingSchools, setIsLoadingSchools] = useState(false);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -111,7 +101,7 @@ const Register: React.FC = () => {
               Créer un compte
             </CardTitle>
             <CardDescription className="text-muted-foreground">
-              Inscrivez-vous pour gérer vos élèves et créer votre école
+              Inscrivez-vous pour accéder au système de gestion scolaire
             </CardDescription>
           </div>
         </CardHeader>

@@ -242,18 +242,19 @@ const ClassModal: React.FC<ClassModalProps> = ({
                   Informations générales
                 </h4>
                 <div className="space-y-2 pl-6">
-                  <p><span className="font-medium">Système :</span> 
-                    <Badge variant={formData.educationSystem === 'francophone' ? 'default' : 'secondary'} className="ml-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Système :</span>
+                    <Badge variant={formData.educationSystem === 'francophone' ? 'default' : 'secondary'}>
                       {formData.educationSystem === 'francophone' ? 'Francophone' : 'Anglophone'}
                     </Badge>
-                  </p>
-                  <p><span className="font-medium">Niveau :</span> {formData.level}</p>
-                  <p><span className="font-medium">Section :</span> {formData.section}</p>
+                  </div>
+                  <div><span className="font-medium">Niveau :</span> {formData.level}</div>
+                  <div><span className="font-medium">Section :</span> {formData.section}</div>
                   {formData.specialty && (
-                    <p><span className="font-medium">Spécialité :</span> {formData.specialty}</p>
+                    <div><span className="font-medium">Spécialité :</span> {formData.specialty}</div>
                   )}
-                  <p><span className="font-medium">Professeur principal :</span> {formData.teacher}</p>
-                  <p><span className="font-medium">Salle :</span> {formData.room}</p>
+                  <div><span className="font-medium">Professeur principal :</span> {formData.teacher}</div>
+                  <div><span className="font-medium">Salle :</span> {formData.room}</div>
                 </div>
               </div>
 
