@@ -15,6 +15,8 @@ import logRoutes from './src/routes/logRoutes.js';
 import dashboardRoutes from './src/routes/dashboardRoutes.js';
 import financesRoutes from './src/routes/financesRoutes.js';
 import reportsRoutes from './src/routes/reportsRoutes.js';
+import schoolRoutes from './src/routes/schoolRoutes.js';
+import authRoutes from './src/routes/authRoutes.js';
 import "express-async-errors";
 import { requestLogger } from "./src/middleware/requestLogger.js";
 
@@ -65,10 +67,6 @@ app.use('/api/logs', logRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/finances', financesRoutes);
 app.use('/api/reports', reportsRoutes);
-
-import schoolRoutes from './src/routes/schoolRoutes.js';
-import authRoutes from './src/routes/authRoutes.js';
-
 app.use('/api/schools', schoolRoutes);
 app.use('/api/auth', authRoutes);
 

@@ -1,60 +1,27 @@
-import express from "express";
-import {
-  registerSchool,
-  getAllSchools,
-  getUserSchools,
-  updateSchoolAccess,
-  switchSchool,
-  requestJoinSchool,
-  getJoinRequests,
-  approveJoinRequest,
-  rejectJoinRequest,
-  getSchoolById,
-  updateSchool,
-  getSchoolMembers,
-  updateMemberRoles,
-} from "../controllers/schoolController.js";
-import { getUserRolesForSchool, protect } from "../middleware/auth.middleware.js";
+import express from 'express';
+import settingController from '../controllers/SettingController.js';
+import { protect, getUserRolesForSchool } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
+router.use(protect);
+router.use(getUserRolesForSchool);
 
-// ➡️ Création d'une école
-router.post("/", protect, registerSchool);
+// Academic Year
+router.post('/academic-year', settingController.createAcademicYear);
+router.get('/academic-year', settingController.getAcademicYears);
+router.put('/academic-year/:id', settingController.updateAcademicYear);
+router.delete('/academic-year/:id', settingController.deleteAcademicYear);
 
-// ➡️ Écoles de l'utilisateur courant
-router.get("/mine", protect, getUserSchools);
+// Term
+router.post('/term', settingController.createTerm);
+router.get('/term', settingController.getTerms);
+router.put('/term/:id', settingController.updateTerm);
+router.delete('/term/:id', settingController.deleteTerm);
 
-// ➡️ Switch d’école active
-router.post("/switch", protect, switchSchool);
-
-// ➡️ Requêtes d’adhésion
-router.post("/:schoolId/request-join", protect, requestJoinSchool);
-router.get("/:schoolId/join-requests", protect, getJoinRequests);
-router.post(
-  "/:schoolId/join-requests/:userId/approve",
-  protect,
-  getUserRolesForSchool,
-  approveJoinRequest
-);
-router.delete(
-  "/:schoolId/join-requests/:userId/reject",
-  protect,
-  rejectJoinRequest
-);
-
-// ➡️ Gestion des écoles (admin)
-router.get("/", protect, getAllSchools);
-router.get("/:schoolId", protect, getSchoolById);
-router.put("/:schoolId", protect, getUserRolesForSchool, updateSchool);
-router.put("/:id/access", protect, updateSchoolAccess);
-
-// ➡️ Gestion des membres
-router.get("/:schoolId/members", protect, getSchoolMembers);
-router.patch(
-  "/:schoolId/members/:memberId/roles",
-  protect,
-  getUserRolesForSchool,
-  updateMemberRoles
-);
+// Sequence
+router.post('/sequence', settingController.createSequence);
+router.get('/sequence', settingController.getSequences);
+router.put('/sequence/:id', settingController.updateSequence);
+router.delete('/sequence/:id', settingController.deleteSequence);
 
 export default router;
