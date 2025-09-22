@@ -24,6 +24,7 @@ import {
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { currentSchool, user } = useAuth();
+  console.log(user)
   
   // Données réelles (vides au début)
   const performanceData: any[] = [];

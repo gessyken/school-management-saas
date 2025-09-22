@@ -70,7 +70,7 @@ interface AuthContextType extends AuthState {
   login: (email: string, password: string, schoolId: string) => Promise<void>;
   register: (name: string, email: string, phone: string, password: string) => Promise<void>;
   logout: () => void;
-  switchSchool: (school: School) => void;
+  switchSchool: (school: SchoolWithId) => Promise<void>;
   updateProfile: (userData: Partial<User>) => Promise<void>;
   checkAuth: () => Promise<boolean>;
 }
@@ -208,11 +208,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const switchSchool = (school: School) => {
-    const authData = JSON.parse(localStorage.getItem('schoolAuth') || '{}');
-    authData.currentSchool = school;
-    localStorage.setItem('schoolAuth', JSON.stringify(authData));
-    dispatch({ type: 'SWITCH_SCHOOL', payload: school });
+  /**
+   * Changer d'école active
+   */
+  const switchSchool = async (school: SchoolWithId): Promise<void> => {
+    try {
+      // Appel à l'API pour changer d'école et obtenir un nouveau token
+      const response = await api.post<{ token: string; message: string }>('/schools/switch', {
+        schoolId: school?.id || school?._id
+      });
+      
+      const { token } = response.data;
+      
+      // Mettre à jour le token JWT
+      localStorage.setItem('token', token);
+      
+      // Mettre à jour les données d'authentification locales
+      const authData = JSON.parse(localStorage.getItem('schoolAuth') || '{}');
+      authData.currentSchool = school;
+      localStorage.setItem('schoolAuth', JSON.stringify(authData));
+      
+      // Mettre à jour le state
+      dispatch({ type: 'SWITCH_SCHOOL', payload: school });
+      
+      toast({
+        title: 'École changée',
+        description: `Vous avez sélectionné l'école ${school.name}.`,
+      });
+    } catch (error) {
+      console.error('Erreur lors du changement d\'école:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de changer d\'école.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
 
   /**

@@ -20,25 +20,26 @@ import Finances from "./pages/Finances";
 import Administration from "./pages/Administration";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import { School } from "lucide-react";
 
 const queryClient = new QueryClient();
 
 // Composant pour gérer les redirections via événements
 const AuthRedirectHandler = () => {
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     const handleRedirect = (event: CustomEvent<{ path: string }>) => {
       navigate(event.detail.path);
     };
-    
+
     window.addEventListener('auth:redirect', handleRedirect as EventListener);
-    
+
     return () => {
       window.removeEventListener('auth:redirect', handleRedirect as EventListener);
     };
   }, [navigate]);
-  
+
   return null;
 };
 
@@ -48,10 +49,25 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Chargement...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
+        <div className="text-center space-y-6">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto"></div>
+            <School className="w-8 h-8 text-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-foreground">Chargement</h2>
+            <p className="text-muted-foreground">Initialisation de votre espace...</p>
+          </div>
+          <div className="flex justify-center space-x-1">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-2 h-2 bg-primary/50 rounded-full animate-bounce"
+                style={{ animationDelay: `${i * 0.1}s` }}
+              />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -62,9 +78,9 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 h-screen overflow-auto">
         {children}
       </main>
     </div>
@@ -77,84 +93,84 @@ const AppRoutes = () => {
       <AuthRedirectHandler />
       <Routes>
         <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/select-school" element={<SelectSchool />} />
-      <Route path="/create-school" element={<CreateSchool />} />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedLayout>
-            <Dashboard />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/students"
-        element={
-          <ProtectedLayout>
-            <Students />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/subjects"
-        element={
-          <ProtectedLayout>
-            <Subjects />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/classes"
-        element={
-          <ProtectedLayout>
-            <Classes />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/academic-years"
-        element={
-          <ProtectedLayout>
-            <AcademicYears />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/reports"
-        element={
-          <ProtectedLayout>
-            <Reports />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/finances"
-        element={
-          <ProtectedLayout>
-            <Finances />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/administration"
-        element={
-          <ProtectedLayout>
-            <Administration />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedLayout>
-            <Settings />
-          </ProtectedLayout>
-        }
-      />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        <Route path="/register" element={<Register />} />
+        <Route path="/select-school" element={<SelectSchool />} />
+        <Route path="/create-school" element={<CreateSchool />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedLayout>
+              <Dashboard />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/students"
+          element={
+            <ProtectedLayout>
+              <Students />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/subjects"
+          element={
+            <ProtectedLayout>
+              <Subjects />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/classes"
+          element={
+            <ProtectedLayout>
+              <Classes />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/academic-years"
+          element={
+            <ProtectedLayout>
+              <AcademicYears />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedLayout>
+              <Reports />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/finances"
+          element={
+            <ProtectedLayout>
+              <Finances />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/administration"
+          element={
+            <ProtectedLayout>
+              <Administration />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedLayout>
+              <Settings />
+            </ProtectedLayout>
+          }
+        />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { School, Mail, Lock, Eye, EyeOff, User, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +50,7 @@ const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { isAuthenticated, register } = useAuth();
-
+  const navigate = useNavigate();
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -89,6 +89,7 @@ const Register: React.FC = () => {
         title: 'Inscription réussie',
         description: 'Votre compte a été créé avec succès. Après vous être connecté, vous pourrez créer ou sélectionner une école.',
       });
+      navigate('/login')
     } catch (error: any) {
       console.error('Erreur lors de l\'inscription:', error);
       // Les erreurs sont gérées dans le contexte Auth

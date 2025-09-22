@@ -35,6 +35,7 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   const { login, isAuthenticated } = useAuth();
+  console.log(isAuthenticated)
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -45,7 +46,7 @@ const Login: React.FC = () => {
   });
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/select-school" replace />;
   }
 
   const onSubmit = async (values: LoginFormValues) => {

@@ -19,6 +19,7 @@ router.get('/me', protect, getMe);
 
 // Check if user is authenticated (for session verification)
 router.get('/check', protect, (req, res) => {
+  console.log(req.userId)
   res.status(200).json({ authenticated: true, userId: req.userId });
 });
 

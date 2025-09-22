@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { Navigate, Link, useNavigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { School, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/context/AuthContext';
@@ -22,21 +20,21 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 
+// Update the schema to include "bilingue" option
 const schoolSchema = z.object({
   name: z.string().min(3, { message: 'Le nom doit contenir au moins 3 caractères' }),
   email: z.string().email({ message: 'Email invalide' }).optional().or(z.literal('')),
   phone: z.string().min(8, { message: 'Numéro de téléphone invalide' }).optional().or(z.literal('')),
   website: z.string().url({ message: 'URL invalide' }).optional().or(z.literal('')),
   address: z.string().min(5, { message: 'L\'adresse doit contenir au moins 5 caractères' }).optional().or(z.literal('')),
-  system_type: z.enum(['francophone', 'anglophone']).default('francophone'),
+  system_type: z.enum(['francophone', 'anglophone', 'bilingue']).default('francophone'),
 });
 
 type SchoolFormValues = z.infer<typeof schoolSchema>;
 
 const CreateSchool: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const { isAuthenticated, user, dispatch } = useAuth();
-  const navigate = useNavigate();
+  const { isAuthenticated, switchSchool } = useAuth();
 
   const form = useForm<SchoolFormValues>({
     resolver: zodResolver(schoolSchema),
@@ -64,66 +62,35 @@ const CreateSchool: React.FC = () => {
         name: values.name,
         email: values.email || undefined,
         phone: values.phone || undefined,
-        // Remove website property since it doesn't exist in School type
         address: values.address || undefined,
         system_type: values.system_type,
       });
+      
+      // Extract the school data from the response
+      const newSchool = response.school;
+      
+      // Switch to the newly created school
+      await switchSchool(newSchool);
       
       toast({
         title: 'École créée',
         description: `L'école ${values.name} a été créée avec succès.`,
       });
       
-      // Mettre à jour le contexte d'authentification avec la nouvelle école
-      const authData = JSON.parse(localStorage.getItem('schoolAuth') || '{}');
-      const newSchool = response.data;
+      // Rediriger vers le tableau de bord
+      window.location.href = '/dashboard';
       
-      // S'assurer que les écoles existent
-      if (!authData.schools) {
-        authData.schools = [];
-      }
-      
-      // Ajouter la nouvelle école à la liste des écoles si elle n'existe pas déjà
-      const schoolExists = authData.schools.some((school: any) => school._id === newSchool._id);
-      if (!schoolExists) {
-        authData.schools.push(newSchool);
-      }
-      
-      // Définir la nouvelle école comme école courante
-      authData.currentSchool = newSchool;
-      
-      // Mettre à jour le localStorage
-      localStorage.setItem('schoolAuth', JSON.stringify(authData));
-      
-      console.log('École créée avec succès:', newSchool);
-      console.log('Données d\'authentification mises à jour:', authData);
-      
-      // Mettre à jour le state du contexte d'authentification
-      dispatch({
-        type: 'LOGIN_SUCCESS',
-        payload: {
-          user: authData.user,
-          schools: authData.schools,
-          currentSchool: newSchool
-        }
-      });
-      
-      // Afficher un message de succès
-      toast({
-        title: 'Succès',
-        description: 'École créée avec succès. Redirection vers le tableau de bord...',
-      });
-      
-      // Rediriger vers le tableau de bord après un court délai pour s'assurer que le contexte est mis à jour
-      setTimeout(() => {
-        // Utiliser window.location.href pour forcer un rechargement complet de la page
-        window.location.href = '/dashboard';
-      }, 1000);
     } catch (error: any) {
       console.error('Erreur lors de la création de l\'école:', error);
+      
+      let errorMessage = 'Impossible de créer l\'école.';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
       toast({
         title: 'Erreur',
-        description: error.response?.data?.message || 'Impossible de créer l\'école.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -227,7 +194,7 @@ const CreateSchool: React.FC = () => {
                   <FormItem>
                     <FormLabel>Adresse</FormLabel>
                     <FormControl>
-                      <Textarea {...field} placeholder="Adresse complète de l'école" />
+                      <Input {...field} placeholder="Adresse complète de l'école" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -248,6 +215,7 @@ const CreateSchool: React.FC = () => {
                       >
                         <option value="francophone">Francophone</option>
                         <option value="anglophone">Anglophone</option>
+                        <option value="bilingue">Bilingue</option>
                       </select>
                     </FormControl>
                     <FormMessage />
@@ -266,9 +234,9 @@ const CreateSchool: React.FC = () => {
         
         <CardFooter className="flex justify-center">
           <Button variant="ghost" asChild>
-            <Link to="/dashboard">
+            <Link to="/select-school">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Aller au tableau de bord
+              Retour à la sélection d'école
             </Link>
           </Button>
         </CardFooter>

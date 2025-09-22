@@ -1,27 +1,50 @@
 import express from 'express';
-import settingController from '../controllers/SettingController.js';
-import { protect, getUserRolesForSchool } from '../middleware/auth.middleware.js';
+import {
+  registerSchool,
+  getAllSchools,
+  updateSchoolAccess,
+  switchSchool,
+  requestJoinSchool,
+  getJoinRequests,
+  approveJoinRequest,
+  rejectJoinRequest,
+  getSchoolById,
+  updateSchool,
+  getSchoolMembers,
+  updateMemberRoles,
+  getUserSchools,
+//   getBillingInfo,
+//   updateBillingRules,
+//   updateUsage,
+} from '../controllers/schoolController.js';
+import { getUserRolesForSchool, protect } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
-router.use(protect);
-router.use(getUserRolesForSchool);
 
-// Academic Year
-router.post('/academic-year', settingController.createAcademicYear);
-router.get('/academic-year', settingController.getAcademicYears);
-router.put('/academic-year/:id', settingController.updateAcademicYear);
-router.delete('/academic-year/:id', settingController.deleteAcademicYear);
+// Create a new school (logged-in user becomes admin)
+router.post('/register', protect, registerSchool);
 
-// Term
-router.post('/term', settingController.createTerm);
-router.get('/term', settingController.getTerms);
-router.put('/term/:id', settingController.updateTerm);
-router.delete('/term/:id', settingController.deleteTerm);
+// Get list of all schools (admin panel)
+router.get('/', protect, getAllSchools);
+router.get("/my-schools", protect, getUserSchools);
+router.get("/detail-school/:schoolId", protect, getSchoolById);
 
-// Sequence
-router.post('/sequence', settingController.createSequence);
-router.get('/sequence', settingController.getSequences);
-router.put('/sequence/:id', settingController.updateSequence);
-router.delete('/sequence/:id', settingController.deleteSequence);
+// Block or unblock a school by ID
+router.put('/:id/access', protect, updateSchoolAccess);
+
+// Switch current active school for logged-in user
+router.post('/switch', protect, switchSchool);
+router.post("/:schoolId/request-join", protect, requestJoinSchool);
+router.get("/:schoolId/join-requests", protect, getJoinRequests);
+router.post("/:schoolId/join-requests/:userId/approve", protect,getUserRolesForSchool, approveJoinRequest);
+router.delete("/:schoolId/join-requests/:userId/reject", protect, rejectJoinRequest);
+// router.get("/:schoolId", protect, getSchoolById);
+router.put("/:schoolId", protect,getUserRolesForSchool, updateSchool);
+router.get("/:schoolId/members", protect, getSchoolMembers);
+router.patch("/:schoolId/members/:memberId/roles", protect,getUserRolesForSchool, updateMemberRoles);
+
+// router.get("/billing/:schoolId", getBillingInfo);
+// router.put("/billing/:schoolId/billing-rules", updateBillingRules);
+// router.put("/billing/:schoolId/usage", updateUsage);
 
 export default router;

@@ -8,7 +8,7 @@ export const registerSchool = async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(403).json({ message: 'Invalid user' });
 
-    const { name, email, phone, address, subdomain } = req.body;
+    const { name, email, phone, address, system_type } = req.body;
 
     // const existingSchool = await School.findOne({ email });
     // if (existingSchool) return res.status(400).json({ message: 'School already exists' });
@@ -18,7 +18,7 @@ export const registerSchool = async (req, res) => {
       email,
       phone,
       address,
-      subdomain,
+      system_type,
       members: [user._id],
       createdBy: user._id
     });
@@ -92,6 +92,8 @@ export const switchSchool = async (req, res) => {
 
   const user = await User.findById(req.userId);
   const membership = user.memberships.find(m => m.school.toString() === schoolId);
+  
+  console.log(user.memberships)
 
   if (!membership) {
     return res.status(403).json({ message: 'User not part of this school' });

@@ -30,10 +30,8 @@ const schoolSchema = new mongoose.Schema({
         trim: true
     },
 
-    subdomain: {
+    system_type: {
         type: String,
-        lowercase: true,
-        unique: true,
         sparse: true
     },
     members: [{
