@@ -50,7 +50,7 @@ export interface SchoolInput {
   address: string;
   phone: string;
   email: string;
-  system_type: 'francophone' | 'anglophone' | 'bilingue';
+  system_type: string|'francophone' | 'anglophone' | 'bilingue';
   region?: string;
   department?: string;
   logo?: File;
