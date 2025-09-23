@@ -53,11 +53,17 @@ export const joinRequestService = {
     const response = await api.get(`/schools/${schoolId}/invitations`);
     return response.data || [];
   },
-  async getMyInvitations(): Promise<any[]> {
-    const response = await api.get(`/schools/invitations/my`);
+  
+
+async getUserInvitations(): Promise<any[]> {
+    const response = await api.get('/schools/invitations/my');
     return response.data || [];
   },
 
+  // Accept an invitation
+  async acceptInvitation(schoolId: string): Promise<void> {
+    await api.put(`/schools/${schoolId}/invitations/accept`);
+  },
 
 
   // Cancel invitation

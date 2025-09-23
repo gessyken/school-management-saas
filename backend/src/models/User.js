@@ -41,7 +41,7 @@ const userSchema = new mongoose.Schema({
   },
   roles: {
     type: [String],
-    enum: ['USER', 'ADMIN'], default:'USER'
+    enum: ['USER', 'ADMIN'], default: 'USER'
   },
   security: {
     twoFactorEnabled: { type: Boolean, default: false },
@@ -65,16 +65,20 @@ const userSchema = new mongoose.Schema({
     },
     roles: [{
       type: String,
-      enum: ['DIRECTOR', 'SECRETARY', 'TEACHER', 'ADMIN']
+      enum: ['DIRECTOR', 'SECRETARY', 'TEACHER', 'ADMIN','FINANCE']
     }],
     status: {
       type: String,
-      enum: ['pending','active', 'inactive', 'suspended'],
+      enum: ['pending', 'active', 'inactive', 'suspended'],
       default: 'pending'
+    },
+    invitedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     },
     invitedAt: {
       type: Date,
-      default: Date.now
+      // default: Date.now
     },
     expiredAt: {
       type: Date,
@@ -82,7 +86,7 @@ const userSchema = new mongoose.Schema({
     },
     joinedAt: {
       type: Date,
-      default: Date.now
+      // default: Date.now
     }
   }]
 

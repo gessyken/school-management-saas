@@ -53,8 +53,8 @@ router.patch("/:schoolId/members/:memberId/roles", protect,getUserRolesForSchool
 // School-specific invitations
 router.post('/:schoolId/invitations', protect, inviteMember);
 router.get('/:schoolId/invitations', protect, getInvitationsBySchool);
+router.put('/:schoolId/invitations/accept', protect, acceptInvitation);
 router.delete('/:schoolId/invitations/:membershipId/cancel', protect, cancelInvitation);
-router.put('/:schoolId/invitations/:membershipId/accept', protect, acceptInvitation);
 
 // User invitation management
 router.get('/invitations/my', protect, getMyInvitations);
