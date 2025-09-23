@@ -69,8 +69,16 @@ const userSchema = new mongoose.Schema({
     }],
     status: {
       type: String,
-      enum: ['active', 'inactive', 'suspended'],
-      default: 'active'
+      enum: ['pending','active', 'inactive', 'suspended'],
+      default: 'pending'
+    },
+    invitedAt: {
+      type: Date,
+      default: Date.now
+    },
+    expiredAt: {
+      type: Date,
+      // default: Date.now
     },
     joinedAt: {
       type: Date,

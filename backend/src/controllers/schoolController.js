@@ -1,5 +1,6 @@
 import School from '../models/School.js';
 import User from '../models/User.js';
+import { generateRandom8Char } from '../utils/helper.js';
 import { generateToken } from '../utils/jwtUtils.js';
 
 // Register a new school
@@ -92,7 +93,7 @@ export const switchSchool = async (req, res) => {
 
   const user = await User.findById(req.userId);
   const membership = user.memberships.find(m => m.school.toString() === schoolId);
-  
+
   console.log(user.memberships)
 
   if (!membership) {
@@ -390,5 +391,230 @@ export const updateMemberRoles = async (req, res) => {
   } catch (error) {
     console.error("Error updating roles:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+// POST /api/schools/:schoolId/invitations
+// POST /api/schools/:schoolId/invitations
+export const inviteMember = async (req, res) => {
+  try {
+    const { schoolId } = req.params;
+    const { email, firstName, lastName, roles, message } = req.body;
+
+    // 1. Check if school exists and user has permission
+    const school = await School.findById(schoolId);
+    if (!school) return res.status(404).json({ message: 'School not found' });
+
+    // 2. Check if user already exists
+    let user = await User.findOne({ email });
+    const password = generateRandom8Char();
+    let sendpassword = false;
+
+    // Calculate expiration date (7 days from now)
+    const expiredAt = new Date();
+    expiredAt.setDate(expiredAt.getDate() + 7);
+    
+    if (user) {
+      // 3. Check if user already has any membership for this school
+      const existingMembership = user.memberships.find(
+        m => m.school.toString() === schoolId
+      );
+
+      if (existingMembership) {
+        // Check the status of existing membership
+        if (existingMembership.status === 'active') {
+          return res.status(400).json({ message: 'User is already an active member of this school' });
+        }
+        
+        if (existingMembership.status === 'pending') {
+          // Check if the pending invitation is expired
+          const isExpired = new Date() > new Date(existingMembership.expiredAt);
+          
+          if (!isExpired) {
+            return res.status(400).json({ 
+              message: 'User already has a pending invitation for this school',
+              expiredAt: existingMembership.expiredAt
+            });
+          } else {
+            // If expired, update the status to inactive and create a new invitation
+            existingMembership.status = 'inactive';
+          }
+        }
+        
+        if (existingMembership.status === 'inactive') {
+          // Reactivate the membership with new invitation
+          existingMembership.status = 'pending';
+          existingMembership.roles = roles || ['TEACHER'];
+          existingMembership.invitedAt = new Date();
+          existingMembership.expiredAt = expiredAt;
+        }
+      } else {
+        // User exists but has no membership for this school - add new membership
+        user.memberships.push({
+          school: school._id,
+          roles: roles || ['TEACHER'],
+          status: 'pending',
+          invitedAt: new Date(),
+          expiredAt: expiredAt
+        });
+      }
+    } else {
+      // User doesn't exist - create new user and membership
+      user = await User.create({
+        email,
+        firstName,
+        lastName,
+        status: 'active',
+        password,
+        memberships: [{
+          school: school._id,
+          roles: roles || ['TEACHER'],
+          status: 'pending',
+          invitedAt: new Date(),
+          expiredAt: expiredAt
+        }]
+      });
+      sendpassword = true;
+      console.log(password); // Only for development
+    }
+
+    await user.save();
+
+    // 4. Send email invitation
+    // await sendInvitationEmail(user.email, {
+    //   schoolName: school.name,
+    //   inviterName: req.user.name,
+    //   password: sendpassword ? password : null,
+    //   message,
+    //   invitationLink: `${process.env.FRONTEND_URL}/accept-invitation/${user.memberships[user.memberships.length - 1]._id}`
+    // });
+
+    res.status(201).json({ 
+      message: 'Invitation sent successfully',
+      expiredAt: expiredAt
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to send invitation', error: error.message });
+  }
+};
+
+// GET /api/schools/:schoolId/invitations
+export const getInvitationsBySchool = async (req, res) => {
+  try {
+    const { schoolId } = req.params;
+
+    // Check if school exists and user has permission
+    const school = await School.findById(schoolId);
+    if (!school) return res.status(404).json({ message: 'School not found' });
+
+    // Get all users with pending memberships for this school
+    const pendingInvitations = await User.find({
+      'memberships.school': schoolId,
+      'memberships.status': 'pending'
+    }).select('firstName lastName email memberships');
+    // console.log(pendingInvitations)
+    // Transform data to match invitation format
+    const invitations = pendingInvitations.map(user => {
+      const membership = user.memberships.find(m => m.school.toString() === schoolId && m.status === 'pending');
+      return {
+        _id: membership._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roles: membership.roles,
+        status: membership.status,
+        invitedAt: membership.invitedAt,
+        expiredAt: membership.expiredAt,
+        user: user._id
+      };
+    });
+    console.log(invitations)
+    console.log("invitations")
+    res.json(invitations);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch invitations', error: error.message });
+  }
+};
+
+// GET /api/invitations/my
+export const getMyInvitations = async (req, res) => {
+  try {
+    const userId = req.user._id; // Assuming authenticated user
+
+    const user = await User.findById(userId).populate('memberships.school', 'name');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Filter pending memberships (invitations)
+    const pendingInvitations = user.memberships.filter(m => m.status === 'pending');
+
+    const invitations = pendingInvitations.map(membership => ({
+      _id: membership._id,
+      school: membership.school,
+      roles: membership.roles,
+      status: membership.status,
+      invitedAt: membership.createdAt
+    }));
+
+    res.json(invitations);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch invitations', error: error.message });
+  }
+};
+
+// PUT /api/invitations/:membershipId/accept
+export const acceptInvitation = async (req, res) => {
+  try {
+    const { membershipId } = req.params;
+    const userId = req.user._id;
+
+    // Find user and the specific membership
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const membership = user.memberships.id(membershipId);
+    if (!membership) return res.status(404).json({ message: 'Invitation not found' });
+
+    if (membership.status !== 'pending') {
+      return res.status(400).json({ message: 'Invitation already processed' });
+    }
+
+    // Update membership status to active
+    membership.status = 'active';
+    await user.save();
+
+    res.json({ message: 'Invitation accepted successfully', membership });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to accept invitation', error: error.message });
+  }
+};
+
+// DELETE /api/invitations/:membershipId/cancel
+export const cancelInvitation = async (req, res) => {
+  try {
+    const { membershipId, schoolId } = req.params;
+    // const { schoolId } = req.body;
+    console.log(membershipId, schoolId)
+    // Check if school exists and user has permission
+    const school = await School.findById(schoolId);
+    if (!school) return res.status(404).json({ message: 'School not found' });
+
+    // Find user with the pending membership
+    const user = await User.findOne({
+      'memberships.school': schoolId,
+      'memberships.status': 'pending'
+    });
+
+    if (!user) return res.status(404).json({ message: 'Invitation not found' });
+
+    // Remove the membership (invitation)
+    user.memberships = user.memberships.filter(m =>
+      !(m?.school?.toString() === school?._id?.toString() && m.status === 'pending')
+    );
+
+    await user.save();
+
+    res.json({ message: 'Invitation cancelled successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to cancel invitation', error: error.message });
   }
 };

@@ -13,6 +13,11 @@ import {
   getSchoolMembers,
   updateMemberRoles,
   getUserSchools,
+  inviteMember,
+  getInvitationsBySchool,
+  getMyInvitations,
+  acceptInvitation,
+  cancelInvitation,
 //   getBillingInfo,
 //   updateBillingRules,
 //   updateUsage,
@@ -35,6 +40,7 @@ router.put('/:id/access', protect, updateSchoolAccess);
 // Switch current active school for logged-in user
 router.post('/switch', protect, switchSchool);
 router.post("/:schoolId/request-join", protect, requestJoinSchool);
+// router.post("/:schoolId/invitations", protect, inviteMember);
 router.get("/:schoolId/join-requests", protect, getJoinRequests);
 router.post("/:schoolId/join-requests/:userId/approve", protect,getUserRolesForSchool, approveJoinRequest);
 router.delete("/:schoolId/join-requests/:userId/reject", protect, rejectJoinRequest);
@@ -42,6 +48,16 @@ router.delete("/:schoolId/join-requests/:userId/reject", protect, rejectJoinRequ
 router.put("/:schoolId", protect,getUserRolesForSchool, updateSchool);
 router.get("/:schoolId/members", protect, getSchoolMembers);
 router.patch("/:schoolId/members/:memberId/roles", protect,getUserRolesForSchool, updateMemberRoles);
+
+
+// School-specific invitations
+router.post('/:schoolId/invitations', protect, inviteMember);
+router.get('/:schoolId/invitations', protect, getInvitationsBySchool);
+router.delete('/:schoolId/invitations/:membershipId/cancel', protect, cancelInvitation);
+router.put('/:schoolId/invitations/:membershipId/accept', protect, acceptInvitation);
+
+// User invitation management
+router.get('/invitations/my', protect, getMyInvitations);
 
 // router.get("/billing/:schoolId", getBillingInfo);
 // router.put("/billing/:schoolId/billing-rules", updateBillingRules);

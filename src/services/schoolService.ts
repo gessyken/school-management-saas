@@ -21,6 +21,14 @@ interface SchoolMembersResponse {
   members: any[];
 }
 
+export interface InviteMemberRequest {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  roles: string[];
+  message?: string;
+}
+
 export const schoolService = {
   // Créer une nouvelle école
   async createSchool(schoolData: SchoolInput): Promise<CreateSchoolResponse> {
@@ -183,6 +191,15 @@ export const schoolService = {
       console.error('Error deleting school:', error);
       throw error;
     }
+  },
+
+  async inviteMember(schoolId: string, inviteData: InviteMemberRequest): Promise<void> {
+    await api.post(`/schools/${schoolId}/invitations`, inviteData);
+  },
+
+  // If you're using the join request flow instead:
+  async createJoinRequest(schoolId: string, userId: string): Promise<void> {
+    await api.post(`/schools/${schoolId}/request-join`, { userId });
   }
 };
 
