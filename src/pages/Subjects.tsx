@@ -1,37 +1,47 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, BookOpen, Users, Clock, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, BookOpen, Users, Clock, Edit, Trash2, Eye, Filter, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import SubjectModal from '@/components/modals/SubjectModal';
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal';
 import { useToast } from '@/hooks/use-toast';
 import { subjectsService } from '@/services/subjectsService';
 
+interface Coefficient {
+  level: string;
+  value: number;
+}
+
 interface SubjectItem {
   id?: string;
+  _id?: string;
   name: string;
   code: string;
   description?: string;
+  year?: string;
   baseCoefficient?: number;
-  coefficient: number; // ensure present for SubjectModal compatibility
-  coefficientsByLevel?: Map<string, number>;
+  coefficient: number;
+  coefficients: Coefficient[]; // Array of coefficient objects
   weeklyHours: number;
   teacher: string;
-  teachers?: Array<{ id: string; name: string; email?: string }> | string[];
+  teachers?: Array<{ id: string; name: string; email?: string }>;
   levels?: string[];
-  level: string[]; // ensure present for SubjectModal compatibility
+  level: string[];
   educationSystem?: string;
   specialty?: string[];
   required?: boolean;
   isActive: boolean;
   color: string;
+  mainTeacher?: { id: string; name: string; email?: string };
 }
 
 const Subjects: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterSystem, setFilterSystem] = useState('all');
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [subjectModal, setSubjectModal] = useState<{
@@ -52,40 +62,72 @@ const Subjects: React.FC = () => {
   });
   const { toast } = useToast();
 
+  const loadSubjects = async (filters = {}) => {
+    try {
+      setIsLoading(true);
+      const data = await subjectsService.getSubjects({
+        search: searchTerm || undefined,
+        status: filterStatus !== 'all' ? filterStatus : undefined,
+        system: filterSystem !== 'all' ? filterSystem : undefined,
+        ...filters
+      });
+      console.log("data",data)
+      const normalized: SubjectItem[] = (data || []).map((s: any) => ({
+        id: s._id || s.id,
+        name: s.name,
+        code: s.code,
+        description: s.description || '',
+        year: s.year,
+        baseCoefficient: s.baseCoefficient ?? s.coefficient ?? 1,
+        coefficient: Number(s.coefficient ?? s.baseCoefficient ?? 1),
+        coefficients: s.coefficients,
+        coefficientsByLevel: s.coefficientsByLevel || {},
+        weeklyHours: Number(s.weeklyHours ?? 0),
+        teacher:  s.mainTeacher?.firstName || 'Non assigné',
+        teachers: Array.isArray(s.teachers) ? s.teachers.map((t: any) => ({
+          id: t._id || t.id,
+          name: `${t.firstName || ''} ${t.lastName || ''}`.trim() || t.name || 'Inconnu',
+          email: t.email
+        })) : [],
+        levels: Array.isArray(s.levels) ? s.levels : [],
+        level: Array.isArray(s.levels) ? s.levels : Array.isArray(s.level) ? s.level : [],
+        educationSystem: s.educationSystem || 'bilingue',
+        specialty: Array.isArray(s.specialty) ? s.specialty : Array.isArray(s.specialties) ? s.specialties : [],
+        required: !!s.required,
+        isActive: s.isActive !== undefined ? !!s.isActive : true,
+        color: s.color || '#3B82F6',
+        mainTeacher: s.mainTeacher ? {
+          id: s.mainTeacher._id || s.mainTeacher.id,
+          name: `${s.mainTeacher.firstName || ''} ${s.mainTeacher.lastName || ''}`.trim() || s.mainTeacher.name,
+          email: s.mainTeacher.email
+        } : undefined
+      }));
+      console.log("normalized",normalized)
+      setSubjects(normalized);
+    } catch (error: any) {
+      console.error('Error loading subjects:', error);
+      toast({ 
+        title: 'Erreur de chargement', 
+        description: 'Impossible de charger les matières. Veuillez réessayer.', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadSubjects = async () => {
-      try {
-        setIsLoading(true);
-        const data = await subjectsService.getSubjects();
-        const normalized: SubjectItem[] = (data || []).map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          code: s.code,
-          description: s.description || '',
-          baseCoefficient: s.baseCoefficient ?? s.coefficient ?? 1,
-          coefficient: Number(s.baseCoefficient ?? s.coefficient ?? 1),
-          coefficientsByLevel: s.coefficientsByLevel,
-          weeklyHours: Number(s.weeklyHours ?? 0),
-          teacher: s.teacher || 'Non assigné',
-          teachers: Array.isArray(s.teachers) ? s.teachers : [],
-          levels: Array.isArray(s.levels) ? s.levels : (Array.isArray(s.level) ? s.level : undefined),
-          level: Array.isArray(s.levels) ? s.levels : (Array.isArray(s.level) ? s.level : []),
-          educationSystem: s.educationSystem || 'both',
-          specialty: Array.isArray(s.specialty) ? s.specialty : [],
-          required: !!s.required,
-          isActive: s.isActive !== undefined ? !!s.isActive : true,
-          color: s.color || '#3B82F6',
-        }));
-        setSubjects(normalized);
-      } catch (e) {
-        console.error(e);
-        toast({ title: 'Données matières indisponibles', description: 'Les données seront affichées dès qu\'elles seront disponibles.', variant: 'destructive' });
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadSubjects();
-  }, [toast]);
+  }, []);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadSubjects();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, filterStatus, filterSystem]);
 
   const handleOpenModal = (mode: 'create' | 'edit' | 'view', subject?: SubjectItem) => {
     setSubjectModal({ isOpen: true, mode, subject });
@@ -95,29 +137,37 @@ const Subjects: React.FC = () => {
     setSubjectModal({ isOpen: false, mode: 'create', subject: null });
   };
 
-  const handleSaveSubject = async (subjectData: SubjectItem) => {
+  const handleSaveSubject = async (subjectData: any) => {
+        console.log("update",subjectModal.mode,subjectData)
     try {
       if (subjectModal.mode === 'create') {
-        const newSubject = await subjectsService.createSubject(subjectData);
-        setSubjects(prev => [...prev, newSubject]);
+        const response = await subjectsService.createSubject(subjectData);
+        const newSubject = response.subject || response;
+        setSubjects(prev => [...prev, { ...subjectData, id: newSubject.id || newSubject._id }]);
         toast({
           title: "Matière créée",
           description: `La matière ${subjectData.name} a été créée avec succès.`,
         });
-      } else if (subjectModal.mode === 'edit') {
-        const updatedSubject = await subjectsService.updateSubject(subjectData.id!, subjectData);
+        loadSubjects(); // Reload to get fresh data with populated fields
+      } else if (subjectModal.mode === 'edit' && subjectData.id) {
+        console.log("update")
+        const response = await subjectsService.updateSubject(subjectData.id, subjectData);
+        const updatedSubject = response.subject || response;
         setSubjects(prev => prev.map(s => 
-          s.id === subjectData.id ? updatedSubject : s
+          s.id === subjectData.id ? { ...subjectData, ...updatedSubject } : s
         ));
         toast({
           title: "Matière modifiée",
           description: `La matière ${subjectData.name} a été mise à jour.`,
         });
       }
-    } catch (error) {
+      handleCloseModal();
+    } catch (error: any) {
+      console.error('Error saving subject:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Une erreur est survenue lors de la sauvegarde.';
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la sauvegarde.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -128,19 +178,20 @@ const Subjects: React.FC = () => {
   };
 
   const confirmDeleteSubject = async () => {
-    if (deleteModal.subject) {
+    if (deleteModal.subject?.id) {
       try {
-        await subjectsService.deleteSubject(deleteModal.subject.id!);
+        await subjectsService.deleteSubject(deleteModal.subject.id);
         setSubjects(prev => prev.filter(s => s.id !== deleteModal.subject!.id));
         toast({
           title: "Matière supprimée",
           description: `La matière ${deleteModal.subject.name} a été supprimée.`,
-          variant: "destructive"
         });
-      } catch (error) {
+      } catch (error: any) {
+        console.error('Error deleting subject:', error);
+        const errorMessage = error.response?.data?.message || error.message || 'Une erreur est survenue lors de la suppression.';
         toast({
           title: "Erreur",
-          description: "Une erreur est survenue lors de la suppression.",
+          description: errorMessage,
           variant: "destructive"
         });
       }
@@ -148,11 +199,88 @@ const Subjects: React.FC = () => {
     setDeleteModal({ isOpen: false, subject: null });
   };
 
+  const handleToggleStatus = async (subject: SubjectItem) => {
+    if (!subject.id) return;
+    
+    try {
+      const response = await subjectsService.toggleActiveStatus(subject.id);
+      const updatedSubject = response.subject || response;
+      setSubjects(prev => prev.map(s => 
+        s.id === subject.id ? { ...s, isActive: !s.isActive } : s
+      ));
+      toast({
+        title: `Matière ${!subject.isActive ? 'activée' : 'désactivée'}`,
+        description: `La matière ${subject.name} a été ${!subject.isActive ? 'activée' : 'désactivée'}.`,
+      });
+    } catch (error: any) {
+      console.error('Error toggling subject status:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le statut de la matière.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      // This would call an export service when implemented
+      toast({
+        title: "Export en cours",
+        description: "Préparation de l'export des matières...",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur d'export",
+        description: "Impossible d'exporter les matières.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleImport = async () => {
+    try {
+      // This would call an import service when implemented
+      toast({
+        title: "Import en cours",
+        description: "Import des matières depuis le fichier...",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur d'import",
+        description: "Impossible d'importer les matières.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStatusBadge = (isActive: boolean) => {
     return isActive ? (
-      <Badge variant="default" className="bg-success">Actif</Badge>
+      <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">Actif</Badge>
     ) : (
-      <Badge variant="destructive">Inactif</Badge>
+      <Badge variant="secondary" className="bg-gray-100 text-gray-600 hover:bg-gray-100">Inactif</Badge>
+    );
+  };
+
+  const getSystemBadge = (system: string) => {
+    const variants = {
+      francophone: 'default',
+      anglophone: 'secondary',
+      bilingue: 'outline',
+      both: 'outline'
+    } as const;
+
+    const labels = {
+      francophone: 'FR',
+      anglophone: 'EN',
+      bilingue: 'Bilingue',
+      both: 'Les deux'
+    };
+
+    return (
+      <Badge variant={variants[system as keyof typeof variants] || 'outline'} className="text-xs">
+        {labels[system as keyof typeof labels] || system}
+      </Badge>
     );
   };
 
@@ -163,7 +291,9 @@ const Subjects: React.FC = () => {
     const matchesStatus = filterStatus === 'all' || 
                          (filterStatus === 'active' && subject.isActive) ||
                          (filterStatus === 'inactive' && !subject.isActive);
-    return matchesSearch && matchesStatus;
+    const matchesSystem = filterSystem === 'all' || 
+                         subject.educationSystem === filterSystem;
+    return matchesSearch && matchesStatus && matchesSystem;
   });
 
   return (
@@ -174,14 +304,20 @@ const Subjects: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">Gestion des matières</h1>
           <p className="text-muted-foreground mt-2">
             {subjects.length} matières • {filteredSubjects.length} affichées
+            {isLoading && ' • Chargement...'}
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm">
-            Import CSV
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="w-4 h-4 mr-2" />
+            Exporter
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleImport}>
+            <Upload className="w-4 h-4 mr-2" />
+            Importer CSV
           </Button>
           <Button 
-            className="bg-gradient-primary hover:bg-primary-hover"
+            className="bg-primary hover:bg-primary/90"
             onClick={() => handleOpenModal('create')}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -191,9 +327,9 @@ const Subjects: React.FC = () => {
       </div>
 
       {/* Filtres */}
-      <Card className="shadow-card">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <Card className="shadow-sm">
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -204,133 +340,156 @@ const Subjects: React.FC = () => {
               />
             </div>
 
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="all">Tous les statuts</option>
-              <option value="active">Actives</option>
-              <option value="inactive">Inactives</option>
-            </select>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="active">Actives</SelectItem>
+                <SelectItem value="inactive">Inactives</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <select
-              className="px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="all">Tous les systèmes</option>
-              <option value="francophone">Francophone</option>
-              <option value="anglophone">Anglophone</option>
-            </select>
+            <Select value={filterSystem} onValueChange={setFilterSystem}>
+              <SelectTrigger>
+                <SelectValue placeholder="Système éducatif" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les systèmes</SelectItem>
+                <SelectItem value="francophone">Francophone</SelectItem>
+                <SelectItem value="anglophone">Anglophone</SelectItem>
+                <SelectItem value="bilingue">Bilingue</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <Button variant="outline" className="w-full">
-              Coefficients par niveau
+            <Button variant="outline" className="w-full" onClick={() => loadSubjects()}>
+              <Filter className="w-4 h-4 mr-2" />
+              Actualiser
             </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Grille des matières */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {filteredSubjects.map((subject: SubjectItem, index: number) => (
-          <Card key={`${subject.id || subject.code || subject.name || 'sub'}-${index}`} className="shadow-card hover:shadow-elevated transition-all duration-200 group">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between mb-2">
-                <div 
-                  className="w-8 h-8 rounded-md flex items-center justify-center text-white font-bold text-sm"
-                  style={{ backgroundColor: subject.color }}
-                >
-                  {subject.code}
-                </div>
-                <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleOpenModal('view', subject)}
-                  >
-                    <Eye className="w-3 h-3" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleOpenModal('edit', subject)}
-                  >
-                    <Edit className="w-3 h-3" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => handleDeleteSubject(subject)}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <CardTitle className="text-sm font-semibold truncate">{subject.name}</CardTitle>
-                <Badge variant={subject.educationSystem === 'francophone' ? 'default' : 'secondary'} className="text-xs mt-1">
-                  {subject.educationSystem === 'francophone' ? 'FR' : subject.educationSystem === 'anglophone' ? 'EN' : 'Les deux'}
-                </Badge>
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-2 pt-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Coef:</span>
-                <span className="font-bold text-primary">{subject.baseCoefficient || subject.coefficient || 1}</span>
-              </div>
-              
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Heures:</span>
-                <span>{subject.weeklyHours}h/sem</span>
-              </div>
-
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground">Professeurs:</div>
-                {subject.teachers && (subject.teachers as any[]).length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {(subject.teachers as any[]).slice(0, 2).map((teacher: any, index: number) => (
-                      <Badge key={index} variant="outline" className="text-xs px-1 py-0">
-                        {typeof teacher === 'string' ? teacher : (teacher?.name || 'Inconnu')}
-                      </Badge>
-                    ))}
-                    {(subject.teachers as any[]).length > 2 && (
-                      <Badge variant="outline" className="text-xs px-1 py-0">
-                        +{(subject.teachers as any[]).length - 2}
-                      </Badge>
-                    )}
+      {isLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4">
+            {filteredSubjects.map((subject: SubjectItem) => (
+              <Card key={subject.id} className="hover:shadow-md transition-shadow group">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div 
+                      className="w-40 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm"
+                      style={{ backgroundColor: subject.color }}
+                    >
+                      {subject.code}
+                    </div>
+                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleOpenModal('view', subject)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Eye className="w-3 h-3" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleOpenModal('edit', subject)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteSubject(subject)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">Non assigné</span>
-                )}
-              </div>
+                  <div className="space-y-2">
+                    <CardTitle className="text-base font-semibold leading-tight">{subject.name}</CardTitle>
+                    <div className="flex flex-wrap gap-1">
+                      {getSystemBadge(subject.educationSystem || 'bilingue')}
+                      {subject.year && (
+                        <Badge variant="outline" className="text-xs">
+                          {subject.year}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
 
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground">Niveaux:</span>
-                <span className="text-xs">{subject.levels?.length || 0}</span>
-              </div>
+                <CardContent className="space-y-3 pt-0">
+                  {/* <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Coefficient:</span>
+                    <span className="font-semibold text-primary">{subject.coefficient}</span>
+                  </div> */}
+                  
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Heures/semaine:</span>
+                    <span>{subject.weeklyHours}h</span>
+                  </div>
 
-              <div className="flex justify-end">
-                {getStatusBadge(subject.isActive)}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                  <div className="space-y-1">
+                    <div className="text-sm text-muted-foreground">Professeur principal:</div>
+                    <div className="text-sm font-medium truncate" title={subject.teacher}>
+                      {subject.teacher}
+                    </div>
+                  </div>
 
-      {/* Message si aucun résultat */}
-      {filteredSubjects.length === 0 && (
-        <Card className="shadow-card">
-          <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Aucune matière trouvée</h3>
-            <p className="text-muted-foreground">
-              Essayez de modifier vos critères de recherche ou ajoutez une nouvelle matière.
-            </p>
-          </CardContent>
-        </Card>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Niveaux:</span>
+                    <span>{subject.levels?.length || 0}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleToggleStatus(subject)}
+                      className="text-xs h-7"
+                    >
+                      {subject.isActive ? 'Désactiver' : 'Activer'}
+                    </Button>
+                    {getStatusBadge(subject.isActive)}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Message si aucun résultat */}
+          {filteredSubjects.length === 0 && (
+            <Card className="text-center py-12">
+              <CardContent>
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <BookOpen className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Aucune matière trouvée</h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchTerm || filterStatus !== 'all' || filterSystem !== 'all' 
+                    ? "Aucune matière ne correspond à vos critères de recherche."
+                    : "Aucune matière n'a été créée pour le moment."
+                  }
+                </p>
+                <Button onClick={() => handleOpenModal('create')}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Créer la première matière
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Modales */}
@@ -340,6 +499,7 @@ const Subjects: React.FC = () => {
         onSave={handleSaveSubject}
         subject={subjectModal.subject}
         mode={subjectModal.mode}
+        coefData={subjectModal?.subject?.coefficients}
       />
 
       <DeleteConfirmModal
@@ -347,7 +507,7 @@ const Subjects: React.FC = () => {
         onClose={() => setDeleteModal({ isOpen: false, subject: null })}
         onConfirm={confirmDeleteSubject}
         title="Supprimer la matière"
-        message="Êtes-vous sûr de vouloir supprimer cette matière ?"
+        message="Êtes-vous sûr de vouloir supprimer cette matière ? Cette action est irréversible."
         itemName={deleteModal.subject?.name}
       />
     </div>

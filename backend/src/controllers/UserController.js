@@ -79,7 +79,10 @@ class UserController {
       console.log(req.query)
       const { role, status, search } = req.query;
       const schoolId = req.schoolId; // Assuming this is set by middleware
-
+      console.log("schoolId",schoolId)
+      if (!schoolId) {
+        return res.status(400).json({ message: 'Select a school first' });
+      }
       const filter = {
         'memberships.school': schoolId,  // users who belong to this school
       };
