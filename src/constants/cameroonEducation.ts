@@ -6,23 +6,23 @@ export const EDUCATION_SYSTEMS = {
 } as const;
 
 export const FRANCOPHONE_LEVELS = [
-  { id: '6eme', name: '6ème', cycle: 'Collège' },
-  { id: '5eme', name: '5ème', cycle: 'Collège' },
-  { id: '4eme', name: '4ème', cycle: 'Collège' },
-  { id: '3eme', name: '3ème', cycle: 'Collège' },
+  { id: '6ème', name: '6ème', cycle: 'Collège' },
+  { id: '5ème', name: '5ème', cycle: 'Collège' },
+  { id: '4ème', name: '4ème', cycle: 'Collège' },
+  { id: '3ème', name: '3ème', cycle: 'Collège' },
   { id: '2nde', name: '2nde', cycle: 'Lycée' },
-  { id: '1ere', name: '1ère', cycle: 'Lycée' },
-  { id: 'terminale', name: 'Terminale', cycle: 'Lycée' }
+  { id: '1ère', name: '1ère', cycle: 'Lycée' },
+  { id: 'Terminale', name: 'Terminale', cycle: 'Lycée' }
 ];
 
 export const ANGLOPHONE_LEVELS = [
-  { id: 'form1', name: 'Form 1', cycle: 'Secondary' },
-  { id: 'form2', name: 'Form 2', cycle: 'Secondary' },
-  { id: 'form3', name: 'Form 3', cycle: 'Secondary' },
-  { id: 'form4', name: 'Form 4', cycle: 'Secondary' },
-  { id: 'form5', name: 'Form 5', cycle: 'Secondary' },
-  { id: 'lower6', name: 'Lower Sixth', cycle: 'High School' },
-  { id: 'upper6', name: 'Upper Sixth', cycle: 'High School' }
+  { id: 'Form 1', name: 'Form 1', cycle: 'Secondary' },
+  { id: 'Form 2', name: 'Form 2', cycle: 'Secondary' },
+  { id: 'Form 3', name: 'Form 3', cycle: 'Secondary' },
+  { id: 'Form 4', name: 'Form 4', cycle: 'Secondary' },
+  { id: 'Form 5', name: 'Form 5', cycle: 'Secondary' },
+  { id: 'Lower Sixth', name: 'Lower Sixth', cycle: 'High School' },
+  { id: 'Upper Sixth', name: 'Upper Sixth', cycle: 'High School' }
 ];
 
 export const FRANCOPHONE_SPECIALTIES = {

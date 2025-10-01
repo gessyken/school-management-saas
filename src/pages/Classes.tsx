@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Users, BookOpen, TrendingUp, Calendar, Eye, Edit, Settings, Trash2, Upload } from 'lucide-react';
+import {
+  Plus, Search, Users, BookOpen, TrendingUp, Calendar, Eye, Edit,
+  Settings, Trash2, Upload, RefreshCw, BarChart3, Filter, Download,
+  User,
+  MapPin,
+  Maximize2
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ClassModal from '@/components/modals/ClassModal';
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal';
 import { useToast } from '@/hooks/use-toast';
 import { classesService } from '@/services/classesService';
 import { mapBackendToFrontend, mapFrontendToBackend } from '@/utils/classMapping';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import BulkClassModal from '@/components/modals/BulkClassModal';
 
 interface ClassRoom {
@@ -20,7 +24,7 @@ interface ClassRoom {
   level: string;
   section: string;
   specialty?: string;
-  educationSystem: 'francophone' | 'anglophone';
+  educationSystem: 'francophone' | 'anglophone' | 'bilingue';
   capacity: number;
   currentStudents: number;
   teacher: string;
@@ -29,13 +33,35 @@ interface ClassRoom {
   averageGrade?: number;
   attendanceRate?: number;
   schedule?: string;
+  isActive?: boolean;
+  status?: string;
+  year?: string;
+  description?: string;
+}
+
+interface ClassStatistics {
+  totalClasses: number;
+  totalStudents: number;
+  totalCapacity: number;
+  activeClasses: number;
+  openClasses: number;
+  averageAttendance: number;
+  averageGrade: number;
+  utilizationRate: number;
+  systemBreakdown: Record<string, any>;
+  levelBreakdown: Record<string, any>;
 }
 
 const Classes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('all');
+  const [filterSystem, setFilterSystem] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [classes, setClasses] = useState<ClassRoom[]>([]);
+  const [statistics, setStatistics] = useState<ClassStatistics | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+
   const [classModal, setClassModal] = useState<{
     isOpen: boolean;
     mode: 'create' | 'edit' | 'view';
@@ -45,6 +71,7 @@ const Classes: React.FC = () => {
     mode: 'create',
     classData: null
   });
+
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
     classData?: ClassRoom | null;
@@ -52,19 +79,35 @@ const Classes: React.FC = () => {
     isOpen: false,
     classData: null
   });
-  const [bulkModal, setBulkModal] = useState<{ isOpen: boolean; payload: string; isSubmitting: boolean; mode: 'simple' | 'json' }>({
+
+  const [bulkModal, setBulkModal] = useState<{
+    isOpen: boolean;
+    payload: string;
+    isSubmitting: boolean;
+    mode: 'simple' | 'json'
+  }>({
     isOpen: false,
     payload: '6ème A; 6ème B; 5ème A',
     isSubmitting: false,
     mode: 'simple'
   });
+
   const { toast } = useToast();
 
-  const loadClasses = async () => {
+  const loadClasses = async (filters = {}) => {
     try {
       setIsLoading(true);
-      const backendData = await classesService.getClasses();
+      const backendData = await classesService.getClasses({
+        search: searchTerm || undefined,
+        level: filterLevel !== 'all' ? filterLevel : undefined,
+        educationSystem: filterSystem !== 'all' ? filterSystem : undefined,
+        status: filterStatus !== 'all' ? filterStatus : undefined,
+        ...filters
+      });
+      console.log("backendData", backendData)
+
       const frontendData = backendData.map(mapBackendToFrontend);
+      console.log("frontendData", frontendData)
       setClasses(frontendData);
     } catch (error) {
       console.error('Error loading classes:', error);
@@ -78,9 +121,34 @@ const Classes: React.FC = () => {
     }
   };
 
+  const loadStatistics = async () => {
+    try {
+      const stats = await classesService.getClassStatistics();
+      setStatistics(stats);
+    } catch (error) {
+      console.error('Error loading statistics:', error);
+    }
+  };
+
+  const refreshAllData = async () => {
+    setIsRefreshing(true);
+    await Promise.all([loadClasses(), loadStatistics()]);
+    setIsRefreshing(false);
+  };
+
   useEffect(() => {
     loadClasses();
-  }, [toast]);
+    loadStatistics();
+  }, []);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadClasses();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, filterLevel, filterSystem, filterStatus]);
 
   const levels = [
     'Tous les niveaux',
@@ -88,6 +156,16 @@ const Classes: React.FC = () => {
     '6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Terminale',
     // Anglophone
     'Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth', 'Upper Sixth'
+  ];
+
+  const educationSystems = [
+    'Tous les systèmes',
+    'francophone', 'anglophone', 'bilingue'
+  ];
+
+  const statusOptions = [
+    'Tous les statuts',
+    'Open', 'Closed', 'Active', 'Inactive'
   ];
 
   const handleOpenModal = (mode: 'create' | 'edit' | 'view', classData?: ClassRoom) => {
@@ -101,49 +179,82 @@ const Classes: React.FC = () => {
   const handleSaveClass = async (classData: ClassRoom) => {
     try {
       const backendData = mapFrontendToBackend(classData);
-      
+
       if (classModal.mode === 'create') {
-        const newClass = await classesService.createClass(backendData);
+        const response = await classesService.createClass(backendData);
+        const newClass = response.class || response;
         const frontendClass = mapBackendToFrontend(newClass);
         setClasses(prev => [...prev, frontendClass]);
-        
+
         toast({
           title: "Classe créée",
           description: `La classe ${classData.name} a été créée avec succès.`,
         });
       } else if (classModal.mode === 'edit') {
-        const updatedClass = await classesService.updateClass(classData.id, backendData);
+        const response = await classesService.updateClass(classData.id, backendData);
+        const updatedClass = response.class || response;
         const frontendClass = mapBackendToFrontend(updatedClass);
-        setClasses(prev => prev.map(c => 
+        setClasses(prev => prev.map(c =>
           c.id === classData.id ? frontendClass : c
         ));
         toast({
           title: "Classe modifiée",
-          description: `La classe ${classData.name} a été mise à jour.`,
+          description: `La classe ${classData.level}${classData.section} a été mise à jour.`,
         });
       }
-    } catch (error) {
+      handleCloseModal();
+      loadStatistics(); // Refresh statistics
+    } catch (error: any) {
+      console.error('Error saving class:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Une erreur est survenue lors de la sauvegarde.';
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la sauvegarde.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
   };
 
-  const handleRefreshSubjects = async (classId: string) => {
+  const handleRefreshSubjects = async (classId: string, className: string) => {
     try {
       await classesService.refreshClassSubjects(classId);
       toast({
         title: "Matières rafraîchies",
-        description: "Les matières de la classe ont été mises à jour selon le niveau et le système éducatif.",
+        description: `Les matières de la classe ${className} ont été mises à jour.`,
       });
-      // Optionally reload classes to show updated subject count
-      loadClasses();
-    } catch (error) {
+      loadClasses(); // Reload to show updated subject count
+    } catch (error: any) {
+      console.error('Error refreshing subjects:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Impossible de rafraîchir les matières.';
       toast({
         title: "Erreur",
-        description: "Impossible de rafraîchir les matières de cette classe.",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleToggleStatus = async (classData: ClassRoom) => {
+    try {
+      const response = await classesService.toggleClassStatus(classData.id);
+      const updatedClass = response.class || response;
+      const frontendClass = mapBackendToFrontend(updatedClass);
+
+      setClasses(prev => prev.map(c =>
+        c.id === classData.id ? frontendClass : c
+      ));
+
+      toast({
+        title: `Classe ${classData.isActive ? 'désactivée' : 'activée'}`,
+        description: `La classe ${classData.name} a été ${classData.isActive ? 'désactivée' : 'activée'}.`,
+      });
+      loadStatistics(); // Refresh statistics
+    } catch (error: any) {
+      console.error('Error toggling class status:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Impossible de modifier le statut.';
+      toast({
+        title: "Erreur",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -161,12 +272,14 @@ const Classes: React.FC = () => {
         toast({
           title: "Classe supprimée",
           description: `La classe ${deleteModal.classData.name} a été supprimée.`,
-          variant: "destructive"
         });
-      } catch (error) {
+        loadStatistics(); // Refresh statistics
+      } catch (error: any) {
+        console.error('Error deleting class:', error);
+        const errorMessage = error.response?.data?.message || error.message || 'Une erreur est survenue lors de la suppression.';
         toast({
           title: "Erreur",
-          description: "Une erreur est survenue lors de la suppression.",
+          description: errorMessage,
           variant: "destructive"
         });
       }
@@ -174,26 +287,152 @@ const Classes: React.FC = () => {
     setDeleteModal({ isOpen: false, classData: null });
   };
 
-  const getGradeColor = (grade: number) => {
-    if (grade >= 16) return 'text-success';
-    if (grade >= 14) return 'text-primary';
-    if (grade >= 12) return 'text-warning';
-    return 'text-destructive';
+  const handleBulkCreate = async (items: any[]) => {
+    try {
+      setBulkModal(prev => ({ ...prev, isSubmitting: true }));
+      console.log('Bulk create items:', items);
+
+      const backendItems = items.map((it) => ({
+        name: it.name,
+        mainTeacher: it.mainTeacher, // Fixed: was it.level, now it.mainTeacher
+        level: it.level,
+        section: it.section,
+        specialty: it.specialty,
+        educationSystem: it.educationSystem,
+        capacity: it.capacity,
+        teacher: it.teacher,
+        room: it.room,
+        description: it.description,
+        year: it.year || '2024-2025',
+      }));
+
+      console.log('Backend items:', backendItems);
+
+      const result = await classesService.bulkCreateClasses(backendItems);
+      const newClasses = (result.savedClasses || []).map(mapBackendToFrontend);
+
+      setClasses(prev => [...prev, ...newClasses]);
+
+      // Auto-refresh subjects for each created class
+      try {
+        await Promise.all((result.savedClasses || []).map((c: any) =>
+          classesService.refreshClassSubjects(c._id || c.id)
+        ));
+      } catch (e) {
+        console.warn('Failed to auto-refresh subjects for some classes:', e);
+      }
+
+      toast({
+        title: 'Création en masse terminée',
+        description: `${newClasses.length} classes créées, ${result.errors?.length || 0} erreurs.`
+      });
+
+      // Close modal after successful creation
+      setBulkModal(prev => ({ ...prev, isOpen: false, isSubmitting: false }));
+      loadStatistics(); // Refresh statistics
+    } catch (err: any) {
+      console.error('Error in bulk creation:', err);
+      const errorMessage = err?.response?.data?.message || 'Création en masse échouée.';
+      toast({
+        title: 'Erreur',
+        description: errorMessage,
+        variant: 'destructive'
+      });
+      setBulkModal(prev => ({ ...prev, isSubmitting: false }));
+    }
   };
 
-  const getCapacityBadge = (current: number, max: number) => {
-    const percentage = (current / max) * 100;
-    if (percentage >= 90) return <Badge variant="destructive">Pleine</Badge>;
-    if (percentage >= 75) return <Badge className="bg-warning">Presque pleine</Badge>;
-    return <Badge variant="default" className="bg-success">Disponible</Badge>;
+  const handleExportData = async () => {
+    try {
+      // This would call an export service when implemented
+      toast({
+        title: "Export en cours",
+        description: "Préparation de l'export des données...",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur d'export",
+        description: "Impossible d'exporter les données.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handlePurgeClasses = async () => {
+    try {
+      await classesService.purgeClasses();
+      setClasses([]);
+      setStatistics(null);
+      toast({
+        title: "Données supprimées",
+        description: "Toutes les classes ont été supprimées.",
+        variant: "destructive"
+      });
+    } catch (error: any) {
+      console.error('Error purging classes:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Impossible de supprimer les classes.';
+      toast({
+        title: "Erreur",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getGradeColor = (grade: number) => {
+    if (grade >= 16) return 'text-green-600';
+    if (grade >= 14) return 'text-blue-600';
+    if (grade >= 12) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  const getStatusBadge = (isActive: boolean, status: string) => {
+    if (!isActive) {
+      return <Badge variant="destructive">Inactive</Badge>;
+    }
+    switch (status) {
+      case 'Open':
+        return <Badge variant="default" className="bg-green-100 text-green-800">Ouverte</Badge>;
+      case 'Closed':
+        return <Badge variant="destructive">Fermée</Badge>;
+      case 'Active':
+        return <Badge variant="default" className="bg-blue-100 text-blue-800">Active</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getSystemBadge = (system: string) => {
+    const variants = {
+      francophone: 'default',
+      anglophone: 'secondary',
+      bilingue: 'outline'
+    } as const;
+
+    const labels = {
+      francophone: 'FR',
+      anglophone: 'EN',
+      bilingue: 'Bilingue'
+    };
+
+    return (
+      <Badge variant={variants[system as keyof typeof variants] || 'outline'} className="text-xs">
+        {labels[system as keyof typeof labels] || system}
+      </Badge>
+    );
   };
 
   const filteredClasses = classes.filter((classroom) => {
-    const matchesSearch = classroom.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         classroom.teacher.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLevel = filterLevel === 'all' || filterLevel === 'Tous les niveaux' || 
-                        classroom.level === filterLevel;
-    return matchesSearch && matchesLevel;
+    const matchesSearch = classroom?.name?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+      classroom?.teacher?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+      classroom?.room?.toLowerCase()?.includes(searchTerm.toLowerCase());
+    const matchesLevel = filterLevel === 'all' || filterLevel === 'Tous les niveaux' ||
+      classroom.level === filterLevel;
+    const matchesSystem = filterSystem === 'all' || filterSystem === 'Tous les systèmes' ||
+      classroom.educationSystem === filterSystem;
+    const matchesStatus = filterStatus === 'all' || filterStatus === 'Tous les statuts' ||
+      classroom.status === filterStatus;
+    return matchesSearch && matchesLevel && matchesSystem && matchesStatus;
   });
 
   return (
@@ -203,22 +442,27 @@ const Classes: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Gestion des classes</h1>
           <p className="text-muted-foreground mt-2">
-            {classes.length} classes • {classes.reduce((acc, c) => acc + c.currentStudents, 0)} élèves au total
+            {statistics?.totalClasses || classes.length} classes • {statistics?.totalStudents || classes.reduce((acc, c) => acc + c.currentStudents, 0)} élèves au total
+            {isLoading && ' • Chargement...'}
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm">
-            <Calendar className="w-4 h-4 mr-2" />
-            Planning
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={handleExportData}>
+            <Download className="w-4 h-4 mr-2" />
+            Exporter
           </Button>
-          <Button 
-            className="bg-gradient-primary hover:bg-primary-hover"
+          <Button variant="outline" size="sm" onClick={refreshAllData} disabled={isRefreshing}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Actualiser
+          </Button>
+          <Button
+            className="bg-primary hover:bg-primary/90"
             onClick={() => handleOpenModal('create')}
           >
             <Plus className="w-4 h-4 mr-2" />
             Créer une classe
           </Button>
-          <Button 
+          <Button
             variant="outline"
             onClick={() => setBulkModal((s) => ({ ...s, isOpen: true }))}
           >
@@ -230,65 +474,67 @@ const Classes: React.FC = () => {
 
       {/* Statistiques rapides */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="shadow-card">
+        <Card className="shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Classes</p>
-                <p className="text-2xl font-bold text-primary">{classes.length}</p>
+                <p className="text-2xl font-bold text-primary">{statistics?.totalClasses || classes.length}</p>
               </div>
               <BookOpen className="w-8 h-8 text-primary" />
             </div>
           </CardContent>
         </Card>
-        
-        <Card className="shadow-card">
+
+        <Card className="shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Élèves</p>
-                <p className="text-2xl font-bold text-secondary">
-                  {classes.reduce((acc, c) => acc + c.currentStudents, 0)}
+                <p className="text-2xl font-bold text-blue-600">
+                  {statistics?.totalStudents || classes.reduce((acc, c) => acc + c.currentStudents, 0)}
                 </p>
               </div>
-              <Users className="w-8 h-8 text-secondary" />
+              <Users className="w-8 h-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
-        
-        <Card className="shadow-card">
+
+        <Card className="shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Moyenne générale</p>
-                <p className="text-2xl font-bold text-success">
-                  {classes.length > 0 ? (classes.reduce((acc, c) => acc + (c.averageGrade || 0), 0) / classes.length).toFixed(1) : '0'}
+                <p className="text-2xl font-bold text-green-600">
+                  {statistics?.averageGrade ? statistics.averageGrade.toFixed(1) :
+                    classes.length > 0 ? (classes.reduce((acc, c) => acc + (c.averageGrade || 0), 0) / classes.length).toFixed(1) : '0'}
                 </p>
               </div>
-              <TrendingUp className="w-8 h-8 text-success" />
+              <TrendingUp className="w-8 h-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
-        
-        <Card className="shadow-card">
+
+        <Card className="shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Taux présence</p>
-                <p className="text-2xl font-bold text-warning">
-                  {classes.length > 0 ? Math.round(classes.reduce((acc, c) => acc + (c.attendanceRate || 0), 0) / classes.length) : 0}%
+                <p className="text-2xl font-bold text-amber-600">
+                  {statistics?.averageAttendance ? Math.round(statistics.averageAttendance) + '%' :
+                    classes.length > 0 ? Math.round(classes.reduce((acc, c) => acc + (c.attendanceRate || 0), 0) / classes.length) + '%' : '0%'}
                 </p>
               </div>
-              <Calendar className="w-8 h-8 text-warning" />
+              <Calendar className="w-8 h-8 text-amber-600" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filtres */}
-      <Card className="shadow-card">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Card className="shadow-sm">
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -299,149 +545,261 @@ const Classes: React.FC = () => {
               />
             </div>
 
-            <select
-              value={filterLevel}
-              onChange={(e) => setFilterLevel(e.target.value)}
-              className="px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              {levels.map((level) => (
-                <option key={level} value={level === 'Tous les niveaux' ? 'all' : level}>
-                  {level}
-                </option>
-              ))}
-            </select>
+            <Select value={filterLevel} onValueChange={setFilterLevel}>
+              <SelectTrigger>
+                <SelectValue placeholder="Niveau" />
+              </SelectTrigger>
+              <SelectContent>
+                {levels.map((level) => (
+                  <SelectItem key={level} value={level === 'Tous les niveaux' ? 'all' : level}>
+                    {level}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <Button variant="outline" className="w-full">
-              <Settings className="w-4 h-4 mr-2" />
-              Paramètres avancés
+            <Select value={filterSystem} onValueChange={setFilterSystem}>
+              <SelectTrigger>
+                <SelectValue placeholder="Système" />
+              </SelectTrigger>
+              <SelectContent>
+                {educationSystems.map((system) => (
+                  <SelectItem key={system} value={system === 'Tous les systèmes' ? 'all' : system}>
+                    {system}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((status) => (
+                  <SelectItem key={status} value={status === 'Tous les statuts' ? 'all' : status}>
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button variant="outline" className="w-full" onClick={() => loadClasses()}>
+              <Filter className="w-4 h-4 mr-2" />
+              Filtrer
             </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Grille des classes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredClasses.map((classRoom) => (
-          <Card key={classRoom.id} className="shadow-card hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-xl font-semibold text-foreground">
-                      {classRoom.name}
-                    </h3>
-                    <Badge variant={classRoom.educationSystem === 'francophone' ? 'default' : 'secondary'} className="text-xs">
-                      {classRoom.educationSystem === 'francophone' ? 'FR' : 'EN'}
-                    </Badge>
-                    {classRoom.specialty && (
-                      <Badge variant="outline" className="text-xs">
-                        {classRoom.specialty}
-                      </Badge>
+      {isLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredClasses.map((classRoom) => (
+              <Card key={classRoom.id} className="hover:shadow-lg transition-all duration-300 group border-l-4 border-l-primary/50 hover:border-l-primary">
+                <CardContent className="p-6">
+                  {/* Header Section */}
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-xl font-bold text-foreground truncate">
+                          {classRoom.name}
+                        </h3>
+                        <div className="flex gap-1 flex-shrink-0">
+                          {getSystemBadge(classRoom.educationSystem)}
+                          {classRoom.specialty && (
+                            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                              {classRoom.specialty}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                        <User className="w-4 h-4" />
+                        <span>{classRoom.teacher}</span>
+                        <span>•</span>
+                        <MapPin className="w-4 h-4" />
+                        <span>Salle {classRoom.level}{classRoom.section}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(classRoom.isActive ?? true, classRoom.status || 'Open')}
+                        {classRoom.year && (
+                          <Badge variant="outline" className="text-xs bg-orange-50">
+                            {classRoom.year}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex space-x-1 ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenModal('view', classRoom)}
+                        className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenModal('edit', classRoom)}
+                        className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRefreshSubjects(classRoom.id, classRoom.name)}
+                        title="Rafraîchir les matières"
+                        className="h-8 w-8 p-0 hover:bg-purple-50 hover:text-purple-600"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteClass(classRoom)}
+                        className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Stats Section */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <Users className="w-4 h-4 text-blue-600" />
+                        <p className="text-2xl font-bold text-blue-700">
+                          {classRoom.currentStudents}
+                        </p>
+                      </div>
+                      <p className="text-sm text-blue-600 font-medium">Élèves inscrits</p>
+                      <div className="w-full bg-blue-200 rounded-full h-1.5 mt-2">
+                        <div
+                          className="bg-blue-600 h-1.5 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(100, (classRoom.currentStudents / classRoom.capacity) * 100)}%`
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="text-center p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <Maximize2 className="w-4 h-4 text-gray-600" />
+                        <p className="text-2xl font-bold text-gray-700">
+                          {classRoom.capacity}
+                        </p>
+                      </div>
+                      <p className="text-sm text-gray-600 font-medium">Capacité max</p>
+                    </div>
+                  </div>
+
+                  {/* Performance Metrics */}
+                  <div className="space-y-3 mb-4">
+                    {classRoom.averageGrade > 0 && (
+                      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-800">Moyenne générale</span>
+                        </div>
+                        <span className={`font-bold text-lg ${getGradeColor(classRoom.averageGrade)}`}>
+                          {classRoom.averageGrade.toFixed(1)}/20
+                        </span>
+                      </div>
+                    )}
+
+                    {classRoom.attendanceRate > 0 && (
+                      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-800">Taux de présence</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-lg text-blue-700">
+                            {classRoom.attendanceRate}%
+                          </span>
+                          <div className="w-12 bg-blue-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full"
+                              style={{ width: `${classRoom.attendanceRate}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
-                  <p className="text-muted-foreground">
-                    {classRoom.teacher} • Salle {classRoom.room}
-                  </p>
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleOpenModal('view', classRoom)}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleOpenModal('edit', classRoom)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRefreshSubjects(classRoom.id)}
-                    title="Rafraîchir les matières selon le niveau/système"
-                  >
-                    <Settings className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteClass(classRoom)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="text-center p-3 bg-primary/10 rounded-lg">
-                  <p className="text-2xl font-bold text-primary">
-                    {classRoom.currentStudents}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Élèves</p>
-                </div>
-                <div className="text-center p-3 bg-muted rounded-lg">
-                  <p className="text-2xl font-bold">
-                    {classRoom.capacity}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Capacité</p>
-                </div>
-              </div>
+                  {/* Subjects Section */}
+                  <div className="border-t pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-foreground">Matières</span>
+                      <span className="text-xs text-muted-foreground">
+                        {classRoom.subjects.length} matière{classRoom.subjects.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
 
-              {classRoom.averageGrade && (
-                <div className="flex items-center justify-between text-sm mb-3">
-                  <span className="text-muted-foreground">Moyenne générale</span>
-                  <span className={`font-semibold ${getGradeColor(classRoom.averageGrade)}`}>
-                    {classRoom.averageGrade.toFixed(1)}/20
-                  </span>
+                    <div className="flex flex-wrap gap-2">
+                      {classRoom.subjects.slice(0, 4).map((subject, index) => (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200"
+                        >
+                          {subject}
+                        </Badge>
+                      ))}
+                      {classRoom.subjects.length > 4 && (
+                        <Badge variant="outline" className="text-xs px-2 py-1">
+                          +{classRoom.subjects.length - 4}
+                        </Badge>
+                      )}
+                      {classRoom.subjects.length === 0 && (
+                        <div className="text-center w-full py-2">
+                          <span className="text-xs text-muted-foreground italic">Aucune matière assignée</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Message si aucun résultat */}
+          {filteredClasses.length === 0 && (
+            <Card className="text-center py-12">
+              <CardContent>
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <BookOpen className="w-8 h-8 text-muted-foreground" />
                 </div>
-              )}
-
-              {classRoom.attendanceRate && (
-                <div className="flex items-center justify-between text-sm mb-3">
-                  <span className="text-muted-foreground">Taux de présence</span>
-                  <span className="font-semibold text-success">
-                    {classRoom.attendanceRate}%
-                  </span>
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-1 mt-3">
-                {classRoom.subjects.slice(0, 3).map((subject) => (
-                  <span 
-                    key={subject}
-                    className="px-2 py-1 bg-secondary/20 text-secondary text-xs rounded"
-                  >
-                    {subject}
-                  </span>
-                ))}
-                {classRoom.subjects.length > 3 && (
-                  <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded">
-                    +{classRoom.subjects.length - 3}
-                  </span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Message si aucun résultat */}
-      {filteredClasses.length === 0 && (
-        <Card className="shadow-card">
-          <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Aucune classe trouvée</h3>
-            <p className="text-muted-foreground">
-              Essayez de modifier vos critères de recherche ou créez une nouvelle classe.
-            </p>
-          </CardContent>
-        </Card>
+                <h3 className="text-lg font-semibold mb-2">Aucune classe trouvée</h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchTerm || filterLevel !== 'all' || filterSystem !== 'all' || filterStatus !== 'all'
+                    ? "Aucune classe ne correspond à vos critères de recherche."
+                    : "Aucune classe n'a été créée pour le moment."
+                  }
+                </p>
+                <Button onClick={() => handleOpenModal('create')}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Créer la première classe
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Modales */}
@@ -458,57 +816,15 @@ const Classes: React.FC = () => {
         onClose={() => setDeleteModal({ isOpen: false, classData: null })}
         onConfirm={confirmDeleteClass}
         title="Supprimer la classe"
-        message="Êtes-vous sûr de vouloir supprimer cette classe ?"
+        message="Êtes-vous sûr de vouloir supprimer cette classe ? Cette action est irréversible."
         itemName={deleteModal.classData?.name}
       />
 
       <BulkClassModal
         isOpen={bulkModal.isOpen}
         onClose={() => setBulkModal((s) => ({ ...s, isOpen: false }))}
-        onSave={async (items) => {
-          try {
-            // Resolve level id -> display name as required by backend enum
-            const ALL_LEVELS = [...(await import('@/constants/cameroonEducation')).FRANCOPHONE_LEVELS, ...(await import('@/constants/cameroonEducation')).ANGLOPHONE_LEVELS];
-            const resolveLevelName = (idOrName: string) => {
-              const byId = ALL_LEVELS.find((l: any) => l.id === idOrName);
-              if (byId) return byId.name;
-              const byName = ALL_LEVELS.find((l: any) => l.name === idOrName);
-              return byName ? byName.name : idOrName;
-            };
-
-            const backendItems = items.map((it) => {
-              const levelName = resolveLevelName(it.level);
-              const includeSpecialty = levelName === 'Terminale' || levelName === 'Upper Sixth';
-              return {
-                classesName: `${levelName} ${it.section}${includeSpecialty && it.specialty ? ` (${it.specialty})` : ''}`.trim(),
-                level: levelName,
-                section: it.section,
-                specialty: includeSpecialty ? it.specialty : undefined,
-                educationSystem: it.educationSystem,
-                capacity: it.capacity,
-                description: it.description,
-                status: 'Open',
-                amountFee: 0,
-                year: '2024-2025',
-              };
-            });
-            const result = await classesService.bulkCreateClasses(backendItems);
-            const newOnes = (result.savedClasses || []).map(mapBackendToFrontend);
-            setClasses((prev) => [...prev, ...newOnes]);
-            // Auto-refresh subjects for each created class
-            try {
-              await Promise.all((result.savedClasses || []).map((c: any) =>
-                classesService.refreshClassSubjects(c._id || c.id)
-              ));
-            } catch (e) {
-              console.warn('Failed to auto-refresh subjects for some classes:', e);
-            }
-            toast({ title: 'Création en masse terminée', description: `${newOnes.length} créées, ${result.errors?.length || 0} erreurs.` });
-            setBulkModal((s) => ({ ...s, isOpen: false }));
-          } catch (err: any) {
-            toast({ title: 'Erreur', description: err?.response?.data?.message || 'Création en masse échouée.', variant: 'destructive' });
-          }
-        }}
+        onSave={handleBulkCreate}
+        isSubmitting={bulkModal.isSubmitting}
       />
     </div>
   );
