@@ -180,9 +180,9 @@ export const mapBackendToFrontend = (backendClass: any): FrontendClass => {
 
   // Calculate current students
   const getCurrentStudents = (): number => {
-    if (backendClass.currentStudents !== undefined) {
-      return backendClass.currentStudents;
-    }
+    // if (backendClass.currentStudents !== undefined) {
+    //   return backendClass.currentStudents;
+    // }
     if (backendClass.studentList && Array.isArray(backendClass.studentList)) {
       return backendClass.studentList.length;
     }

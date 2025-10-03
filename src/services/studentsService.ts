@@ -331,7 +331,7 @@ export const studentsService = {
       parentEmail: 'parentEmail',
       parentOccupation: 'parentOccupation',
       parentAddress: 'parentAddress',
-      classesId: 'class',
+      classesId: 'classId',
       class: 'class',
       status: 'status',
       academicStatus: 'academicStatus',

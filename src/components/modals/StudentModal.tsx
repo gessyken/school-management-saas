@@ -64,6 +64,25 @@ interface StudentModalProps {
   mode: 'create' | 'edit' | 'view';
 }
 
+// Education system configuration
+const EDUCATION_SYSTEMS = {
+  francophone: {
+    name: 'Francophone',
+    sections: ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+    levels: ['6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Terminale']
+  },
+  anglophone: {
+    name: 'Anglophone',
+    sections: ['A', 'B', 'C', 'D'],
+    levels: ['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth', 'Upper Sixth']
+  },
+  bilingue: {
+    name: 'Bilingue',
+    sections: ['A', 'B', 'C', 'D', 'E'],
+    levels: ['6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Terminale', 'Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth', 'Upper Sixth']
+  }
+};
+
 const StudentModal: React.FC<StudentModalProps> = ({
   isOpen,
   onClose,
@@ -103,8 +122,12 @@ const StudentModal: React.FC<StudentModalProps> = ({
     allergies: [],
     medicalConditions: [],
   });
-  const [availableClasses, setAvailableClasses] = useState<Array<{ _id: string; id: string; name: string; level: string }>>([]);
+  
+  const [availableClasses, setAvailableClasses] = useState<Array<{ _id: string; id: string; name: string; level: string; section: string; educationSystem: string }>>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>('');
+  const [selectedEducationSystem, setSelectedEducationSystem] = useState<string>('');
+  // const [selectedSection, setSelectedSection] = useState<string>('');
+  const [selectedLevel, setSelectedLevel] = useState<string>('');
 
   useEffect(() => {
     const loadClasses = async () => {
@@ -114,7 +137,9 @@ const StudentModal: React.FC<StudentModalProps> = ({
           id: c.id || c._id,
           _id: c.id || c._id,
           name: c.name || c.classesName || c.className,
-          level: c.level
+          level: c.level,
+          section: c.section,
+          educationSystem: c.educationSystem
         })) : [];
         setAvailableClasses(items);
       } catch {
@@ -124,6 +149,12 @@ const StudentModal: React.FC<StudentModalProps> = ({
     loadClasses();
 
     if (student) {
+      // Extract education system and section from existing class data
+      const studentClass = availableClasses.find(c => c.id === student.classesId);
+      const educationSystem = studentClass?.educationSystem || '';
+      // const section = studentClass?.section || '';
+      const level = student.level || studentClass?.level || '';
+
       setFormData({
         _id: student._id || student.id || '',
         id: student._id || student.id || '',
@@ -142,7 +173,7 @@ const StudentModal: React.FC<StudentModalProps> = ({
         parentEmail: student.parentEmail || '',
         birthDate: new Date(student.birthDate)?.toISOString()?.split('T')[0] || '',
         avatar: student.avatar || '',
-        level: student.level || '',
+        level: student.level || studentClass?.level||'' ,
         matricule: student.matricule || '',
         gender: student.gender || '',
         city: student.city || '',
@@ -158,7 +189,11 @@ const StudentModal: React.FC<StudentModalProps> = ({
         allergies: student.allergies || [],
         medicalConditions: student.medicalConditions || [],
         emergencyContact: student.emergencyContact || { name: '', relationship: '', phone: '' }
+        
       });
+      
+      setSelectedEducationSystem(educationSystem);
+      setSelectedLevel(level);
       setSelectedClassId(student.classesId || '');
     } else {
       setFormData({
@@ -190,11 +225,32 @@ const StudentModal: React.FC<StudentModalProps> = ({
         bloodGroup: '',
         allergies: [],
         medicalConditions: [],
-        emergencyContact: { name: '', relationship: '', phone: '' }
+        emergencyContact: { name: '', relationship: '', phone: '' },
       });
+      setSelectedEducationSystem('');
+      // setSelectedSection('');
+      setSelectedLevel('');
       setSelectedClassId('');
     }
   }, [student, isOpen]);
+
+  // Filter classes based on selected education system, section, and level
+  const filteredClasses = availableClasses.filter(cls => {
+    if (selectedEducationSystem && cls.educationSystem !== selectedEducationSystem) return false;
+    // if (selectedSection && cls.section !== selectedSection) return false;
+    if (selectedLevel && cls.level !== selectedLevel) return false;
+    return true;
+  });
+
+  // Get available sections based on selected education system
+  // const availableSections = selectedEducationSystem 
+  //   ? EDUCATION_SYSTEMS[selectedEducationSystem as keyof typeof EDUCATION_SYSTEMS]?.sections || []
+  //   : [];
+
+  // Get available levels based on selected education system
+  const availableLevels = selectedEducationSystem 
+    ? EDUCATION_SYSTEMS[selectedEducationSystem as keyof typeof EDUCATION_SYSTEMS]?.levels || []
+    : [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,7 +258,8 @@ const StudentModal: React.FC<StudentModalProps> = ({
     // Generate name from firstName and lastName if not provided
     const finalFormData = {
       ...formData,
-      name: formData.name || `${formData.firstName} ${formData.lastName}`.trim()
+      name: formData.name || `${formData.firstName} ${formData.lastName}`.trim(),
+      level: selectedLevel || formData.level
     };
 
     const selectedClass = availableClasses.find(c => c.id === selectedClassId);
@@ -211,11 +268,10 @@ const StudentModal: React.FC<StudentModalProps> = ({
       class: selectedClassId || selectedClass?._id,
       className: selectedClass?.name || finalFormData.class,
       classesId: selectedClassId || finalFormData.classesId,
-      level: selectedClass?.level || finalFormData.level,
+      level: selectedLevel || finalFormData.level,
     };
 
     onSave(payload);
-    // onClose();
   };
 
   const handleChange = (field: keyof Student, value: any) => {
@@ -230,6 +286,38 @@ const StudentModal: React.FC<StudentModalProps> = ({
         [field]: value
       }
     }));
+  };
+
+  const handleEducationSystemChange = (value: string) => {
+    setSelectedEducationSystem(value);
+    // setSelectedSection('');
+    setSelectedLevel('');
+    handleChange('level', '');
+    setSelectedClassId('');
+    handleChange('classesId', '');
+  };
+
+  // const handleSectionChange = (value: string) => {
+  //   setSelectedSection(value);
+  //   setSelectedLevel('');
+  //   setSelectedClassId('');
+  // };
+
+  const handleLevelChange = (value: string) => {
+    setSelectedLevel(value);
+    setSelectedClassId('');
+    handleChange('level', value);
+    handleChange('classesId', '');
+  };
+
+  const handleClassChange = (value: string) => {
+    setSelectedClassId(value);
+    handleChange('classesId', value);
+    const selectedClass = availableClasses.find(c => c.id === value);
+    if (selectedClass) {
+      handleChange('level', selectedClass.level);
+      setSelectedLevel(selectedClass.level);
+    }
   };
 
   const getModalTitle = () => {
@@ -312,20 +400,6 @@ const StudentModal: React.FC<StudentModalProps> = ({
                   </p>
                 )}
               </div>
-              {/* <div className="text-right space-y-1">
-                {formData.average !== undefined && (
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Moyenne</p>
-                    <p className="text-2xl font-bold text-primary">{formData.average.toFixed(1)}/20</p>
-                  </div>
-                )}
-                {formData.attendanceRate !== undefined && (
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Présence</p>
-                    <p className="text-lg font-semibold">{formData.attendanceRate}%</p>
-                  </div>
-                )}
-              </div> */}
             </div>
 
             {/* Informations personnelles */}
@@ -432,9 +506,7 @@ const StudentModal: React.FC<StudentModalProps> = ({
   }
 
   return (
-    <Dialog open={isOpen}
-      onOpenChange={onClose}
-    >
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{getModalTitle()}</DialogTitle>
@@ -568,17 +640,6 @@ const StudentModal: React.FC<StudentModalProps> = ({
                   placeholder="Ville"
                 />
               </div>
-
-              {/* <div>
-                <Label htmlFor="matricule">Matricule</Label>
-                <Input
-                  id="matricule"
-                  disabled
-                  value={formData.matricule}
-                  onChange={(e) => handleChange('matricule', e.target.value)}
-                  placeholder="Matricule"
-                />
-              </div> */}
             </div>
           </div>
 
@@ -586,23 +647,83 @@ const StudentModal: React.FC<StudentModalProps> = ({
           <div className="space-y-4">
             <h4 className="font-semibold text-foreground">Informations scolaires</h4>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <Label htmlFor="class">Classe</Label>
-                <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                <Label htmlFor="educationSystem">Système éducatif *</Label>
+                <Select value={selectedEducationSystem} onValueChange={handleEducationSystemChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner une classe" />
+                    <SelectValue placeholder="Sélectionnez le système" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableClasses.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name} ({c.level})
+                    <SelectItem value="francophone">Francophone</SelectItem>
+                    <SelectItem value="anglophone">Anglophone</SelectItem>
+                    <SelectItem value="bilingue">Bilingue</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* <div>
+                <Label htmlFor="section">Section *</Label>
+                <Select 
+                  value={selectedSection} 
+                  onValueChange={handleSectionChange}
+                  disabled={!selectedEducationSystem}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez la section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSections.map((section) => (
+                      <SelectItem key={section} value={section}>
+                        Section {section}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div> */}
+
+              <div>
+                <Label htmlFor="level">Niveau *</Label>
+                <Select 
+                  value={selectedLevel || formData.level} 
+                  onValueChange={handleLevelChange}
+                  disabled={!selectedEducationSystem}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez le niveau" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableLevels.map((level) => (
+                      <SelectItem key={level} value={level}>
+                        {level}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
+              <div>
+                <Label htmlFor="class">Classe *</Label>
+                <Select 
+                  value={selectedClassId || formData.classesId} 
+                  onValueChange={handleClassChange}
+                  disabled={!selectedLevel}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez la classe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredClasses.map((cls) => (
+                      <SelectItem key={cls.id} value={cls.id}>
+                        {cls.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="enrollmentDate">Date d'inscription *</Label>
                 <Input
@@ -630,9 +751,7 @@ const StudentModal: React.FC<StudentModalProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="academicStatus">Statut académique</Label>
                 <Select value={formData.academicStatus} onValueChange={(value) => handleChange('academicStatus', value)}>
@@ -646,7 +765,6 @@ const StudentModal: React.FC<StudentModalProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-
             </div>
           </div>
 
