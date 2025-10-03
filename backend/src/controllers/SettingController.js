@@ -3,32 +3,95 @@ import Term from '../models/Term.js';
 import Sequence from '../models/Sequence.js';
 
 class SettingController {
-  /* ───────────── Academic Year Detail ───────────── */
+  /* ───────────── ACADEMIC YEAR METHODS ───────────── */
 
   async createAcademicYear(req, res) {
     try {
-      // Assign school from request (e.g., middleware)
-      const academicYearData = { ...req.body, school: req.schoolId };
+      const academicYearData = { 
+        ...req.body, 
+        school: req.schoolId,
+        metadata: {
+          ...req.body.metadata,
+          createdBy: req.user?._id
+        }
+      };
+      
       const academicYear = await AcademicYearDetail.create(academicYearData);
       res.status(201).json(academicYear);
     } catch (error) {
+      console.log(error)
       res.status(400).json({ error: error.message });
     }
   }
 
   async getAcademicYears(req, res) {
     try {
-      // Restrict to current school and allow optional filters from query
-      const filter = { school: req.schoolId, ...req.query };
+      const { status, isCurrent, year } = req.query;
+      const filter = { school: req.schoolId };
+      console.log("years")
+      
+      if (status) filter.status = status;
+      if (isCurrent !== undefined) filter.isCurrent = isCurrent === 'true';
+      if (year) filter.name = year;
 
       const years = await AcademicYearDetail.find(filter)
         .populate({
           path: 'terms',
           populate: {
             path: 'sequences',
+            options: { sort: { order: 1 } }
           },
-        });
+          options: { sort: { order: 1 } }
+        })
+        .sort({ startDate: -1 });
+      console.log(years)
       res.json(years);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async getAcademicYearById(req, res) {
+    try {
+      const academicYear = await AcademicYearDetail.findOne({
+        _id: req.params.id,
+        school: req.schoolId
+      }).populate({
+        path: 'terms',
+        populate: {
+          path: 'sequences',
+          options: { sort: { order: 1 } }
+        },
+        options: { sort: { order: 1 } }
+      });
+
+      if (!academicYear) {
+        return res.status(404).json({ error: "Academic year not found." });
+      }
+
+      res.json(academicYear);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async getCurrentAcademicYear(req, res) {
+    try {
+      const academicYear = await AcademicYearDetail.findCurrentBySchool(req.schoolId)
+        .populate({
+          path: 'terms',
+          populate: {
+            path: 'sequences',
+            options: { sort: { order: 1 } }
+          },
+          options: { sort: { order: 1 } }
+        });
+
+      if (!academicYear) {
+        return res.status(404).json({ error: "No current academic year found." });
+      }
+
+      res.json(academicYear);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -38,269 +101,499 @@ class SettingController {
     try {
       const academicYear = await AcademicYearDetail.findOne({
         _id: req.params.id,
-        school: req.schoolId, // Ensure belongs to school
+        school: req.schoolId
       });
 
       if (!academicYear) {
-        return res.status(404).json({ error: "Academic year not found or not authorized." });
+        return res.status(404).json({ error: "Academic year not found." });
       }
 
-      academicYear.name = req.body.name ?? academicYear.name;
-      academicYear.startDate = req.body.startDate ?? academicYear.startDate;
-      academicYear.endDate = req.body.endDate ?? academicYear.endDate;
-      academicYear.isCurrent = req.body.isCurrent ?? academicYear.isCurrent;
+      // Update fields
+      const allowedUpdates = ['name', 'startDate', 'endDate', 'isCurrent', 'description', 'status'];
+      allowedUpdates.forEach(field => {
+        if (req.body[field] !== undefined) {
+          academicYear[field] = req.body[field];
+        }
+      });
+
+      // Update metadata
+      if (req.user?._id) {
+        academicYear.metadata.lastModifiedBy = req.user._id;
+        if (req.body.metadata?.notes) {
+          academicYear.metadata.notes = req.body.metadata.notes;
+        }
+      }
 
       const updated = await academicYear.save();
       res.json(updated);
     } catch (error) {
-      console.error(error);
       res.status(400).json({ error: error.message });
     }
   }
 
   async deleteAcademicYear(req, res) {
     try {
-      const academicYear = await AcademicYearDetail.findOneAndDelete({
+      const academicYear = await AcademicYearDetail.findOne({
         _id: req.params.id,
-        school: req.schoolId, // Restrict delete to school-owned records
+        school: req.schoolId
       });
 
       if (!academicYear) {
-        return res.status(404).json({ error: "Academic year not found or not authorized." });
+        return res.status(404).json({ error: "Academic year not found." });
       }
 
-      res.json({ message: 'Academic year deleted.' });
+      // Check if academic year has terms
+      if (academicYear.terms.length > 0) {
+        return res.status(400).json({ 
+          error: "Cannot delete academic year with existing terms. Delete terms first." 
+        });
+      }
+
+      await AcademicYearDetail.findByIdAndDelete(academicYear._id);
+      res.json({ message: 'Academic year deleted successfully.' });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   }
 
-  /* ───────────── Term ───────────── */
+  /* ───────────── TERM METHODS ───────────── */
 
   async createTerm(req, res) {
     try {
-      const { academicYear: academicYearName } = req.body;
-      const school = req.schoolId;
-      console.log(academicYearName)
-      // Validate required school field
-      if (!school) {
-        return res.status(400).json({ error: "School is required." });
+      const { academicYear: academicYearId, ...termData } = req.body;
+      const schoolId = req.schoolId;
+
+      if (!academicYearId) {
+        return res.status(400).json({ error: "Academic year ID is required." });
       }
 
-      // Find the academic year within the specified school
-      const academicYear = await AcademicYearDetail.findOne({ name: academicYearName, school });
+      // Validate academic year exists and belongs to school
+      const academicYear = await AcademicYearDetail.findOne({
+        _id: academicYearId,
+        school: schoolId
+      });
+      
       if (!academicYear) {
-        return res.status(404).json({ error: "Academic year not found for this school." });
+        return res.status(404).json({ error: "Academic year not found." });
       }
 
-      // Set academicYear name and school explicitly to avoid inconsistencies
-      req.body.academicYear = academicYear.name;
-      req.body.school = school;
+      // Create term with proper references
+      const term = new Term({
+        ...termData,
+        academicYear: academicYearId,
+        school: schoolId,
+        createdBy: req.user?._id
+      });
 
-      // Create the term
-      const term = new Term(req.body);
-      console.log(term)
-      await term.save()
-      // Link term to academic year
-      academicYear.terms.push(term._id);
-      await academicYear.save();
+      await term.save();
+
+      // Add term to academic year if not already present
+      if (!academicYear.terms.includes(term._id)) {
+        academicYear.terms.push(term._id);
+        await academicYear.save();
+      }
 
       res.status(201).json(term);
     } catch (error) {
-      console.error(error);
       res.status(400).json({ error: error.message });
     }
   }
 
   async getTerms(req, res) {
     try {
-      // Optionally filter by school if provided as a query param
-      const filter = {};
-      console.log(req.schoolId)
-      if (req.schoolId) {
-        filter.school = req.schoolId;
-      }
+      const { academicYear, status, isCurrent } = req.query;
+      const filter = { school: req.schoolId };
+      
+      if (academicYear) filter.academicYear = academicYear;
+      if (status) filter.status = status;
+      if (isCurrent !== undefined) filter.isCurrent = isCurrent === 'true';
 
-      const terms = await Term.find(filter).populate('sequences');
+      const terms = await Term.find(filter)
+        .populate('academicYear')
+        .populate({
+          path: 'sequences',
+          options: { sort: { order: 1 } }
+        })
+        .sort({ order: 1 });
+      
       res.json(terms);
     } catch (error) {
-      console.error(error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async getTermById(req, res) {
+    try {
+      const term = await Term.findOne({
+        _id: req.params.id,
+        school: req.schoolId
+      })
+        .populate('academicYear')
+        .populate({
+          path: 'sequences',
+          options: { sort: { order: 1 } }
+        });
+
+      if (!term) {
+        return res.status(404).json({ error: "Term not found." });
+      }
+
+      res.json(term);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async getCurrentTerm(req, res) {
+    try {
+      const term = await Term.findCurrentBySchool(req.schoolId);
+
+      if (!term) {
+        return res.status(404).json({ error: "No current term found." });
+      }
+
+      res.json(term);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async getTermsByAcademicYear(req, res) {
+    try {
+      const { academicYearId } = req.params;
+      const terms = await Term.findByAcademicYear(req.schoolId, academicYearId);
+      res.json(terms);
+    } catch (error) {
       res.status(500).json({ error: error.message });
     }
   }
 
   async updateTerm(req, res) {
     try {
-      const term = await Term.findById(req.params.id);
+      const term = await Term.findOne({
+        _id: req.params.id,
+        school: req.schoolId
+      });
+
       if (!term) {
         return res.status(404).json({ error: "Term not found." });
       }
 
-      // Prevent changing school or academicYear to inconsistent values
-      const updates = { ...req.body };
-      if (updates.school && updates.school.toString() !== term.school.toString()) {
-        return res.status(400).json({ error: "Cannot change school of the term." });
-      }
-      if (updates.academicYear && updates.academicYear !== term.academicYear) {
-        // Check that the new academicYear exists within the same school
-        const validYear = await AcademicYearDetail.findOne({
-          name: updates.academicYear,
-          school: term.school
-        });
-        if (!validYear) {
-          return res.status(400).json({ error: "Invalid academic year for this school." });
+      // Update fields
+      const allowedUpdates = ['name', 'code', 'order', 'startDate', 'endDate', 'isCurrent', 'status', 'description', 'settings', 'type'];
+      allowedUpdates.forEach(field => {
+        if (req.body[field] !== undefined) {
+          term[field] = req.body[field];
         }
-      }
-
-      // Update allowed fields
-      Object.keys(updates).forEach(key => {
-        term[key] = updates[key];
       });
+
+      // Update last modified by
+      if (req.user?._id) {
+        term.lastModifiedBy = req.user._id;
+      }
 
       const updated = await term.save();
       res.json(updated);
     } catch (error) {
-      console.error(error);
       res.status(400).json({ error: error.message });
     }
   }
 
   async deleteTerm(req, res) {
     try {
-      const term = await Term.findById(req.params.id);
+      const term = await Term.findOne({
+        _id: req.params.id,
+        school: req.schoolId
+      });
+
       if (!term) {
         return res.status(404).json({ error: "Term not found." });
       }
 
-      // Remove term from academic year’s terms list
-      const academicYear = await AcademicYearDetail.findOne({ name: term.academicYear, school: term.school });
-      if (academicYear) {
-        academicYear.terms = academicYear.terms.filter(
-          (termId) => termId.toString() !== term._id.toString()
-        );
-        await academicYear.save();
+      // Check if term has sequences
+      if (term.sequences.length > 0) {
+        return res.status(400).json({ 
+          error: "Cannot delete term with existing sequences. Delete sequences first." 
+        });
       }
 
-      await term.deleteOne();
-      res.json({ message: "Term deleted." });
+      // Remove term from academic year
+      await AcademicYearDetail.findByIdAndUpdate(
+        term.academicYear,
+        { $pull: { terms: term._id } }
+      );
+
+      await Term.findByIdAndDelete(term._id);
+      res.json({ message: "Term deleted successfully." });
     } catch (error) {
-      console.error(error);
       res.status(500).json({ error: error.message });
     }
   }
 
-  /* ───────────── Create Sequence ───────────── */
+  /* ───────────── SEQUENCE METHODS ───────────── */
+
   async createSequence(req, res) {
     try {
-      const { term: termId, ...rest } = req.body;
+      const { term: termId, ...sequenceData } = req.body;
       const schoolId = req.schoolId;
+
+      if (!termId) {
+        return res.status(400).json({ error: 'Term ID is required.' });
+      }
+
+      // Verify term exists and belongs to school
+      const term = await Term.findOne({ 
+        _id: termId, 
+        school: schoolId 
+      });
       
-      if (!termId || !schoolId) {
-        return res.status(400).json({ error: 'Term and school are required.' });
-      }
-
-      // Verify term exists and belongs to the specified school
-      const term = await Term.findOne({ _id: termId, school: schoolId });
       if (!term) {
-        return res.status(404).json({ error: 'Term not found or does not belong to the school.' });
+        return res.status(404).json({ error: 'Term not found.' });
       }
 
-      // Create the sequence with school and term
-      const sequence = await Sequence.create({ ...rest, term: termId, school: schoolId });
-
-      // Add sequence to term's sequences array if not already present
-      if (!term.sequences.includes(sequence._id)) {
-        term.sequences.push(sequence._id);
-        await term.save();
-      }
+      // Create sequence
+      const sequence = await Sequence.create({
+        ...sequenceData,
+        term: termId,
+        school: schoolId,
+        createdBy: req.user?._id
+      });
 
       res.status(201).json(sequence);
     } catch (error) {
-      console.error(error);
+      console.log(error)
       res.status(400).json({ error: error.message });
     }
   }
 
-  /* ───────────── Get Sequences ───────────── */
   async getSequences(req, res) {
     try {
-      // Optional: you can filter by school or term via query parameters
-      const filter = { ...req.query };
+      const { term, status, isCurrent } = req.query;
+      const filter = { school: req.schoolId };
+      
+      if (term) filter.term = term;
+      if (status) filter.status = status;
+      if (isCurrent !== undefined) filter.isCurrent = isCurrent === 'true';
 
-      // If school filter exists, ensure it's used correctly
-      if (req.schoolId) {
-        filter.school = req.schoolId;
-      }
-
-      const sequences = await Sequence.find(filter).populate('term');
+      const sequences = await Sequence.find(filter)
+        .populate('term')
+        .sort({ order: 1 });
+      
       res.json(sequences);
     } catch (error) {
-      console.error(error);
       res.status(500).json({ error: error.message });
     }
   }
 
-  /* ───────────── Update Sequence ───────────── */
-  async updateSequence(req, res) {
+  async getSequenceById(req, res) {
     try {
-      const sequence = await Sequence.findById(req.params.id);
+      const sequence = await Sequence.findOne({
+        _id: req.params.id,
+        school: req.schoolId
+      }).populate('term');
+
       if (!sequence) {
         return res.status(404).json({ error: 'Sequence not found.' });
       }
 
-      // If term or school is being updated, validate them
-      if (req.body.term || req.schoolId) {
-        const newTermId = req.body.term ?? sequence.term.toString();
-        const newSchoolId = req.schoolId ?? sequence.school.toString();
+      res.json(sequence);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
 
-        const term = await Term.findOne({ _id: newTermId, school: newSchoolId });
-        if (!term) {
-          return res.status(400).json({ error: 'Term not found or does not belong to the specified school.' });
-        }
+  async getCurrentSequence(req, res) {
+    try {
+      const sequence = await Sequence.findCurrentBySchool(req.schoolId);
 
-        // If term changed, update old and new term sequences arrays
-        if (req.body.term && sequence.term.toString() !== req.body.term) {
-          // Remove from old term
-          await Term.findByIdAndUpdate(sequence.term, { $pull: { sequences: sequence._id } });
-          // Add to new term
-          await Term.findByIdAndUpdate(req.body.term, { $addToSet: { sequences: sequence._id } });
-        }
+      if (!sequence) {
+        return res.status(404).json({ error: "No current sequence found." });
       }
 
-      // Update all allowed fields
-      ['name', 'startDate', 'endDate', 'isActive', 'term', 'school'].forEach(field => {
+      res.json(sequence);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async getSequencesByTerm(req, res) {
+    try {
+      const { termId } = req.params;
+      const sequences = await Sequence.findByTerm(termId);
+      res.json(sequences);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async updateSequence(req, res) {
+    try {
+      const sequence = await Sequence.findOne({
+        _id: req.params.id,
+        school: req.schoolId
+      });
+
+      if (!sequence) {
+        return res.status(404).json({ error: 'Sequence not found.' });
+      }
+
+      // Update fields
+      const allowedUpdates = ['name', 'code', 'order', 'startDate', 'endDate', 'isCurrent', 'status', 'description', 'objectives', 'settings'];
+      allowedUpdates.forEach(field => {
         if (req.body[field] !== undefined) {
           sequence[field] = req.body[field];
         }
       });
 
+      // Update last modified by
+      if (req.user?._id) {
+        sequence.lastModifiedBy = req.user._id;
+      }
+
       const updated = await sequence.save();
       res.json(updated);
     } catch (error) {
-      console.error(error);
       res.status(400).json({ error: error.message });
     }
   }
 
-  /* ───────────── Delete Sequence ───────────── */
   async deleteSequence(req, res) {
     try {
-      const sequence = await Sequence.findById(req.params.id);
+      const sequence = await Sequence.findOne({
+        _id: req.params.id,
+        school: req.schoolId
+      });
+
       if (!sequence) {
         return res.status(404).json({ error: 'Sequence not found.' });
       }
 
-      // Remove sequence reference from term
-      await Term.findByIdAndUpdate(sequence.term, {
-        $pull: { sequences: sequence._id }
+      await Sequence.findByIdAndDelete(sequence._id);
+      res.json({ message: 'Sequence deleted successfully.' });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  /* ───────────── BULK OPERATION METHODS ───────────── */
+
+  async bulkUpdateTermStatus(req, res) {
+    try {
+      const { termIds, status } = req.body;
+
+      if (!termIds || !Array.isArray(termIds) || !status) {
+        return res.status(400).json({ error: 'Term IDs array and status are required.' });
+      }
+
+      const result = await Term.updateMany(
+        { 
+          _id: { $in: termIds },
+          school: req.schoolId 
+        },
+        { 
+          status,
+          lastModifiedBy: req.user?._id 
+        }
+      );
+
+      res.json({ 
+        message: `${result.modifiedCount} terms updated successfully.`,
+        modifiedCount: result.modifiedCount 
+      });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  async getAcademicYearProgress(req, res) {
+    try {
+      const { id } = req.params;
+      const academicYear = await AcademicYearDetail.findOne({
+        _id: id,
+        school: req.schoolId
+      }).populate({
+        path: 'terms',
+        populate: {
+          path: 'sequences',
+          options: { sort: { order: 1 } }
+        },
+        options: { sort: { order: 1 } }
       });
 
-      // Delete the sequence
-      await sequence.deleteOne();
+      if (!academicYear) {
+        return res.status(404).json({ error: "Academic year not found." });
+      }
 
-      res.json({ message: 'Sequence deleted.' });
+      // Calculate progress statistics
+      const totalTerms = academicYear.terms.length;
+      const activeTerms = academicYear.terms.filter(term => term.status === 'active').length;
+      const completedTerms = academicYear.terms.filter(term => term.status === 'completed').length;
+      
+      let totalSequences = 0;
+      let completedSequences = 0;
+      
+      academicYear.terms.forEach(term => {
+        totalSequences += term.sequences.length;
+        completedSequences += term.sequences.filter(seq => seq.status === 'completed').length;
+      });
+
+      const progress = {
+        academicYear: academicYear.name,
+        totalTerms,
+        activeTerms,
+        completedTerms,
+        totalSequences,
+        completedSequences,
+        overallProgress: totalSequences > 0 ? Math.round((completedSequences / totalSequences) * 100) : 0
+      };
+
+      res.json(progress);
     } catch (error) {
-      console.error(error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  /* ───────────── VALIDATION METHODS ───────────── */
+
+  async validateAcademicYearDates(req, res) {
+    try {
+      const { startDate, endDate, academicYearId } = req.body;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ error: 'Start date and end date are required.' });
+      }
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (start >= end) {
+        return res.json({ valid: false, error: 'Start date must be before end date.' });
+      }
+
+      // Check for overlapping academic years
+      const overlapFilter = {
+        school: req.schoolId,
+        $or: [
+          { startDate: { $lte: end }, endDate: { $gte: start } }
+        ]
+      };
+
+      if (academicYearId) {
+        overlapFilter._id = { $ne: academicYearId };
+      }
+
+      const overlappingYears = await AcademicYearDetail.find(overlapFilter);
+
+      if (overlappingYears.length > 0) {
+        return res.json({ 
+          valid: false, 
+          error: 'Dates overlap with existing academic years.',
+          overlappingYears: overlappingYears.map(year => year.name)
+        });
+      }
+
+      res.json({ valid: true });
+    } catch (error) {
       res.status(500).json({ error: error.message });
     }
   }

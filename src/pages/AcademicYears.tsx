@@ -72,7 +72,8 @@ const AcademicYears: React.FC = () => {
     });
   };
 
-  const currentYear = academicYears.find(year => year.id === selectedYear);
+  const currentYear = academicYears
+  // ?.find(year => year.id === selectedYear);
 
   return (
     <div className="p-6 space-y-6">

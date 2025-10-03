@@ -228,7 +228,6 @@ const StudentModal: React.FC<StudentModalProps> = ({
         emergencyContact: { name: '', relationship: '', phone: '' },
       });
       setSelectedEducationSystem('');
-      // setSelectedSection('');
       setSelectedLevel('');
       setSelectedClassId('');
     }
