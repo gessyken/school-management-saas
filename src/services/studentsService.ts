@@ -1,123 +1,366 @@
 import api from '@/lib/api';
 
 export const studentsService = {
-  async getStudents(): Promise<any[]> {
-    // Expected shape: [{ id, name, email, phone, class, average, status, enrollmentDate, ... }, ...]
+  // Get all students with filtering
+  async getStudents(filters = {
+    search: '',
+    class: '',
+    status: '',
+    level: '',
+    page: 1,
+    limit: 10
+  }): Promise<any[]> {
     try {
-      const res = await api.get('/students');
-      const raw = res.data?.students || res.data || [];
+      const { search, class: classFilter, status, level, page, limit } = filters;
+
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (classFilter && classFilter !== 'all') params.append('class', classFilter);
+      if (status) params.append('status', status);
+      if (level) params.append('level', level);
+      if (page) params.append('page', page.toString());
+      if (limit) params.append('limit', limit.toString());
+
+      const queryString = params.toString();
+      const url = `/students${queryString ? `?${queryString}` : ''}`;
+
+      const res = await api.get(url);
+      const responseData = res.data;
+
+      // Handle both response formats (array or object with students property)
+      const raw = responseData?.students || responseData || [];
+
       return Array.isArray(raw)
-        ? raw.map((s: any) => ({
-            id: s.id || s._id,
-            name: s.name || `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim(),
-            email: s.email || s.user?.email,
-            phone: s.phone || s.phoneNumber || s.user?.phoneNumber,
-            class: s.class || s.className || s.classInfo?.classesName,
-            average: typeof s.average === 'number' ? s.average : (s.overallAverage ?? 0),
-            status: s.status || 'active',
-            enrollmentDate: s.enrollmentDate || s.createdAt || new Date().toISOString(),
-            address: s.address,
-            parentName: s.parentName,
-            parentPhone: s.parentPhone,
-            parentEmail: s.parentEmail,
-            birthDate: s.birthDate || s.dateOfBirth,
-            avatar: s.avatar,
-          }))
+        ? raw.map((s: any) => this.normalizeStudent(s))
         : [];
-    } catch {
+    } catch (error) {
+      console.error('Error fetching students:', error);
       return [];
     }
   },
 
+  // Get single student by ID
+  async getStudentById(id: string): Promise<any> {
+    try {
+      const res = await api.get(`/students/${id}`);
+      const studentData = res.data?.student || res.data;
+      return this.normalizeStudent(studentData);
+    } catch (error) {
+      console.error(`Error fetching student ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Create new student
   async createStudent(studentData: any): Promise<any> {
     try {
-      // Transform UI payload -> backend expected fields
-      const name: string = studentData.name || '';
-      const [firstName, ...rest] = name.trim().split(/\s+/);
-      const lastName = rest.join(' ');
-      const derivedLevel = studentData.level || (typeof studentData.class === 'string' ? (studentData.class.split(' ')[0] || '').replace(/[^0-9A-Za-zÀ-ÿ]/g, '') : undefined);
-      const payload = {
-        matricule: studentData.matricule || `MAT-${Date.now().toString().slice(-6)}`,
-        firstName: studentData.firstName || firstName || 'Inconnu',
-        lastName: studentData.lastName || lastName || 'Inconnu',
-        email: studentData.email,
-        level: derivedLevel || 'N/A',
-        dateOfBirth: studentData.birthDate || studentData.dateOfBirth,
-        phoneNumber: studentData.phone,
-        address: studentData.address,
-        parentName: studentData.parentName,
-        parentPhone: studentData.parentPhone,
-        parentEmail: studentData.parentEmail,
-        status: studentData.status,
-      };
+      // Transform frontend data to backend format
+      const payload = this.transformToBackendFormat(studentData);
 
-      // Create student
       const res = await api.post('/students', payload);
-      let s = res.data?.student || res.data;
+      let student = res.data?.student || res.data;
 
-      // If a class was selected in UI, assign student to that class immediately
-      const classesId = studentData.classesId;
-      if (s && (classesId ?? '') !== '') {
+      // If class is specified, assign student to class
+      if (student && studentData.classesId) {
         try {
-          const assignRes = await api.put(`/students/${s.id || s._id}`, { classesId });
-          s = assignRes.data?.student || assignRes.data || s;
-        } catch (e) {
-          // Silently ignore class assignment failure here; UI toasts will handle via caller if needed
+          await this.addStudentToClass(student._id || student.id, studentData.classesId);
+          // Refetch student to get updated class information
+          const updatedRes = await api.get(`/students/${student._id || student.id}`);
+          student = updatedRes.data?.student || updatedRes.data;
+        } catch (error) {
+          console.warn('Student created but class assignment failed:', error);
+          // Continue with original student data
         }
       }
 
-      // Normalize back to UI shape
-      return {
-        id: s.id || s._id,
-        name: `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim(),
-        email: s.email || s.user?.email,
-        phone: s.phoneNumber || s.user?.phoneNumber,
-        class: s.classInfo?.classesName,
-        average: s.overallAverage ?? 0,
-        status: s.status || 'active',
-        enrollmentDate: s.enrollmentDate || s.createdAt || new Date().toISOString(),
-        address: s.address,
-        parentName: s.parentName,
-        parentPhone: s.parentPhone,
-        parentEmail: s.parentEmail,
-        birthDate: s.dateOfBirth,
-        avatar: s.avatar,
-      };
+      return this.normalizeStudent(student);
     } catch (error) {
+      console.error('Error creating student:', error);
       throw error;
     }
   },
 
+  // Update student
   async updateStudent(id: string, studentData: any): Promise<any> {
     try {
-      const res = await api.put(`/students/${id}`, studentData);
-      const s = res.data?.student || res.data;
-      return {
-        id: s.id || s._id,
-        name: `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim() || s.name,
-        email: s.email || s.user?.email,
-        phone: s.phoneNumber || s.user?.phoneNumber,
-        class: s.classInfo?.classesName || s.class,
-        average: s.overallAverage ?? s.average ?? 0,
-        status: s.status || 'active',
-        enrollmentDate: s.enrollmentDate || s.createdAt || new Date().toISOString(),
-        address: s.address,
-        parentName: s.parentName,
-        parentPhone: s.parentPhone,
-        parentEmail: s.parentEmail,
-        birthDate: s.dateOfBirth || s.birthDate,
-        avatar: s.avatar,
-      };
+      const payload = this.transformToBackendFormat(studentData, true);
+
+      const res = await api.put(`/students/${id}`, payload);
+      const student = res.data?.student || res.data;
+
+      return this.normalizeStudent(student);
     } catch (error) {
+      console.error(`Error updating student ${id}:`, error);
       throw error;
     }
   },
 
+  // Delete student
   async deleteStudent(id: string): Promise<void> {
     try {
       await api.delete(`/students/${id}`);
     } catch (error) {
+      console.error(`Error deleting student ${id}:`, error);
       throw error;
     }
   },
+
+  // Add student to class
+  async addStudentToClass(studentId: string, classId: string): Promise<any> {
+    try {
+      const res = await api.post(`/students/${studentId}/add-to-class`, {
+        studentId,
+        classId
+      });
+      return res.data;
+    } catch (error) {
+      console.error(`Error adding student ${studentId} to class ${classId}:`, error);
+      throw error;
+    }
+  },
+
+  // Change student's class
+  async changeStudentClass(studentId: string, classId: string): Promise<any> {
+    try {
+      const res = await api.put(`/students/${studentId}/change-class`, {
+        classId
+      });
+      const student = res.data?.student || res.data;
+      return this.normalizeStudent(student);
+    } catch (error) {
+      console.error(`Error changing class for student ${studentId}:`, error);
+      throw error;
+    }
+  },
+
+  // Remove student from class
+  async removeStudentFromClass(studentId: string): Promise<any> {
+    try {
+      const res = await api.delete(`/students/${studentId}/remove-from-class`);
+      const student = res.data?.student || res.data;
+      return this.normalizeStudent(student);
+    } catch (error) {
+      console.error(`Error removing student ${studentId} from class:`, error);
+      throw error;
+    }
+  },
+
+  // Get student statistics
+  async getStudentStatistics(): Promise<any> {
+    try {
+      const res = await api.get('/students/stats');
+      return res.data?.statistics || res.data;
+    } catch (error) {
+      console.error('Error fetching student statistics:', error);
+      throw error;
+    }
+  },
+
+  // Get students by class
+  async getStudentsByClass(classId: string): Promise<any[]> {
+    try {
+      const res = await api.get(`/students/class/${classId}`);
+      const students = res.data?.students || [];
+      return Array.isArray(students)
+        ? students.map((s: any) => this.normalizeStudent(s))
+        : [];
+    } catch (error) {
+      console.error(`Error fetching students for class ${classId}:`, error);
+      return [];
+    }
+  },
+
+  // Change student status
+  async changeStudentStatus(studentId: string, status: string): Promise<any> {
+    try {
+      const res = await api.patch(`/students/${studentId}/status`, { status });
+      const student = res.data?.student || res.data;
+      return this.normalizeStudent(student);
+    } catch (error) {
+      console.error(`Error changing status for student ${studentId}:`, error);
+      throw error;
+    }
+  },
+
+  // Toggle student active status
+  async toggleStudentStatus(studentId: string): Promise<any> {
+    try {
+      const res = await api.patch(`/students/${studentId}/toggle-status`);
+      const student = res.data?.student || res.data;
+      return this.normalizeStudent(student);
+    } catch (error) {
+      console.error(`Error toggling status for student ${studentId}:`, error);
+      throw error;
+    }
+  },
+
+  // Bulk create students
+  async createManyStudents(studentsData: any[]): Promise<any> {
+    try {
+      const transformedStudents = studentsData.map(student =>
+        this.transformToBackendFormat(student)
+      );
+
+      const res = await api.post('/students/bulk', {
+        students: transformedStudents
+      });
+
+      return res.data;
+    } catch (error) {
+      console.error('Error creating multiple students:', error);
+      throw error;
+    }
+  },
+
+  // Get student academic performance
+  async getStudentAcademicPerformance(studentId: string, year?: string): Promise<any> {
+    try {
+      const url = year
+        ? `/students/${studentId}/performance?year=${year}`
+        : `/students/${studentId}/performance`;
+
+      const res = await api.get(url);
+      return res.data;
+    } catch (error) {
+      console.error(`Error fetching performance for student ${studentId}:`, error);
+      throw error;
+    }
+  },
+
+  // Get student attendance
+  async getStudentAttendance(studentId: string, year?: string): Promise<any> {
+    try {
+      const url = year
+        ? `/students/${studentId}/attendance?year=${year}`
+        : `/students/${studentId}/attendance`;
+
+      const res = await api.get(url);
+      return res.data;
+    } catch (error) {
+      console.error(`Error fetching attendance for student ${studentId}:`, error);
+      throw error;
+    }
+  },
+
+  // Utility function to normalize student data for frontend
+  normalizeStudent(student: any): any {
+    if (!student) return null;
+
+    return {
+      id: student.id || student._id,
+      name: student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim(),
+      firstName: student.firstName,
+      lastName: student.lastName,
+      email: student.email,
+      phone: student.phone || student.phoneNumber,
+      class: student.class?.name || student.className || student.classInfo?.classesName || 'Non assigné',
+      classesId: student.class?._id || student.class,
+      average: typeof student.average === 'number' ? student.average : (student.overallAverage ?? 0),
+      status: student.status || 'active',
+      enrollmentDate: student.enrollmentDate || student.createdAt || new Date().toISOString(),
+      enrollmentYear: student.enrollmentYear, // Added from schema
+      address: student.address,
+      city: student.city,
+      parentName: student.parentName,
+      parentPhone: student.parentPhone,
+      parentEmail: student.parentEmail,
+      parentOccupation: student.parentOccupation, // Added from schema
+      parentAddress: student.parentAddress, // Added from schema
+      birthDate: student.birthDate || student.dateOfBirth,
+      dateOfBirth: student.dateOfBirth || student.birthDate, // Added from schema
+      avatar: student.avatar || student.profilePicture,
+      profilePicture: student.profilePicture || student.avatar, // Added from schema
+      level: student.level,
+      matricule: student.matricule,
+      gender: student.gender,
+      nationality: student.nationality,
+      birthPlace: student.birthPlace, // Added from schema
+      academicStatus: student.academicStatus,
+      attendanceRate: student.attendanceRate,
+      isActive: student.isActive !== undefined ? student.isActive : true,
+
+      // Medical information fields
+      bloodGroup: student.bloodGroup || '', // Added from schema
+      allergies: student.allergies || [], // Added from schema
+      medicalConditions: student.medicalConditions || [], // Added from schema
+      emergencyContact: student.emergencyContact || { // Added from schema
+        name: '',
+        relationship: '',
+        phone: ''
+      },
+
+      // Academic history
+      academicYears: student.academicYears || [], // Added from schema
+
+      // School and creator references
+      school: student.school, // Added from schema
+      createdBy: student.createdBy, // Added from schema
+
+      // Virtual fields
+      fullName: student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim(),
+      age: student.age // Virtual field from schema
+    };
+  },
+
+  // Transform frontend data to backend format
+  transformToBackendFormat(studentData: any, isUpdate: boolean = false): any {
+    const payload: any = {};
+
+    // Handle name splitting for create operations
+    if (!isUpdate && studentData.name && !studentData.firstName) {
+      const nameParts = studentData.name.trim().split(/\s+/);
+      payload.firstName = nameParts[0] || 'Inconnu';
+      payload.lastName = nameParts.slice(1).join(' ') || 'Inconnu';
+    } else {
+      if (studentData.firstName !== undefined) payload.firstName = studentData.firstName;
+      if (studentData.lastName !== undefined) payload.lastName = studentData.lastName;
+    }
+
+    // Map fields to backend format
+    const fieldMappings = {
+      email: 'email',
+      phone: 'phone',
+      level: 'level',
+      birthDate: 'dateOfBirth',
+      dateOfBirth: 'dateOfBirth',
+      enrollmentDate: 'enrollmentDate',
+      address: 'address',
+      city: 'city',
+      parentName: 'parentName',
+      parentPhone: 'parentPhone',
+      parentEmail: 'parentEmail',
+      parentOccupation: 'parentOccupation',
+      parentAddress: 'parentAddress',
+      classesId: 'class',
+      class: 'class',
+      status: 'status',
+      academicStatus: 'academicStatus',
+      average: 'average',
+      attendanceRate: 'attendanceRate',
+      gender: 'gender',
+      nationality: 'nationality',
+      birthPlace: 'birthPlace',
+      bloodGroup: 'bloodGroup',
+      allergies: 'allergies',
+      medicalConditions: 'medicalConditions',
+      emergencyContact: 'emergencyContact',
+      avatar: 'avatar',
+      profilePicture: 'profilePicture',
+      enrollmentYear: 'enrollmentYear',
+      isActive: 'isActive'
+    };
+
+    Object.entries(fieldMappings).forEach(([frontendField, backendField]) => {
+      if (studentData[frontendField] !== undefined) {
+        payload[backendField] = studentData[frontendField];
+      }
+    });
+
+    // Generate matricule if not provided for new students
+    if (!isUpdate && !payload.matricule && !studentData.matricule) {
+      payload.matricule = `MAT-${Date.now().toString().slice(-6)}`;
+    }
+
+    return payload;
+  }
 };

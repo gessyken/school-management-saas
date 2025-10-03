@@ -175,9 +175,6 @@ function computeDefaultAcademicYear() {
 
 class ClassController {
 
-
-
-
   // GET /classes - Get all classes with filtering
   async getAllClasses(req, res) {
     try {
