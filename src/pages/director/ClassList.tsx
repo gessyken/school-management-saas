@@ -1,23 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { AppLayout } from "@/components/layout/AppLayout"; // Assuming AppLayout is still used higher up
 import { studentService, Student } from "@/lib/services/studentService";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   AlertCircle,
-  BadgeCheck,
-  Calendar,
   Download,
-  FilePlus,
-  GraduationCap,
-  Info,
   Loader2,
-  Mail,
-  Phone,
-  Smile,
-  Upload,
-  User,
   XCircle,
 } from "lucide-react";
 import {
@@ -38,155 +28,271 @@ import { AcademicYear, settingService } from "@/lib/services/settingService";
 import { classService, SchoolClass } from "@/lib/services/classService";
 import {
   academicService,
-  AcademicYearStudent,
+  AcademicYearStudent, // Ensure this interface is complete in academicService.ts
 } from "@/lib/services/academicService";
 import { useSearchParams } from "react-router-dom";
 import AssignStudentsToClass from "./AssignStudentsToClass";
-import Classes from "../../../backend/src/models/Classes";
+// import Classes from "../../../backend/src/models/Classes"; // Not needed here, Classes model used via classService
 import PaymentForm from "./setting/PaymentForm";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  SelectGroup,
+  SelectLabel,
+} from "@/components/ui/select";
+import { getAllLevelsStructured } from "@/data/cameroonSubjects"; // Import levels for consistent filter
 
 const itemsPerPage = 5;
 
+// Interface for PaymentForm's student prop
+interface PaymentStudentInfo {
+  studentId: string;
+  studentName: string;
+  studentClass: string;
+  year: string;
+}
+
 export default function ClassesList() {
   const { t } = useTranslation();
-  const [students, setStudents] = useState<Student[]>([]);
-  const [academicStudents, setAcademicStudents] = useState<AcademicYearStudent[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [students, setStudents] = useState<Student[]>([]); // All raw student data
+  const [academicStudents, setAcademicStudents] = useState<AcademicYearStudent[]>([]); // Student data linked to academic year/class
+  const [loading, setLoading] = useState<boolean>(true); // General loading state
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState<"view" | "edit" | "create" | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]); // List of academic years for filter
+  const [classes, setClasses] = useState<SchoolClass[]>([]); // List of classes for filter
+
   const [filter, setFilter] = useState({
-    level: "",
-    classes: "",
-    status: "",
-    academicYear: "",
+    level: "", // Filter by student's level
+    classId: "", // Filter by student's assigned class ID
+    academicYearName: "", // Filter by academic year name (e.g., "2023-2024")
   });
-  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
-  const [classes, setClasses] = useState<SchoolClass[]>([]);
+
   const { toast } = useToast();
+  const allCameroonLevels = getAllLevelsStructured(); // Get structured levels for dropdown
 
-  useEffect(() => {
-    fetchClasses();
-    loadAcademicYearDetail();
-    fetchStudents();
-    fetchAcademicYear();
-  }, []);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "";
 
-  const loadAcademicYearDetail = async () => {
-    const data = await settingService.getAcademicYears();
-    setAcademicYears(data);
-    if (data.length > 0 && filter.academicYear === "") {
-      setFilter({
-        ...filter,
-        academicYear: data.find((opt) => opt.isCurrent)?.name,
+  const [openPaymentForm, setOpenPaymentForm] = useState(false);
+  const [selectedStudentForPayment, setSelectedStudentForPayment] = useState<PaymentStudentInfo | null>(null);
+
+  // --- Data Fetching Callbacks ---
+  const fetchAcademicYears = useCallback(async () => {
+    try {
+      const data = await settingService.getAcademicYears();
+      setAcademicYears(data);
+      // Set default filter to current academic year if available and not already set
+      if (data.length > 0 && !filter.academicYearName) {
+        const currentYear = data.find((opt: AcademicYear) => opt.isCurrent);
+        if (currentYear) {
+          setFilter(prev => ({ ...prev, academicYearName: currentYear.name }));
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch academic years:", error);
+      toast({
+        title: t("common.error"),
+        description: t("school.class_list.errors.load_academic_years"),
+        variant: "destructive"
       });
     }
-  };
+  }, [t, toast, filter.academicYearName]);
 
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
     try {
-      const res = await classService.getAll({});
-      setClasses(res.data.classes);
-    } catch {
+      const res = await classService.getAll(); // Fetch all classes, frontend filters
+      setClasses(res.data.classes || []);
+    } catch (error) {
+      console.error("Failed to fetch classes:", error);
       toast({
         title: t("common.error"),
         description: t("school.class_list.errors.load_classes"),
+        variant: "destructive"
       });
     }
-  };
+  }, [t, toast]);
 
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     try {
       const data = await studentService.getAll();
-      setStudents(data.students);
+      setStudents(data.students || []);
     } catch (error) {
-      console.error("Failed to fetch students", error);
+      console.error("Failed to fetch students:", error);
       toast({
         title: t("common.error"),
         description: t("school.class_list.errors.load_students"),
+        variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      // Set loading to false only after all initial fetches are done
+      // This is a bit tricky if they run in parallel, a dedicated initialLoading state might be better
+      // For now, will keep it after the main student data fetch.
     }
-  };
+  }, [t, toast]);
 
-  const fetchAcademicYear = async () => {
+  const fetchAcademicStudents = useCallback(async () => {
+    setLoading(true); // Set loading true for the main table data
     try {
-      const data = await academicService.getAll();
-      setAcademicStudents(data.students);
+      const data = await academicService.getAll(); // Fetch academic year specific student data
+      setAcademicStudents(data.students || []);
     } catch (error) {
-      console.error("Failed to fetch academic students", error);
+      console.error("Failed to fetch academic students:", error);
       toast({
         title: t("common.error"),
         description: t("school.class_list.errors.load_academic_students"),
+        variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setLoading(false); // Finished loading main table data
     }
-  };
+  }, [t, toast]);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
+  // --- Initial Data Load Effect ---
+  useEffect(() => {
+    // Fetch all necessary data on component mount
+    fetchAcademicYears();
+    fetchClasses();
+    fetchStudents(); // Raw student data for 'AssignStudentsToClass'
+    fetchAcademicStudents(); // Academic year specific student data for the main table
+  }, [fetchAcademicYears, fetchClasses, fetchStudents, fetchAcademicStudents]);
 
-  const filteredStudents = students
-    .filter(
-      (student) =>
-        student.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.matricule?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .filter((student) =>
-      filter.level ? student?.level === filter.level : true
-    );
+  // --- Filtering Logic for Main Table (Academic Students) ---
+  const filteredAcademicStudents = useMemo(() => {
+    let result = academicStudents;
 
-  const filteredAcademicStudents = academicStudents
-    .filter(
-      (academic) =>
-        academic?.student?.fullName
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        academic?.student?.firstName
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        academic?.student?.lastName
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        academic?.student?.matricule
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase())
-    )
-    .filter(
-      (academic) =>
-        (filter.level ? academic?.classes?.level === filter.level : true) &&
-        (filter.academicYear ? academic?.year === filter.academicYear : true) &&
-        (filter.classes ? academic?.classes?._id === filter.classes : true)
-    );
+    if (searchTerm) {
+      const lowerCaseSearch = searchTerm.toLowerCase();
+      result = result.filter(
+        (academic) =>
+          academic.student?.fullName?.toLowerCase().includes(lowerCaseSearch) ||
+          academic.student?.firstName?.toLowerCase().includes(lowerCaseSearch) ||
+          academic.student?.lastName?.toLowerCase().includes(lowerCaseSearch) ||
+          academic.student?.matricule?.toLowerCase().includes(lowerCaseSearch)
+      );
+    }
 
-  const filteredClasses = classes.filter((item) =>
-    filter.level ? item.level === filter.level : true
-  );
+    if (filter.level) {
+      result = result.filter(academic => academic.classes?.level === filter.level);
+    }
 
+    if (filter.academicYearName) {
+      result = result.filter(academic => academic.year === filter.academicYearName);
+    }
+
+    if (filter.classId) {
+      result = result.filter(academic => academic.classes?._id === filter.classId);
+    }
+
+    return result;
+  }, [academicStudents, searchTerm, filter.level, filter.academicYearName, filter.classId]);
+
+  // --- Filtering Logic for AssignStudentsToClass (Raw Students) ---
+  const filteredRawStudents = useMemo(() => {
+    let result = students;
+
+    if (searchTerm) {
+      const lowerCaseSearch = searchTerm.toLowerCase();
+      result = result.filter(
+        (student) =>
+          student.fullName?.toLowerCase().includes(lowerCaseSearch) ||
+          student.firstName?.toLowerCase().includes(lowerCaseSearch) ||
+          student.lastName?.toLowerCase().includes(lowerCaseSearch) ||
+          student.matricule?.toLowerCase().includes(lowerCaseSearch)
+      );
+    }
+
+    if (filter.level) {
+      result = result.filter(student => student.level === filter.level);
+    }
+
+    // No academicYearName or classId filter on raw students as they might not be assigned yet.
+
+    return result;
+  }, [students, searchTerm, filter.level]);
+
+
+  // --- Pagination Hook ---
   const {
     currentPage,
     totalPages,
-    currentData,
+    currentData, // This will be the paginated portion of filteredAcademicStudents
     goToNextPage,
     goToPreviousPage,
     goToPage,
   } = usePagination(filteredAcademicStudents, itemsPerPage);
 
+  // Reset pagination when filters or search change
+  useEffect(() => {
+    goToPage(1);
+  }, [filteredAcademicStudents, goToPage]);
+
+  // --- Event Handlers ---
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleFilterChange = (key: string, value: string) => {
+    goToPage(1); // Reset page on any filter change
+    setFilter(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleTabChange = (tabKey: string) => {
+    setSearchParams({ tab: tabKey });
+  };
+
+  const handleOpenPaymentForm = (academic: AcademicYearStudent) => {
+    if (!academic.student || !academic.classes) {
+      toast({
+        title: t("common.error"),
+        description: t("school.class_list.errors.missing_student_class_info"),
+        variant: "destructive"
+      });
+      return;
+    }
+    setSelectedStudentForPayment({
+      studentId: academic.student._id,
+      studentName: `${academic.student.firstName} ${academic.student.lastName}`,
+      studentClass: academic.classes.classesName,
+      year: academic.year,
+    });
+    setOpenPaymentForm(true);
+  };
+
+  const handlePaymentSubmit = async (student: PaymentStudentInfo, fee: number) => {
+    try {
+      // academicService.addFee might need to accept academicYearStudent ID, student ID, and fee
+      // Assuming it needs studentId and the fee amount
+      await academicService.addFee(student.studentId, fee); // Adjust based on actual API
+      toast({
+        title: t("common.success"),
+        description: t("school.class_list.payment_success"),
+        variant: "default"
+      });
+      setOpenPaymentForm(false);
+      fetchAcademicStudents(); // Refresh data to reflect new payment status/amount if needed
+    } catch (error) {
+      console.error("Payment submission failed:", error);
+      toast({
+        title: t("common.error"),
+        description: t("school.class_list.errors.payment_failed"),
+        variant: "destructive"
+      });
+    }
+  };
+
+  // --- Export Functions ---
   const exportExcel = () => {
     try {
-      const formattedData = [];
+      const formattedData: any[] = [];
 
-      currentData.forEach((record) => {
+      filteredAcademicStudents.forEach((record) => { // Export filtered data
         const student = record.student || {};
         const classInfo = record.classes || {};
-        const year = record.year;
+        const academicYearName = record.year;
 
         record.terms.forEach((term) => {
           const termName = term.termInfo?.name || t("common.na");
@@ -207,18 +313,21 @@ export default function ClassesList() {
               const modifications =
                 (subject.marks?.modified || [])
                   .map((mod) => {
-                    return `${mod.dateModified.toLocaleDateString()} ${t("common.by")} ${
-                      mod.modifiedBy?.name
+                    // Ensure dateModified is a Date object before calling toLocaleDateString
+                    const modDate = mod.dateModified instanceof Date ? mod.dateModified : new Date(mod.dateModified);
+                    return `${modDate.toLocaleDateString()} ${t("common.by")} ${
+                      mod.modifiedBy?.name || t("common.na")
                     }: ${mod.preMark} → ${mod.modMark}`;
                   })
                   .join(" | ") || t("school.class_list.no_modifications");
 
               formattedData.push({
-                [t("school.class_list.excel.academic_year")]: year,
+                [t("school.class_list.excel.academic_year")]: academicYearName,
                 [t("school.class_list.excel.student_name")]: `${student.firstName || t("common.na")} ${
                   student.lastName || ""
                 }`,
-                [t("school.class_list.excel.class")]: classInfo.name || t("common.na"),
+                [t("school.class_list.excel.class")]: classInfo.classesName || t("common.na"),
+                [t("school.class_list.excel.level")]: student.level || t("common.na"), // Added level
                 [t("school.class_list.excel.term")]: termName,
                 [t("school.class_list.excel.term_average")]: termAverage,
                 [t("school.class_list.excel.term_rank")]: termRank,
@@ -230,8 +339,8 @@ export default function ClassesList() {
                 [t("school.class_list.excel.subject")]: subjectName,
                 [t("school.class_list.excel.current_mark")]: currentMark,
                 [t("school.class_list.excel.mark_modifications")]: modifications,
-                [t("common.created_at")]: record.createdAt.toLocaleString(),
-                [t("common.updated_at")]: record.updatedAt.toLocaleString(),
+                [t("common.created_at")]: new Date(record.createdAt).toLocaleString(),
+                [t("common.updated_at")]: new Date(record.updatedAt).toLocaleString(),
               });
             });
           });
@@ -247,6 +356,7 @@ export default function ClassesList() {
       toast({
         title: t("common.error"),
         description: t("school.class_list.errors.export_failed"),
+        variant: "destructive"
       });
     }
   };
@@ -264,22 +374,22 @@ export default function ClassesList() {
 
     const tableColumn = [
       t("school.class_list.pdf.matricule"),
-      t("school.class_list.pdf.first_name"),
+      t("school.class_list.pdf.full_name"), // Changed from first_name
       t("school.class_list.pdf.email"),
       t("school.class_list.pdf.level"),
-      t("school.class_list.pdf.phone"),
-      t("school.class_list.pdf.dob"),
-      t("school.class_list.pdf.gender"),
+      t("school.class_list.pdf.class_name"), // Changed from phone
+      t("school.class_list.pdf.academic_year"), // Changed from dob
+      t("school.class_list.pdf.overall_average"), // Changed from gender
     ];
 
-    const tableRows = students.map((s) => [
-      s.matricule,
-      s.firstName,
-      s.email,
-      s.level,
-      s.phoneNumber,
-      new Date(s.dateOfBirth).toLocaleDateString(),
-      s.gender,
+    const tableRows = filteredAcademicStudents.map((academic) => [ // Export filtered academic students
+      academic.student?.matricule || t("common.na"),
+      `${academic.student?.firstName || t("common.na")} ${academic.student?.lastName || ""}`,
+      academic.student?.email || t("common.na"),
+      academic.classes?.level || t("common.na"),
+      academic.classes?.classesName || t("common.na"),
+      academic.year || t("common.na"),
+      academic.overallAverage ?? t("common.na"),
     ]);
 
     autoTable(doc, {
@@ -302,41 +412,6 @@ export default function ClassesList() {
     doc.save(`${t("school.class_list.pdf.file_prefix")}_${date.replace(/\//g, "-")}.pdf`);
   };
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") || "";
-
-  const handleTabChange = (tabKey: string) => {
-    setSearchParams({ tab: tabKey });
-  };
-
-  const [openPaymentForm, setOpenPaymentForm] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-
-  const handleOpenPaymentForm = (student) => {
-    setSelectedStudent({
-      studentId: student._id,
-      studentName: student.student.firstName + " " + student.student.firstName,
-      studentClass: student.classes.classesName,
-      year: student.year,
-    });
-    setOpenPaymentForm(true);
-  };
-
-  const handlePaymentSubmit = async (student, fee) => {
-    try {
-      await academicService.addFee(student.studentId, fee);
-      toast({
-        title: t("common.success"),
-        description: t("school.class_list.payment_success"),
-      });
-      setOpenPaymentForm(false);
-    } catch (error) {
-      toast({
-        title: t("common.error"),
-        description: t("school.class_list.errors.payment_failed"),
-      });
-    }
-  };
 
   return (
     <div className="p-4 space-y-4">
@@ -358,8 +433,7 @@ export default function ClassesList() {
                 className="flex items-center gap-2"
               >
                 <Download className="h-4 w-4" />
-                {/* {t("common.excel")} */}
-                Excel
+                {t("common.excel_button")}
               </Button>
 
               <Button
@@ -368,8 +442,7 @@ export default function ClassesList() {
                 className="flex items-center gap-2"
               >
                 <Download className="h-4 w-4" />
-                {/* {t("common.pdf")} */}
-                PDF
+                {t("common.pdf_button")}
               </Button>
             </div>
             <Button
@@ -378,9 +451,9 @@ export default function ClassesList() {
                 handleTabChange(activeTab === "" ? "assign-student" : "")
               }
             >
-              {activeTab === "" 
-                ? t("school.class_list.assign_student") 
-                : t("school.class_list.view_list")}
+              {activeTab === ""
+                ? t("school.class_list.assign_student_button")
+                : t("school.class_list.view_list_button")}
             </Button>
           </div>
 
@@ -396,27 +469,13 @@ export default function ClassesList() {
                   setSearchTerm("");
                   setFilter({
                     level: "",
-                    academicYear: filter.academicYear,
-                    status: "",
-                    classes: "",
+                    academicYearName: academicYears.find((opt) => opt.isCurrent)?.name || "", // Reset to current or empty
+                    classId: "",
                   });
-                  setSelectedStudents([]);
                 }}
                 className="text-sm text-primary hover:text-primary/80 flex items-center gap-1"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <XCircle className="w-4 h-4" />
                 {t("school.students.filters.reset")}
               </Button>
             </div>
@@ -424,70 +483,73 @@ export default function ClassesList() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="block mb-1 text-sm font-medium text-foreground">
-                  {t("school.class_list.level")}
+                  {t("school.class_list.level_filter")}
                 </label>
-                <select
-                  className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
+                <Select
                   value={filter.level}
-                  onChange={(e) => {
-                    goToPage(1);
-                    setFilter({ ...filter, level: e.target.value });
-                    setSelectedStudents([]);
-                  }}
+                  onValueChange={(value) => handleFilterChange("level", value)}
                 >
-                  <option value="">{t("school.students.filters.all")}</option>
-                  <option value="6ème">6ème</option>
-                  <option value="5ème">5ème</option>
-                  <option value="4ème">4ème</option>
-                  <option value="3ème">3ème</option>
-                  <option value="2nde">2nde</option>
-                  <option value="1ère">1ère</option>
-                  <option value="Terminale">Terminale</option>
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t("school.students.filters.all_levels")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>{t("school.students.filters.all")}</SelectItem>
+                    <SelectGroup>
+                      <SelectLabel>{t('classes.system.francophone')}</SelectLabel>
+                      {allCameroonLevels.francophone.map((level) => (
+                        <SelectItem key={level} value={level}>{level}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>{t('classes.system.anglophone')}</SelectLabel>
+                      {allCameroonLevels.anglophone.map((level) => (
+                        <SelectItem key={level} value={level}>{level}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="block mb-1 text-sm font-medium text-foreground">
-                  {t("school.class_list.classes")}
+                  {t("school.class_list.classes_filter")}
                 </label>
-                <select
-                  className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
-                  required
-                  value={filter.classes}
-                  onChange={(e) => {
-                    const classId = e.target.value;
-                    setFilter({ ...filter, classes: classId });
-                  }}
+                <Select
+                  value={filter.classId}
+                  onValueChange={(value) => handleFilterChange("classId", value)}
                 >
-                  <option value="">{t("school.students.filters.all")}</option>
-                  {filteredClasses.map((item) => (
-                    <option key={item._id} value={item._id}>
-                      {item.classesName}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t("school.students.filters.all_classes")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>{t("school.students.filters.all")}</SelectItem>
+                    {classes.map((item) => (
+                      <SelectItem key={item._id} value={item._id}>
+                        {item.classesName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="block mb-1 text-sm font-medium text-foreground">
-                  {t("school.class_list.academic_year")}
+                  {t("school.class_list.academic_year_filter")}
                 </label>
-                <select
-                  required
-                  value={filter.academicYear}
-                  onChange={(e) => {
-                    const yearId = e.target.value;
-                    setFilter({ ...filter, academicYear: yearId });
-                  }}
-                  className="w-full sm:w-auto border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
+                <Select
+                  value={filter.academicYearName}
+                  onValueChange={(value) => handleFilterChange("academicYearName", value)}
                 >
-                  <option value="" disabled>
-                    {t("school.class_list.select_year")}
-                  </option>
-                  {academicYears.map((year) => (
-                    <option key={year._id} value={year.name}>
-                      {year.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t("school.class_list.select_year")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>{t("school.students.filters.all")}</SelectItem>
+                    {academicYears.map((year) => (
+                      <SelectItem key={year._id} value={year.name}>
+                        {year.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -497,6 +559,7 @@ export default function ClassesList() {
             {loading ? (
               <div className="flex justify-center items-center p-8">
                 <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
+                <p className="ml-2 text-muted-foreground">{t("common.loading")}</p>
               </div>
             ) : (
               <>
@@ -507,6 +570,8 @@ export default function ClassesList() {
                       <TableHead>{t("school.class_list.full_name")}</TableHead>
                       <TableHead>{t("school.class_list.class")}</TableHead>
                       <TableHead>{t("school.class_list.level")}</TableHead>
+                      <TableHead>{t("school.class_list.academic_year")}</TableHead>
+                      <TableHead>{t("school.class_list.overall_average")}</TableHead>
                       <TableHead>{t("school.class_list.status")}</TableHead>
                       <TableHead>{t("school.students.table.actions")}</TableHead>
                     </TableRow>
@@ -515,97 +580,96 @@ export default function ClassesList() {
                     {currentData.length > 0 ? (
                       currentData.map((academic) => (
                         <TableRow key={academic._id}>
-                          <TableCell>{academic?.student?.matricule}</TableCell>
+                          <TableCell>{academic?.student?.matricule || t("common.na")}</TableCell>
                           <TableCell>
                             {academic?.student?.fullName ||
-                              `${academic?.student?.firstName} ${academic?.student?.lastName}`}
+                              `${academic?.student?.firstName || t("common.na")} ${academic?.student?.lastName || ""}`}
                           </TableCell>
                           <TableCell>
                             {academic?.classes?.classesName || t("common.na")}
                           </TableCell>
-                          <TableCell>{academic?.student?.level}</TableCell>
-                          <TableCell>{academic?.student?.status}</TableCell>
+                          <TableCell>{academic?.classes?.level || t("common.na")}</TableCell>
+                          <TableCell>{academic?.year || t("common.na")}</TableCell>
+                          <TableCell>{academic?.overallAverage ?? t("common.na")}</TableCell>
+                          <TableCell>{academic?.student?.status || t("common.na")}</TableCell>
                           <TableCell>
-                            <button
+                            <Button
                               onClick={() => handleOpenPaymentForm(academic)}
                               className="bg-primary hover:bg-primary/80 text-white px-4 py-1 rounded"
                             >
                               {t("school.class_list.add_payment")}
-                            </button>
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
                         <TableCell
-                          colSpan={7}
-                          className="text-center text-muted-foreground"
+                          colSpan={8}
+                          className="text-center text-muted-foreground py-8"
                         >
-                          {t("school.class_list.no_students")}
+                          {t("school.class_list.no_students_found")}
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
                 <div className="flex justify-between items-center mt-4">
-                  <button
-                    className="px-4 py-2 bg-secondary text-secondary-foreground rounded disabled:opacity-50"
+                  <Button
+                    variant="outline"
                     onClick={goToPreviousPage}
                     disabled={currentPage === 1}
                   >
                     {t("common.pagination.previous")}
-                  </button>
+                  </Button>
 
                   <div className="space-x-2">
                     {Array.from({ length: totalPages }, (_, index) => (
-                      <button
+                      <Button
                         key={index + 1}
-                        className={`px-3 py-1 rounded ${
-                          currentPage === index + 1
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground"
-                        }`}
+                        variant={currentPage === index + 1 ? "default" : "outline"}
                         onClick={() => goToPage(index + 1)}
                       >
                         {index + 1}
-                      </button>
+                      </Button>
                     ))}
                   </div>
 
-                  <button
-                    className="px-4 py-2 bg-secondary text-secondary-foreground rounded disabled:opacity-50"
+                  <Button
+                    variant="outline"
                     onClick={goToNextPage}
                     disabled={currentPage === totalPages}
                   >
                     {t("common.pagination.next")}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}
           </>
         ) : (
+          // <>hello</>
           <AssignStudentsToClass
-            students={filteredStudents}
-            selectedClass={filter.classes}
-            selectedYear={filter.academicYear}
-            selectedStudents={selectedStudents}
-            setSelectedStudents={setSelectedStudents}
-            fetchStudents={fetchStudents}
+            students={filteredRawStudents} // Pass filtered raw students to assign
+            selectedClass={filter.classId}
+            selectedYear={filter.academicYearName}
+            // selectedStudents is not used by AssignStudentsToClass based on its typical function
+            // setSelectedStudents is also not used if AssignStudentsToClass handles its own selections internally
+            fetchStudents={fetchAcademicStudents} // Refresh academic students after assignment
           />
         )}
-        {openPaymentForm && selectedStudent && (
+        {openPaymentForm && selectedStudentForPayment && (
           <div
             className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4"
             onClick={(e) => {
               if (e.target === e.currentTarget) setOpenPaymentForm(false);
             }}
           >
-            <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg">
-              <PaymentForm
-                student={selectedStudent}
+            <div className="bg-background p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg">
+              {/* <PaymentForm
+                student={selectedStudentForPayment}
                 onCancel={() => setOpenPaymentForm(false)}
                 onSubmit={handlePaymentSubmit}
-              />
+              /> */}
             </div>
           </div>
         )}
