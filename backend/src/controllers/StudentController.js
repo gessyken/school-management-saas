@@ -1,6 +1,10 @@
 import Student from '../models/Student.js';
 import User from '../models/User.js';
 import Classes from '../models/Classes.js';
+import AcademicYear from '../models/AcademicYear.js'; // Adjust path as needed
+import AcademicYearDetail from '../models/AcademicYearDetail.js'; // Adjust path as needed
+import Term from '../models/Term.js';
+import Sequence from '../models/Sequence.js';
 
 // Helper: Normalize and validate student data (following your Class controller pattern)
 function normalizeAndValidateStudent(data) {
@@ -76,43 +80,370 @@ function normalizeAndValidateStudent(data) {
 
   return { data: result };
 }
-// Internal method to add student to class (reusable)
+
 async function addStudentToClassInternal(studentId, classId, schoolId) {
-  // Validate class exists in school
-  const classData = await Classes.findOne({ _id: classId, school: schoolId });
-  if (!classData) {
-    throw new Error('Class not found in this school');
+  try {
+    // Validate class exists in school
+    const classData = await Classes.findOne({ _id: classId, school: schoolId });
+    if (!classData) {
+      throw new Error('Class not found in this school');
+    }
+
+    // Validate student exists in school
+    const student = await Student.findOne({ _id: studentId, school: schoolId });
+    if (!student) {
+      throw new Error('Student not found in this school');
+    }
+
+    // Check if student is already in this class
+    if (classData.studentList.includes(studentId)) {
+      throw new Error('Student already in this class');
+    }
+
+    // Check class capacity
+    if (classData.currentStudents >= classData.capacity) {
+      throw new Error('Class is at full capacity');
+    }
+
+    // Validate student level matches class level
+    if (student.level && classData.level && student.level !== classData.level) {
+      throw new Error(`Student level (${student.level}) does not match class level (${classData.level})`);
+    }
+
+    // Get current academic year
+    const currentAcademicYearDetail = await AcademicYearDetail.findOne({ 
+      school: schoolId, 
+      isCurrent: true 
+    });
+
+    if (!currentAcademicYearDetail) {
+      throw new Error('No current academic year found for this school');
+    }
+
+    // Check if academic year already exists for this student
+    let academicYear = await AcademicYear.findOne({
+      student: studentId,
+      year: currentAcademicYearDetail.name,
+      school: schoolId
+    });
+
+    if (academicYear) {
+      // Update existing academic year
+      academicYear.classes = classId;
+      academicYear.status = 'Active';
+      academicYear.enrollmentDate = student?.enrollmentDate;
+      
+      // Update terms structure if class has changed
+      if (academicYear.classes.toString() !== classId.toString()) {
+        await initializeAcademicYearTerms(academicYear, currentAcademicYearDetail, classData);
+      }
+      
+      await academicYear.save();
+    } else {
+      // Create new academic year
+      const terms = await initializeTermsFromAcademicYear(currentAcademicYearDetail, classData);
+      
+      academicYear = new AcademicYear({
+        student: studentId,
+        school: schoolId,
+        year: currentAcademicYearDetail.name,
+        classes: classId,
+        terms: terms,
+        fees: [],
+        status: 'Active',
+        enrollmentDate: student?.enrollmentDate
+      });
+
+      await academicYear.save();
+    }
+
+    // Add student to class studentList
+    classData.studentList.push(studentId);
+    classData.currentStudents = classData.studentList.length;
+    await classData.save();
+
+    // Update student class info
+    student.classInfo = classId;
+    await student.save();
+
+
+    return {
+      classData,
+      academicYear,
+      message: academicYear.isModified() ? 'Academic year updated and student added to class' : 'New academic year created and student added to class'
+    };
+
+  } catch (error) {
+    throw error;
+  } finally {
   }
-
-  // Validate student exists in school
-  const student = await Student.findOne({ _id: studentId, school: schoolId });
-  if (!student) {
-    throw new Error('Student not found in this school');
-  }
-
-  // Check if student is already in this class
-  if (classData.studentList.includes(studentId)) {
-    throw new Error('Student already in this class');
-  }
-
-  // Check class capacity
-  if (classData.currentStudents >= classData.capacity) {
-    throw new Error('Class is at full capacity');
-  }
-
-  // Validate student level matches class level
-  if (student.level && classData.level && student.level !== classData.level) {
-    throw new Error(`Student level (${student.level}) does not match class level (${classData.level})`);
-  }
-
-  // Add student to class studentList
-  classData.studentList.push(studentId);
-  classData.currentStudents = classData.studentList.length;
-
-  await classData.save();
-
-  return classData;
 }
+
+// Helper function to initialize terms from academic year detail
+async function initializeTermsFromAcademicYear(academicYearDetail, classDoc) {
+  const terms = [];
+  
+  // Get terms for this academic year
+  const termDocs = await Term.find({ 
+    _id: { $in: academicYearDetail.terms },
+    school: academicYearDetail.school 
+  }).populate('sequences');
+
+  for (const termDoc of termDocs) {
+    const sequences = [];
+    
+    for (const sequenceDoc of termDoc.sequences) {
+      const subjects = [];
+      
+      // Initialize subjects from class subject details
+      for (const subjectDetail of classDoc.subjectDetails) {
+        if (subjectDetail.isActive) {
+          subjects.push({
+            subjectInfo: subjectDetail.subject,
+            isActive: true,
+            discipline: 'Not Available',
+            marks: {
+              currentMark: 0,
+              isActive: true,
+              modified: []
+            }
+          });
+        }
+      }
+
+      sequences.push({
+        sequenceInfo: sequenceDoc._id,
+        isActive: true,
+        average: 0,
+        rank: null,
+        absences: 0,
+        subjects: subjects,
+        discipline: 'Not Available'
+      });
+    }
+
+    terms.push({
+      termInfo: termDoc._id,
+      average: 0,
+      rank: null,
+      sequences: sequences,
+      discipline: 'Not Available'
+    });
+  }
+
+  return terms;
+}
+
+// Helper function to update existing academic year terms
+async function initializeAcademicYearTerms(academicYear, academicYearDetail, classDoc) {
+  const newTerms = await initializeTermsFromAcademicYear(academicYearDetail, classDoc);
+  
+  // Map existing terms to preserve marks if possible
+  const updatedTerms = newTerms.map(newTerm => {
+    const existingTerm = academicYear.terms.find(t => 
+      t.termInfo.toString() === newTerm.termInfo.toString()
+    );
+
+    if (existingTerm) {
+      // Update sequences while preserving existing marks
+      const updatedSequences = newTerm.sequences.map(newSequence => {
+        const existingSequence = existingTerm.sequences.find(s => 
+          s.sequenceInfo.toString() === newSequence.sequenceInfo.toString()
+        );
+
+        if (existingSequence) {
+          // Update subjects while preserving marks
+          const updatedSubjects = newSequence.subjects.map(newSubject => {
+            const existingSubject = existingSequence.subjects.find(sub => 
+              sub.subjectInfo.toString() === newSubject.subjectInfo.toString()
+            );
+
+            if (existingSubject) {
+              // Keep existing subject with its marks
+              return {
+                ...newSubject,
+                marks: existingSubject.marks,
+                discipline: existingSubject.discipline
+              };
+            }
+            return newSubject; // New subject
+          });
+
+          return {
+            ...newSequence,
+            subjects: updatedSubjects,
+            average: existingSequence.average,
+            rank: existingSequence.rank,
+            absences: existingSequence.absences,
+            discipline: existingSequence.discipline
+          };
+        }
+        return newSequence; // New sequence
+      });
+
+      return {
+        ...newTerm,
+        sequences: updatedSequences,
+        average: existingTerm.average,
+        rank: existingTerm.rank,
+        discipline: existingTerm.discipline
+      };
+    }
+    return newTerm; // New term
+  });
+
+  academicYear.terms = updatedTerms;
+  return academicYear;
+}
+
+// Enhanced version with additional validation and options
+async function addStudentToClassInternalEnhanced(studentId, classId, schoolId, options = {}) {
+  const {
+    enrollmentDate = new Date(),
+    status = 'Active',
+    createAcademicYear = true,
+    updateIfExists = true
+  } = options;
+
+  try {
+    // Validate class exists in school
+    const classData = await Classes.findOne({ _id: classId, school: schoolId });
+    if (!classData) {
+      throw new Error('Class not found in this school');
+    }
+
+    // Validate student exists in school
+    const student = await Student.findOne({ _id: studentId, school: schoolId });
+    if (!student) {
+      throw new Error('Student not found in this school');
+    }
+
+    // Check if student is already in this class
+    if (classData.studentList.includes(studentId)) {
+      throw new Error('Student already in this class');
+    }
+
+    // Check class capacity
+    if (classData.currentStudents >= classData.capacity) {
+      throw new Error('Class is at full capacity');
+    }
+
+    // Validate student level matches class level
+    if (student.level && classData.level && student.level !== classData.level) {
+      throw new Error(`Student level (${student.level}) does not match class level (${classData.level})`);
+    }
+
+    let academicYear = null;
+    
+    if (createAcademicYear) {
+      // Get current academic year
+      const currentAcademicYearDetail = await AcademicYearDetail.findOne({ 
+        school: schoolId, 
+        isCurrent: true 
+      });
+
+      if (!currentAcademicYearDetail) {
+        throw new Error('No current academic year found for this school');
+      }
+
+      // Check if academic year already exists for this student
+      academicYear = await AcademicYear.findOne({
+        student: studentId,
+        year: currentAcademicYearDetail.name,
+        school: schoolId
+      });
+
+      if (academicYear) {
+        if (updateIfExists) {
+          // Update existing academic year
+          academicYear.classes = classId;
+          academicYear.status = status;
+          academicYear.enrollmentDate = enrollmentDate;
+          
+          // Update terms structure if class has changed
+          if (academicYear.classes.toString() !== classId.toString()) {
+            await initializeAcademicYearTerms(academicYear, currentAcademicYearDetail, classData);
+          }
+          
+          await academicYear.save();
+        } else {
+          throw new Error('Academic year already exists for this student and update is disabled');
+        }
+      } else {
+        // Create new academic year
+        const terms = await initializeTermsFromAcademicYear(currentAcademicYearDetail, classData);
+        
+        academicYear = new AcademicYear({
+          student: studentId,
+          school: schoolId,
+          year: currentAcademicYearDetail.name,
+          classes: classId,
+          terms: terms,
+          fees: [],
+          status: status,
+          enrollmentDate: enrollmentDate
+        });
+
+        await academicYear.save();
+      }
+    }
+
+    // Add student to class studentList
+    classData.studentList.push(studentId);
+    classData.currentStudents = classData.studentList.length;
+    await classData.save();
+
+    // Update student class info
+    student.classInfo = classId;
+    await student.save();
+
+
+    return {
+      classData,
+      academicYear,
+      student,
+      message: academicYear ? 
+        (academicYear.isModified() ? 'Academic year updated and student added to class' : 'New academic year created and student added to class') :
+        'Student added to class (no academic year created)'
+    };
+
+  } catch (error) {
+    throw error;
+  } finally {
+  }
+}
+
+// Bulk version for adding multiple students
+async function addStudentsToClassInternal(studentIds, classId, schoolId, options = {}) {
+  const results = {
+    success: [],
+    failed: []
+  };
+
+  for (const studentId of studentIds) {
+    try {
+      let enrollmentDate = new Date()
+      const result = await addStudentToClassInternalEnhanced(studentId, classId, schoolId,enrollmentDate, options);
+      results.success.push({
+        studentId,
+        ...result
+      });
+    } catch (error) {
+      results.failed.push({
+        studentId,
+        error: error.message
+      });
+    }
+  }
+
+  return results;
+}
+
+// export {
+//   addStudentToClassInternal,
+//   addStudentToClassInternalEnhanced,
+//   addStudentsToClassInternal
+// };
 class StudentController {
   // Create student with comprehensive validation
   // Create student with comprehensive validation and class assignment
@@ -392,7 +723,7 @@ class StudentController {
           }
 
           // Add to new class
-          await addStudentToClassInternal(studentId, newClassId, schoolId);
+          await addStudentToClassInternal(studentId, newClassId, schoolId,);
           console.log("studentId", studentId)
         } catch (error) {
           console.warn('Student updated but class assignment failed:', error);

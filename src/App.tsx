@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, Outlet } from "react-router-dom";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Sidebar } from "./components/layout/Sidebar";
@@ -14,13 +14,16 @@ import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import Subjects from "./pages/Subjects";
 import Classes from "./pages/Classes";
-import AcademicYears from "./pages/AcademicYears";
+import AcademicYears from "./pages/AcademicYearLayout";
 import Reports from "./pages/Reports";
 import Finances from "./pages/Finances";
 import Administration from "./pages/Administration";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { School } from "lucide-react";
+import AcademicYearOverview from "./pages/AcademicYear/AcademicYearOverview";
+import AcademicYearLayout from "./pages/AcademicYearLayout";
+import GradesManagement from "./pages/AcademicYear/GradesManagement";
 
 const queryClient = new QueryClient();
 
@@ -128,14 +131,52 @@ const AppRoutes = () => {
             </ProtectedLayout>
           }
         />
-        <Route
-          path="/academic-years"
-          element={
-            <ProtectedLayout>
-              <AcademicYears />
-            </ProtectedLayout>
-          }
-        />
+        <Route path="/academic-years" element={
+          <ProtectedLayout>
+            <AcademicYearLayout />
+          </ProtectedLayout>
+        }>
+          {/* All tab routes */}
+          <Route path="overview" element={<AcademicYearOverview />} />
+          <Route path="grades" element={<GradesManagement />} />
+          {/* <Route path="bulk" element={<BulkGradeManagement />} />
+          <Route path="analytics" element={<AcademicAnalytics />} />
+          <Route path="fees" element={<FeeManagement />} />
+          <Route path="ranks" element={<RankManagement />} />
+          <Route path="promotion" element={<StudentPromotion />} />
+          <Route path="reports" element={<ReportCards />} />
+          <Route path="student/:studentId" element={<StudentPerformanceDetail />} />
+          <Route path="class/:classId" element={<ClassAcademicOverview />} /> */}
+
+          {/* Default route */}
+          <Route index element={<AcademicYearOverview />} />
+        </Route>
+        {/* <Route path="/academic-years" element={
+          <ProtectedLayout>
+            <AcademicYearLayout />
+          </ProtectedLayout>
+        }>
+          <Route path=":academicYear?/:educationSystem?/:level?/:class?/:term?/:sequence?/:subject?/:tab?" element={
+            <div className="min-h-[400px]">
+              <Outlet />
+            </div>
+          }>
+            <Route path="overview" element={<AcademicYearOverview />} />
+            <Route path="grades" element={<GradesManagement />} />
+            <Route path="bulk" element={<BulkGradeManagement />} />
+            <Route path="analytics" element={<AcademicAnalytics />} />
+            <Route path="fees" element={<FeeManagement />} />
+            <Route path="ranks" element={<RankManagement />} />
+            <Route path="promotion" element={<StudentPromotion />} />
+            <Route path="reports" element={<ReportCards />} />
+            <Route path="student/:studentId" element={<StudentPerformanceDetail />} />
+            <Route path="class/:classId" element={<ClassAcademicOverview />} /> 
+
+            <Route index element={<Navigate to="overview" replace />} />
+          </Route>
+
+          <Route index element={<Navigate to="overview" replace />} />
+        </Route> */}
         <Route
           path="/reports"
           element={
