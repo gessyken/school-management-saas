@@ -56,7 +56,7 @@ const AcademicYearLayout: React.FC = () => {
   const selectedSequence = searchParams.get('sequence') || "";
   const selectedSubject = searchParams.get('subject') || "";
   const selectedTab = searchParams.get('tab') || "overview";
-
+  console.log("selectedTab",selectedTab)
   // State
   const [academicYears, setAcademicYears] = useState<AcademicYearDetail[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
@@ -161,14 +161,15 @@ const AcademicYearLayout: React.FC = () => {
         newParams.delete(key);
       }
     });
-
+    // console.log("newParams.get('tab')",newParams.get('tab'))
     // Ensure tab is always set
     if (!newParams.get('tab')) {
       newParams.set('tab', 'overview');
     }
+    // console.log("newParams.get('newParams.toString()') 123",newParams.toString())
 
     // Update URL
-    navigate(`/academic-years?${newParams.toString()}`, { replace: true });
+    navigate(`/academic-years/${newParams.get('tab')}?${newParams.toString()}`, { replace: true });
   };
 
   const filterClasses = () => {
@@ -300,8 +301,14 @@ const AcademicYearLayout: React.FC = () => {
         teacher: subject?.teacher?._id || subject?.teacher?.id,
         teacherName: subject?.teacher?.name || subject?.teacher?.fullName,
       }));
-
-      setSubjects(formattedSubjects);
+      const absence = [{
+        id: "absences",
+        name: 'absences',
+        coefficient: 5,
+        teacher: 'absences',
+        teacherName: 'absences',
+      }];
+      setSubjects([...absence, ...formattedSubjects]);
 
       // Auto-select first subject if available and none selected
       if (formattedSubjects.length > 0 && !selectedSubject) {
@@ -609,6 +616,31 @@ const AcademicYearLayout: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
+            {/* Class Selection */}
+            {(selectedTab === "grades" || selectedTab === "fees") && (<div className="space-y-2">
+              <Label>Classe</Label>
+              <Select
+                value={selectedClass}
+                onValueChange={(value) => updateURLParams({
+                  class: value,
+                  term: '',
+                  sequence: '',
+                  subject: ''
+                })}
+                disabled={!selectedLevel}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionnez une classe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredClasses.map((classItem) => (
+                    <SelectItem key={classItem._id} value={classItem._id}>
+                      {classItem.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>)}
           </div>
           {/* Tabs Navigation */}
           <Card>
@@ -638,113 +670,98 @@ const AcademicYearLayout: React.FC = () => {
             </CardContent>
           </Card>
           {/* Second row: Class, Term, Sequence, Subject */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Class Selection */}
-            <div className="space-y-2">
-              <Label>Classe</Label>
-              <Select
-                value={selectedClass}
-                onValueChange={(value) => updateURLParams({
-                  class: value,
-                  term: '',
-                  sequence: '',
-                  subject: ''
-                })}
-                disabled={!selectedLevel}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionnez une classe" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredClasses.map((classItem) => (
-                    <SelectItem key={classItem._id} value={classItem._id}>
-                      {classItem.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {selectedTab === "grades" && (
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {/* Term Selection */}
+              <div className="space-y-2">
+                <Label>Terme</Label>
+                <Select
+                  value={selectedTerm}
+                  onValueChange={(value) => updateURLParams({
+                    term: value,
+                    sequence: '',
+                    subject: ''
+                  })}
+                  disabled={!selectedAcademicYear}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez un terme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {terms.map((term) => (
+                      <SelectItem key={term.id} value={term.id!}>
+                        {term.name} {term.isCurrent && '(Actuel)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Term Selection */}
-            <div className="space-y-2">
-              <Label>Terme</Label>
-              <Select
-                value={selectedTerm}
-                onValueChange={(value) => updateURLParams({
-                  term: value,
-                  sequence: '',
-                  subject: ''
-                })}
-                disabled={!selectedAcademicYear}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionnez un terme" />
-                </SelectTrigger>
-                <SelectContent>
-                  {terms.map((term) => (
-                    <SelectItem key={term.id} value={term.id!}>
-                      {term.name} {term.isCurrent && '(Actuel)'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              {/* Sequence Selection */}
+              <div className="space-y-2">
+                <Label>Séquence</Label>
+                <Select
+                  value={selectedSequence}
+                  onValueChange={(value) => updateURLParams({ sequence: value, subject: '' })}
+                  disabled={!selectedTerm}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez une séquence" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sequences.map((sequence) => (
+                      <SelectItem key={sequence._id} value={sequence._id!}>
+                        {sequence.name} {sequence.isCurrent && '(Actuelle)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Sequence Selection */}
-            <div className="space-y-2">
-              <Label>Séquence</Label>
-              <Select
-                value={selectedSequence}
-                onValueChange={(value) => updateURLParams({ sequence: value, subject: '' })}
-                disabled={!selectedTerm}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionnez une séquence" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sequences.map((sequence) => (
-                    <SelectItem key={sequence._id} value={sequence._id!}>
-                      {sequence.name} {sequence.isCurrent && '(Actuelle)'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* Subject Selection */}
+              <div className="space-y-2">
+                <Label>Matière</Label>
+                <Select
+                  value={selectedSubject}
+                  onValueChange={(value) => updateURLParams({ subject: value })}
+                  disabled={!selectedClass}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez une matière" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjects.map((subject) => (
+                      <SelectItem key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-
-            {/* Subject Selection */}
-            <div className="space-y-2">
-              <Label>Matière</Label>
-              <Select
-                value={selectedSubject}
-                onValueChange={(value) => updateURLParams({ subject: value })}
-                disabled={!selectedClass}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionnez une matière" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Tab Content */}
       <Outlet context={{
         academicYear: selectedAcademicYear,
+        academicYearObj: academicYears.find(f => f.name === selectedAcademicYear),
         educationSystem: selectedEducationSystem,
+        educationSystemObj: educationSystems.find(es => es.id === selectedEducationSystem),
         level: selectedLevel,
+        levelObj: getLevels().find(l => l.id === selectedLevel),
         class: selectedClass,
+        classObj: filteredClasses.find(c => c._id === selectedClass),
         term: selectedTerm,
+        termObj: terms.find(t => t._id === selectedTerm || t.id === selectedTerm),
         sequence: selectedSequence,
+        sequenceObj: sequences.find(s => s._id === selectedSequence),
         subject: selectedSubject,
-        tab: selectedTab
+        subjectObj: subjects.find(s => s.id === selectedSubject),
+        tab: selectedTab,
+        academicStudents: allAcademicYearRecords,
+        loadAcademicYearRecords:loadAcademicYearRecords,
       }} />
     </div>
   );

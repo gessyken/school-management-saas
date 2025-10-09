@@ -139,6 +139,7 @@ const AppRoutes = () => {
           {/* All tab routes */}
           <Route path="overview" element={<AcademicYearOverview />} />
           <Route path="grades" element={<GradesManagement />} />
+          <Route path="fees" element={<AcademicYearOverview />} />
           {/* <Route path="bulk" element={<BulkGradeManagement />} />
           <Route path="analytics" element={<AcademicAnalytics />} />
           <Route path="fees" element={<FeeManagement />} />

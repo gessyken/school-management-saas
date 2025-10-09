@@ -483,6 +483,110 @@ academicYearSchema.methods.calculateAverages = async function () {
     return this.save();
 };
 
+// find all ranks
+academicYearSchema.statics.calculateAllRanks = async function (classId, year, termId, sequenceId, subjectId) {
+    const academicYears = await this.find({ classes: classId, year });
+
+    // Arrays to hold marks/averages for ranking
+    const subjectMarks = [];
+    const sequenceAverages = [];
+    const termAverages = [];
+    const academicAverages = [];
+
+    for (const student of academicYears) {
+        // Academic overall average
+        academicAverages.push({
+            studentId: student._id.toString(),
+            average: student.overallAverage || 0
+        });
+
+        const term = student.terms.find(t => t.termInfo.toString() === termId.toString());
+        if (!term) continue;
+
+        // Term average
+        termAverages.push({
+            studentId: student._id.toString(),
+            average: term.average || 0
+        });
+
+        const sequence = term.sequences.find(s => s.sequenceInfo.toString() === sequenceId.toString());
+        if (!sequence || !sequence.isActive) continue;
+
+        // Sequence average
+        sequenceAverages.push({
+            studentId: student._id.toString(),
+            average: sequence.average || 0
+        });
+
+        const subject = sequence.subjects.find(s => s.subjectInfo.toString() === subjectId.toString());
+        if (!subject || !subject.isActive || !subject.marks.isActive) continue;
+
+        // Subject mark
+        subjectMarks.push({
+            studentId: student._id.toString(),
+            mark: subject.marks.currentMark || 0
+        });
+    }
+
+    // Utility function to assign ranks with tie support
+    function assignRanks(arr, keyName, rankField, findStudentFn) {
+        arr.sort((a, b) => b[keyName] - a[keyName]);
+        let currentRank = 1;
+        for (let i = 0; i < arr.length; i++) {
+            if (i > 0 && arr[i][keyName] < arr[i - 1][keyName]) {
+                currentRank = i + 1;
+            }
+            const studentDoc = findStudentFn(arr[i].studentId);
+            if (!studentDoc) continue;
+
+            // Assign rank to correct nested path
+            if (rankField === 'subjectRank') {
+                const term = studentDoc.terms.find(t => t.termInfo.toString() === termId.toString());
+                if (!term) continue;
+                const sequence = term.sequences.find(s => s.sequenceInfo.toString() === sequenceId.toString());
+                if (!sequence) continue;
+                const subject = sequence.subjects.find(s => s.subjectInfo.toString() === subjectId.toString());
+                if (!subject) continue;
+
+                subject.rank = currentRank;
+            } else if (rankField === 'sequenceRank') {
+                const term = studentDoc.terms.find(t => t.termInfo.toString() === termId.toString());
+                if (!term) continue;
+                const sequence = term.sequences.find(s => s.sequenceInfo.toString() === sequenceId.toString());
+                if (!sequence) continue;
+
+                sequence.rank = currentRank;
+            } else if (rankField === 'termRank') {
+                const term = studentDoc.terms.find(t => t.termInfo.toString() === termId.toString());
+                if (!term) continue;
+
+                term.rank = currentRank;
+            } else if (rankField === 'academicRank') {
+                studentDoc.rank = currentRank;
+            }
+        }
+    }
+
+    // Helper to find student document by string id
+    const findStudentById = (id) => academicYears.find(s => s._id.toString() === id);
+
+    // Assign ranks
+    assignRanks(subjectMarks, 'mark', 'subjectRank', findStudentById);
+    assignRanks(sequenceAverages, 'average', 'sequenceRank', findStudentById);
+    assignRanks(termAverages, 'average', 'termRank', findStudentById);
+    assignRanks(academicAverages, 'average', 'academicRank', findStudentById);
+
+    // Save all updated documents at once
+    await Promise.all(academicYears.map(s => s.save()));
+
+    return {
+        subjectRanks: subjectMarks,
+        sequenceRanks: sequenceAverages,
+        termRanks: termAverages,
+        academicRanks: academicAverages,
+    };
+};
+
 // Enhanced method to update a student's mark
 academicYearSchema.methods.updateMark = async function (termInfo, sequenceInfo, subjectInfo, newMark, modifiedBy, reason = '') {
     // Validate inputs
