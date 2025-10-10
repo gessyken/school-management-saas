@@ -261,6 +261,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
     if (!formData.teacher) errors.teacher = 'Le professeur principal est requis';
     if (!formData.room) errors.room = 'La salle est requise';
     if (!formData.capacity || formData.capacity < 1) errors.capacity = 'La capacité doit être au moins 1';
+    if (!formData.amountFee || formData.capacity < 0) errors.amountFee = 'La frais de schoolar doit être au moins 1';
     if (formData.currentStudents > formData.capacity) {
       errors.currentStudents = `Ne peut pas dépasser la capacité (${formData.capacity})`;
     }
@@ -863,18 +864,18 @@ const ClassModal: React.FC<ClassModalProps> = ({
               {/* Étudiants actuels (édition seulement) */}
               {mode === 'edit' && (
                 <div>
-                  <Label htmlFor="currentStudents">Étudiants actuels</Label>
+                  <Label htmlFor="amountFee">Frais schoolar</Label>
                   <Input
-                    id="currentStudents"
+                    id="amountFee"
                     type="number"
                     min="0"
-                    max={formData.capacity}
-                    value={formData.currentStudents}
-                    onChange={(e) => handleChange('currentStudents', parseInt(e.target.value) || 0)}
-                    className={formErrors.currentStudents ? 'border-destructive' : ''}
+                    // max={formData.capacity}
+                    value={formData.amountFee}
+                    onChange={(e) => handleChange('amountFee', parseInt(e.target.value) || 0)}
+                    className={formErrors.amountFee ? 'border-destructive' : ''}
                   />
-                  {formErrors.currentStudents && (
-                    <p className="text-destructive text-xs mt-1">{formErrors.currentStudents}</p>
+                  {formErrors.amountFee && (
+                    <p className="text-destructive text-xs mt-1">{formErrors.amountFee}</p>
                   )}
                 </div>
               )}
