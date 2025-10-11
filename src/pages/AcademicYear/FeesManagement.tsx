@@ -96,7 +96,7 @@ export default function FeesManagement() {
   const [showFeeDetail, setShowFeeDetail] = useState(false);
   const [paymentData, setPaymentData] = useState<AcademicFee>({
     billID: "",
-    type: "Tuition",
+    type: "",
     amount: 0,
     paymentDate: "",
     paymentMethod: "cash",
@@ -116,7 +116,7 @@ export default function FeesManagement() {
     )
     .map(student => {
       console.log("student.classes", student.classes)
-      const totalFeesPaid = student.fees?.reduce((sum, fee) => sum + (fee.amount || 0), 0) || 0;
+      const totalFeesPaid = student.fees?.filter(f=>f.type==='Tuition')?.reduce((sum, fee) => sum + (fee.amount || 0), 0) || 0;
       const amountToPay = student.classes?.amountFee || 0;
       const remaining = amountToPay - totalFeesPaid;
 
@@ -183,7 +183,7 @@ export default function FeesManagement() {
     setSelectedFee(null);
     setPaymentData({
     billID: "",
-    type: "Tuition",
+    type: "",
     amount: 0,
     paymentDate: "",
     paymentMethod: "cash",
@@ -708,15 +708,15 @@ export default function FeesManagement() {
               <select
                 className={`w-full border rounded-lg px-3 py-2 text-sm`}
                 value={paymentData?.type}
-                disabled
-                onChange={(e) => setPaymentData({ ...paymentData, type: "Tuition" })}
+                // disabled
+                onChange={(e) => setPaymentData({ ...paymentData, type: e.target.value })}
               >
-                {/* <option value="">Sélectionnez le type de frais</option> */}
+                <option value="">Sélectionnez le type de frais</option>
                 <option value="Tuition">Scolarité</option>
-                {/* <option value="Books">Livres</option>
+                <option value="Books">Livres</option>
                 <option value="Uniform">Uniforme</option>
                 <option value="Transport">Transport</option>
-                <option value="Other">Autre</option> */}
+                <option value="Other">Autre</option>
               </select>
             </div>
             <div>

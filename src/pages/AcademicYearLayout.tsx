@@ -56,7 +56,7 @@ const AcademicYearLayout: React.FC = () => {
   const selectedSequence = searchParams.get('sequence') || "";
   const selectedSubject = searchParams.get('subject') || "";
   const selectedTab = searchParams.get('tab') || "overview";
-  console.log("selectedTab",selectedTab)
+  console.log("selectedTab", selectedTab)
   // State
   const [academicYears, setAcademicYears] = useState<AcademicYearDetail[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
@@ -95,7 +95,7 @@ const AcademicYearLayout: React.FC = () => {
   const tabs = [
     { id: 'overview', label: 'Vue d\'ensemble', icon: BarChart3 },
     { id: 'grades', label: 'Notes', icon: FileText },
-    { id: 'analytics', label: 'Analytiques', icon: TrendingUp },
+    { id: 'fees-statis', label: 'Analytiques', icon: TrendingUp },
     { id: 'fees', label: 'Frais', icon: CreditCard },
     { id: 'ranks', label: 'Classements', icon: Award },
     { id: 'promotion', label: 'Promotion', icon: Users },
@@ -140,14 +140,14 @@ const AcademicYearLayout: React.FC = () => {
 
   // Load academic year records when class or academic year changes
   useEffect(() => {
-    if (selectedClass && selectedAcademicYear) {
+    if (selectedAcademicYear) {
       loadAcademicYearRecords();
       loadClassOverview();
     } else {
       setAllAcademicYearRecords([]);
       setClassOverview(null);
     }
-  }, [selectedClass, selectedAcademicYear]);
+  }, [ selectedAcademicYear]);
 
   // Update URL parameters
   const updateURLParams = (updates: Partial<AcademicYearParams>) => {
@@ -320,11 +320,11 @@ const AcademicYearLayout: React.FC = () => {
   };
 
   const loadAcademicYearRecords = async () => {
-    if (!selectedClass || !selectedAcademicYear) return;
+    if (!selectedAcademicYear) return;
 
     try {
       const records = await academicYearService.getAcademicYears({
-        classes: selectedClass,
+        // classes: selectedClass,
         year: selectedAcademicYear
       });
       setAllAcademicYearRecords(records);
@@ -581,6 +581,11 @@ const AcademicYearLayout: React.FC = () => {
                   <SelectValue placeholder="Sélectionnez un système" />
                 </SelectTrigger>
                 <SelectContent>
+                  {selectedTab === "fees-statis" && (
+                    <SelectItem value={null}>
+                      all
+                    </SelectItem>
+                  )}
                   {educationSystems.map((system) => (
                     <SelectItem key={system.id} value={system.id}>
                       {system.name}
@@ -608,6 +613,11 @@ const AcademicYearLayout: React.FC = () => {
                   <SelectValue placeholder="Sélectionnez un niveau" />
                 </SelectTrigger>
                 <SelectContent>
+                  {selectedTab === "fees-statis" && (
+                    <SelectItem value={null}>
+                      all
+                    </SelectItem>
+                  )}
                   {levels.map((level) => (
                     <SelectItem key={level.id} value={level.id}>
                       {level.name} - {level.cycle}
@@ -617,7 +627,7 @@ const AcademicYearLayout: React.FC = () => {
               </Select>
             </div>
             {/* Class Selection */}
-            {(selectedTab === "grades" || selectedTab === "fees") && (<div className="space-y-2">
+            {(selectedTab === "grades" || selectedTab === "fees" || selectedTab === "fees-statis") && (<div className="space-y-2">
               <Label>Classe</Label>
               <Select
                 value={selectedClass}
@@ -633,6 +643,11 @@ const AcademicYearLayout: React.FC = () => {
                   <SelectValue placeholder="Sélectionnez une classe" />
                 </SelectTrigger>
                 <SelectContent>
+                  {selectedTab === "fees-statis" && (
+                    <SelectItem value={null}>
+                      all
+                    </SelectItem>
+                  )}
                   {filteredClasses.map((classItem) => (
                     <SelectItem key={classItem._id} value={classItem._id}>
                       {classItem.name}
@@ -761,7 +776,7 @@ const AcademicYearLayout: React.FC = () => {
         subjectObj: subjects.find(s => s.id === selectedSubject),
         tab: selectedTab,
         academicStudents: allAcademicYearRecords,
-        loadAcademicYearRecords:loadAcademicYearRecords,
+        loadAcademicYearRecords: loadAcademicYearRecords,
       }} />
     </div>
   );
