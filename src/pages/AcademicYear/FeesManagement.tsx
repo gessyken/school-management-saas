@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { usePagination } from "@/components/ui/usePagination";
-import { academicService } from "@/services/academicService";
+import { AcademicFee, academicService } from "@/services/academicService";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -94,25 +94,32 @@ export default function FeesManagement() {
   const [selectedFee, setSelectedFee] = useState<any>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showFeeDetail, setShowFeeDetail] = useState(false);
+  const [paymentData, setPaymentData] = useState<AcademicFee>({
+    billID: "",
+    type: "Tuition",
+    amount: 0,
+    paymentDate: "",
+    paymentMethod: "cash",
+  })
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [paymentFilter, setPaymentFilter] = useState('all'); // 'all', 'paid', 'pending'
   const [amountFilter, setAmountFilter] = useState('all'); // 'all', 'high', 'low'
 
   // Filter and sort students based on current context
   const filteredStudents = academicStudents
-    .filter(student => 
+    .filter(student =>
       (academicYear ? student.year === academicYear : true) &&
       (classId ? student.classes?._id === classId : true) &&
       (student.student?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       student.student?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       student.student?.matricule?.toLowerCase().includes(searchTerm.toLowerCase()))
+        student.student?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.student?.matricule?.toLowerCase().includes(searchTerm.toLowerCase()))
     )
     .map(student => {
-        console.log("student.classes",student.classes)
+      console.log("student.classes", student.classes)
       const totalFeesPaid = student.fees?.reduce((sum, fee) => sum + (fee.amount || 0), 0) || 0;
       const amountToPay = student.classes?.amountFee || 0;
       const remaining = amountToPay - totalFeesPaid;
-      
+
       return {
         ...student,
         totalFeesPaid,
@@ -130,22 +137,22 @@ export default function FeesManagement() {
     })
     .sort((a, b) => {
       if (!sortConfig.key) return 0;
-      
+
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
-      
+
       if (sortConfig.key === 'remaining' || sortConfig.key === 'totalFeesPaid' || sortConfig.key === 'amountToPay') {
         return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
       }
-      
+
       if (sortConfig.key === 'studentName') {
         const aName = `${a.student?.firstName} ${a.student?.lastName}`;
         const bName = `${b.student?.firstName} ${b.student?.lastName}`;
-        return sortConfig.direction === 'asc' 
+        return sortConfig.direction === 'asc'
           ? aName.localeCompare(bName)
           : bName.localeCompare(aName);
       }
-      
+
       return 0;
     })
     .filter(student => {
@@ -173,12 +180,21 @@ export default function FeesManagement() {
 
   const handleAddPayment = (student) => {
     setSelectedStudent(student);
+    setSelectedFee(null);
+    setPaymentData({
+    billID: "",
+    type: "Tuition",
+    amount: 0,
+    paymentDate: "",
+    paymentMethod: "cash",
+  });
     setShowPaymentForm(true);
   };
 
   const handleEditPayment = (student, fee) => {
     setSelectedStudent(student);
     setSelectedFee(fee);
+    setPaymentData(fee);
     setShowPaymentForm(true);
   };
 
@@ -189,7 +205,7 @@ export default function FeesManagement() {
 
   const handleDeletePayment = async (student, feeId) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce paiement ?')) return;
-    
+
     setLoading(true);
     try {
       await academicService.deleteFee(student._id, feeId);
@@ -198,6 +214,8 @@ export default function FeesManagement() {
         description: "Paiement supprimé avec succès",
       });
       loadAcademicYearRecords(); // Refresh data
+      setShowFeeDetail(false);
+      setShowPaymentForm(false);
     } catch (error) {
       console.error("Failed to delete fee:", error);
       toast({
@@ -210,7 +228,7 @@ export default function FeesManagement() {
     }
   };
 
-  const handlePaymentSubmit = async (paymentData) => {
+  const handlePaymentSubmit = async () => {
     setLoading(true);
     try {
       if (selectedFee) {
@@ -222,6 +240,7 @@ export default function FeesManagement() {
         });
       } else {
         // Add new payment
+        console.log("add function", paymentData)
         await academicService.addFee(selectedStudent._id, paymentData);
         toast({
           title: "Succès",
@@ -229,6 +248,7 @@ export default function FeesManagement() {
         });
       }
       setShowPaymentForm(false);
+      setShowFeeDetail(false);
       setSelectedFee(null);
       setSelectedStudent(null);
       loadAcademicYearRecords(); // Refresh data
@@ -266,19 +286,19 @@ export default function FeesManagement() {
 
   const exportToPDF = () => {
     const doc = new jsPDF();
-    
+
     doc.setFontSize(16);
     doc.text('Rapport des Frais Académiques', 14, 20);
-    
+
     const tableColumn = [
       'Matricule',
-      'Nom élève', 
+      'Nom élève',
       'Classe',
       'Total payé',
       'Reste à payer',
       'Statut'
     ];
-    
+
     const tableRows = filteredStudents.map(student => [
       student.student?.matricule || 'N/A',
       `${student.student?.firstName} ${student.student?.lastName}`,
@@ -366,7 +386,7 @@ export default function FeesManagement() {
                   <div className="flex items-center space-x-2">
                     <School className="w-4 h-4 text-muted-foreground" />
                     <span className="font-medium">Classe:</span>
-                    <Badge variant="outline">{classObj?.classesName}</Badge>
+                    <Badge variant="outline">{classObj?.name}</Badge>
                   </div>
                 )}
                 <div className="flex items-center space-x-2">
@@ -397,7 +417,7 @@ export default function FeesManagement() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">Statut paiement</label>
                 <select
@@ -494,7 +514,7 @@ export default function FeesManagement() {
                         {student.student?.firstName} {student.student?.lastName}
                       </TableCell>
                       <TableCell>{student.student?.matricule}</TableCell>
-                      <TableCell>{student.classes?.classesName}</TableCell>
+                      <TableCell>{student.classes?.name}</TableCell>
                       <TableCell className="font-semibold">
                         {student.amountToPay?.toLocaleString()} FCFA
                       </TableCell>
@@ -550,7 +570,7 @@ export default function FeesManagement() {
                 >
                   Précédent
                 </Button>
-                
+
                 <div className="flex items-center space-x-2">
                   {Array.from({ length: totalPages }, (_, i) => (
                     <Button
@@ -684,11 +704,20 @@ export default function FeesManagement() {
           {/* Simple Payment Form */}
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Type de frais</label>
-              <Input
-                placeholder="Ex: Frais de scolarité"
-                defaultValue={selectedFee?.type}
-              />
+              <label className="text-sm font-medium">Type de frais *</label>
+              <select
+                className={`w-full border rounded-lg px-3 py-2 text-sm`}
+                value={paymentData?.type}
+                disabled
+                onChange={(e) => setPaymentData({ ...paymentData, type: "Tuition" })}
+              >
+                {/* <option value="">Sélectionnez le type de frais</option> */}
+                <option value="Tuition">Scolarité</option>
+                {/* <option value="Books">Livres</option>
+                <option value="Uniform">Uniforme</option>
+                <option value="Transport">Transport</option>
+                <option value="Other">Autre</option> */}
+              </select>
             </div>
             <div>
               <label className="text-sm font-medium">Montant</label>
@@ -696,22 +725,34 @@ export default function FeesManagement() {
                 type="number"
                 placeholder="Montant en FCFA"
                 defaultValue={selectedFee?.amount}
+                value={paymentData?.amount}
+                // placeholder="Montant en FCFA"
+                min="0"
+                step="0.01"
+                onChange={(e) => setPaymentData({ ...paymentData, amount: parseFloat(e.target.value) })}
               />
             </div>
             <div>
               <label className="text-sm font-medium">Date de paiement</label>
               <Input
+                value={paymentData?.paymentDate?.split('T')[0]}
                 type="date"
                 defaultValue={selectedFee?.paymentDate?.split('T')[0]}
+                onChange={(e) => setPaymentData({ ...paymentData, paymentDate: e.target.value })}
               />
             </div>
             <div>
               <label className="text-sm font-medium">Méthode de paiement</label>
-              <select className="w-full border border-border rounded-lg px-3 py-2 text-sm">
-                <option value="cash">Espèces</option>
-                <option value="transfer">Virement</option>
-                <option value="check">Chèque</option>
-                <option value="mobile">Mobile Money</option>
+              <select className="w-full border border-border rounded-lg px-3 py-2 text-sm"
+                value={paymentData?.paymentMethod}
+                onChange={(e) => setPaymentData({ ...paymentData, paymentMethod: e.target.value })}
+              >
+                <option value="">Choisi le mode de payment</option>
+                <option value="Cash">Espèces</option>
+                <option value="Bank Transfer">Virement</option>
+                <option value="Check">Chèque</option>
+                <option value="Mobile Money">Mobile Money</option>
+                <option value="Credit Card">Credit Card</option>
               </select>
             </div>
           </div>

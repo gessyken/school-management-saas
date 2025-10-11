@@ -916,13 +916,13 @@ class AcademicYearController {
     try {
       const { academicYearId } = req.params;
       const schoolId = req.schoolId;
-      const { billID, type, amount, paymentMethod, paymentDate } = req.body;
-
+      const {  type, amount, paymentMethod, paymentDate } = req.body;
+      console.log(req.body)
       const academicYear = await AcademicYear.findOne({ _id: academicYearId, school: schoolId });
       if (!academicYear) {
         return res.status(404).json({ message: 'Academic year not found or not accessible.' });
       }
-
+      const billID=`BILL-${Date.now().toString().slice(-6)}`
       const feeExists = academicYear.fees.some(f => f.billID === billID);
       if (feeExists) {
         return res.status(400).json({ message: 'Fee with this billID already exists' });

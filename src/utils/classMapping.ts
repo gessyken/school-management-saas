@@ -153,10 +153,10 @@ export const mapBackendToFrontend = (backendClass: any): FrontendClass => {
     if (Array.isArray(backendClass.subjects)) {
       return backendClass.subjects.map((subject: any) => {
         if (typeof subject === 'string') return subject;
-        if (subject.name) return subject.name;
+        if (subject._id || subject.id) return subject._id || subject.id;
         if (subject.subjectInfo) {
           if (typeof subject.subjectInfo === 'string') return subject.subjectInfo;
-          return subject.subjectInfo.name || subject.subjectInfo.subjectName || 'Matière';
+          return subject.subjectInfo.id || subject.subjectInfo._id || 'Matière';
         }
         return 'Matière';
       });

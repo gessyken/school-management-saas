@@ -278,13 +278,15 @@ const ClassModal: React.FC<ClassModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    console.log("formData", formData)
+    console.log("FormErrors", formErrors)
     if (!validateForm()) {
       return;
     }
 
     try {
       // Prepare subject details with coefficients and teachers
+      console.log("formData.subjects", formData.subjects)
       const subjectDetails = formData.subjects.map(subjectId => {
         const subject = availableSubjects.find(s => s.id === subjectId || s._id === subjectId);
         return {
@@ -324,6 +326,8 @@ const ClassModal: React.FC<ClassModalProps> = ({
       setFormErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
+      // console.log("formData 1", formData)
+    // console.log("FormErrors 1", formErrors)
 
   const handleSystemChange = (system: 'francophone' | 'anglophone' | 'bilingue') => {
     setFormData(prev => ({
@@ -718,7 +722,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
 
               {/* Niveau */}
               <div>
-                <Label htmlFor="level">Niveau *</Label>
+                <Label htmlFor="level">Niveau * {formData.level}</Label>
                 <Select
                   value={formData.level}
                   onValueChange={handleLevelChange}
