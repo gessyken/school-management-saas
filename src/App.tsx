@@ -27,6 +27,7 @@ import GradesManagement from "./pages/AcademicYear/GradesManagement";
 import FeesManagement from "./pages/AcademicYear/FeesManagement";
 import FeesStatistics from "./pages/AcademicYear/FeeStatistics";
 import ClassmentManagement from "./pages/AcademicYear/ClassmentManagement";
+import ReportCardManagement from "./pages/AcademicYear/ReportCardManagement";
 
 const queryClient = new QueryClient();
 
@@ -145,10 +146,10 @@ const AppRoutes = () => {
           <Route path="fees" element={<FeesManagement />} />
           <Route path="fees-statis" element={<FeesStatistics />} />
           <Route path="ranks" element={<ClassmentManagement />} />
+          <Route path="reports" element={<ReportCardManagement />} />
           {/* <Route path="bulk" element={<BulkGradeManagement />} />
           <Route path="analytics" element={<AcademicAnalytics />} />
           <Route path="promotion" element={<StudentPromotion />} />
-          <Route path="reports" element={<ReportCards />} />
           <Route path="student/:studentId" element={<StudentPerformanceDetail />} />
           <Route path="class/:classId" element={<ClassAcademicOverview />} /> */}
 
