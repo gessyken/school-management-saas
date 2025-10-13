@@ -147,7 +147,7 @@ const AcademicYearLayout: React.FC = () => {
       setAllAcademicYearRecords([]);
       setClassOverview(null);
     }
-  }, [ selectedAcademicYear]);
+  }, [selectedAcademicYear]);
 
   // Update URL parameters
   const updateURLParams = (updates: Partial<AcademicYearParams>) => {
@@ -581,11 +581,11 @@ const AcademicYearLayout: React.FC = () => {
                   <SelectValue placeholder="Sélectionnez un système" />
                 </SelectTrigger>
                 <SelectContent>
-                  {selectedTab === "fees-statis" && (
-                    <SelectItem value={null}>
-                      all
-                    </SelectItem>
-                  )}
+                  {/* {(selectedTab === "fees-statis" ||  selectedTab ===  'ranks' ) && ( */}
+                  <SelectItem value={null}>
+                    all
+                  </SelectItem>
+                  {/* )} */}
                   {educationSystems.map((system) => (
                     <SelectItem key={system.id} value={system.id}>
                       {system.name}
@@ -613,11 +613,11 @@ const AcademicYearLayout: React.FC = () => {
                   <SelectValue placeholder="Sélectionnez un niveau" />
                 </SelectTrigger>
                 <SelectContent>
-                  {selectedTab === "fees-statis" && (
-                    <SelectItem value={null}>
-                      all
-                    </SelectItem>
-                  )}
+                  {/* {(selectedTab === "fees-statis" || selectedTab ===  'ranks' ) && ( */}
+                  <SelectItem value={null}>
+                    all
+                  </SelectItem>
+                  {/* )} */}
                   {levels.map((level) => (
                     <SelectItem key={level.id} value={level.id}>
                       {level.name} - {level.cycle}
@@ -627,7 +627,7 @@ const AcademicYearLayout: React.FC = () => {
               </Select>
             </div>
             {/* Class Selection */}
-            {(selectedTab === "grades" || selectedTab === "fees" || selectedTab === "fees-statis") && (<div className="space-y-2">
+            {(selectedTab === "grades" || selectedTab === "fees" || selectedTab === "fees-statis" || selectedTab === 'ranks') && (<div className="space-y-2">
               <Label>Classe</Label>
               <Select
                 value={selectedClass}
@@ -643,11 +643,11 @@ const AcademicYearLayout: React.FC = () => {
                   <SelectValue placeholder="Sélectionnez une classe" />
                 </SelectTrigger>
                 <SelectContent>
-                  {selectedTab === "fees-statis" && (
-                    <SelectItem value={null}>
-                      all
-                    </SelectItem>
-                  )}
+                  {/* {(selectedTab === "fees-statis" ||  selectedTab ===  'ranks' ) && ( */}
+                  <SelectItem value={null}>
+                    all
+                  </SelectItem>
+                  {/* // )} */}
                   {filteredClasses.map((classItem) => (
                     <SelectItem key={classItem._id} value={classItem._id}>
                       {classItem.name}
@@ -685,7 +685,7 @@ const AcademicYearLayout: React.FC = () => {
             </CardContent>
           </Card>
           {/* Second row: Class, Term, Sequence, Subject */}
-          {selectedTab === "grades" && (
+          {(selectedTab === "grades" || selectedTab === 'ranks') && (
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {/* Term Selection */}
               <div className="space-y-2">
@@ -703,6 +703,9 @@ const AcademicYearLayout: React.FC = () => {
                     <SelectValue placeholder="Sélectionnez un terme" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={null}>
+                      all
+                    </SelectItem>
                     {terms.map((term) => (
                       <SelectItem key={term.id} value={term.id!}>
                         {term.name} {term.isCurrent && '(Actuel)'}
@@ -724,6 +727,9 @@ const AcademicYearLayout: React.FC = () => {
                     <SelectValue placeholder="Sélectionnez une séquence" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={null}>
+                      all
+                    </SelectItem>
                     {sequences.map((sequence) => (
                       <SelectItem key={sequence._id} value={sequence._id!}>
                         {sequence.name} {sequence.isCurrent && '(Actuelle)'}
@@ -745,6 +751,9 @@ const AcademicYearLayout: React.FC = () => {
                     <SelectValue placeholder="Sélectionnez une matière" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={null}>
+                      all
+                    </SelectItem>
                     {subjects.map((subject) => (
                       <SelectItem key={subject.id} value={subject.id}>
                         {subject.name}

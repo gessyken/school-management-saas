@@ -17,63 +17,63 @@ const subjectSchema = new mongoose.Schema({
         required: true,
         index: true
     },
-    isActive: { 
-        type: Boolean, 
-        default: true 
+    isActive: {
+        type: Boolean,
+        default: true
     },
-    discipline: { 
-        type: String, 
-        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average', 'Not Available'], 
-        default: 'Not Available' 
+    discipline: {
+        type: String,
+        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average', 'Not Available'],
+        default: 'Not Available'
     },
-    rank: { 
-        type: Number, 
+    rank: {
+        type: Number,
         default: null,
         min: 1
     },
     marks: {
-        currentMark: { 
-            type: Number, 
-            default: 0, 
-            min: 0, 
+        currentMark: {
+            type: Number,
+            default: 0,
+            min: 0,
             max: 20,
             validate: {
                 validator: Number.isFinite,
                 message: 'Mark must be a valid number'
             }
         },
-        isActive: { 
-            type: Boolean, 
-            default: true 
+        isActive: {
+            type: Boolean,
+            default: true
         },
         modified: [{
-            preMark: { 
-                type: Number, 
-                required: true, 
-                min: 0, 
-                max: 20 
+            preMark: {
+                type: Number,
+                required: true,
+                min: 0,
+                max: 20
             },
-            modMark: { 
-                type: Number, 
-                required: true, 
-                min: 0, 
-                max: 20 
+            modMark: {
+                type: Number,
+                required: true,
+                min: 0,
+                max: 20
             },
             modifiedBy: {
-                name: { 
-                    type: String, 
+                name: {
+                    type: String,
                     required: true,
-                    trim: true 
+                    trim: true
                 },
-                userId: { 
-                    type: mongoose.Schema.Types.ObjectId, 
-                    ref: 'User', 
-                    required: true 
+                userId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'User',
+                    required: true
                 }
             },
-            dateModified: { 
-                type: Date, 
-                default: Date.now 
+            dateModified: {
+                type: Date,
+                default: Date.now
             },
             reason: {
                 type: String,
@@ -82,7 +82,7 @@ const subjectSchema = new mongoose.Schema({
             }
         }]
     },
-}, { 
+}, {
     _id: false,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
@@ -96,28 +96,28 @@ const sequenceSchema = new mongoose.Schema({
         required: true,
         index: true
     },
-    isActive: { 
-        type: Boolean, 
-        default: true 
+    isActive: {
+        type: Boolean,
+        default: true
     },
-    average: { 
-        type: Number, 
-        default: 0, 
-        min: 0, 
+    average: {
+        type: Number,
+        default: 0,
+        min: 0,
         max: 20,
         validate: {
             validator: Number.isFinite,
             message: 'Average must be a valid number'
         }
     },
-    rank: { 
-        type: Number, 
+    rank: {
+        type: Number,
         default: null,
         min: 1
     },
-    absences: { 
-        type: Number, 
-        default: 0, 
+    absences: {
+        type: Number,
+        default: 0,
         min: 0,
         validate: {
             validator: Number.isInteger,
@@ -128,7 +128,7 @@ const sequenceSchema = new mongoose.Schema({
         type: [subjectSchema],
         required: true,
         validate: {
-            validator: function(subjects) {
+            validator: function (subjects) {
                 // Validate unique subjects within sequence
                 const subjectIds = subjects.map(s => s.subjectInfo?.toString());
                 return new Set(subjectIds).size === subjectIds.length;
@@ -136,12 +136,12 @@ const sequenceSchema = new mongoose.Schema({
             message: 'Duplicate subjects in sequence'
         }
     },
-    discipline: { 
-        type: String, 
-        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average', 'Not Available'], 
-        default: 'Not Available' 
+    discipline: {
+        type: String,
+        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average', 'Not Available'],
+        default: 'Not Available'
     },
-}, { 
+}, {
     _id: false,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
@@ -155,18 +155,18 @@ const termSchema = new mongoose.Schema({
         required: true,
         index: true
     },
-    average: { 
-        type: Number, 
-        default: 0, 
-        min: 0, 
+    average: {
+        type: Number,
+        default: 0,
+        min: 0,
         max: 20,
         validate: {
             validator: Number.isFinite,
             message: 'Average must be a valid number'
         }
     },
-    rank: { 
-        type: Number, 
+    rank: {
+        type: Number,
         default: null,
         min: 1
     },
@@ -174,7 +174,7 @@ const termSchema = new mongoose.Schema({
         type: [sequenceSchema],
         required: true,
         validate: {
-            validator: function(sequences) {
+            validator: function (sequences) {
                 // Validate unique sequences within term
                 const sequenceIds = sequences.map(s => s.sequenceInfo?.toString());
                 return new Set(sequenceIds).size === sequenceIds.length;
@@ -182,12 +182,12 @@ const termSchema = new mongoose.Schema({
             message: 'Duplicate sequences in term'
         }
     },
-    discipline: { 
-        type: String, 
-        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average', 'Not Available'], 
-        default: 'Not Available' 
+    discipline: {
+        type: String,
+        enum: ['Excellent', 'Very Good', 'Good', 'Average', 'Below Average', 'Not Available'],
+        default: 'Not Available'
     },
-}, { 
+}, {
     _id: false,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
@@ -225,11 +225,11 @@ const feeSchema = new mongoose.Schema({
             message: 'Amount must be a valid number'
         }
     },
-    paymentDate: { 
-        type: Date, 
+    paymentDate: {
+        type: Date,
         default: Date.now,
         validate: {
-            validator: function(date) {
+            validator: function (date) {
                 return date <= new Date();
             },
             message: 'Payment date cannot be in the future'
@@ -245,7 +245,7 @@ const feeSchema = new mongoose.Schema({
         trim: true,
         uppercase: true
     }
-}, { 
+}, {
     _id: false,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
@@ -278,19 +278,19 @@ const academicYearSchema = new mongoose.Schema({
         required: true,
         index: true
     },
-    hasRepeated: { 
-        type: Boolean, 
-        default: false 
+    hasRepeated: {
+        type: Boolean,
+        default: false
     },
-    hasCompleted: { 
-        type: Boolean, 
-        default: false 
+    hasCompleted: {
+        type: Boolean,
+        default: false
     },
     terms: {
         type: [termSchema],
         required: true,
         validate: {
-            validator: function(terms) {
+            validator: function (terms) {
                 // Validate unique terms within academic year
                 const termIds = terms.map(t => t.termInfo?.toString());
                 return new Set(termIds).size === termIds.length;
@@ -302,8 +302,8 @@ const academicYearSchema = new mongoose.Schema({
         type: [feeSchema],
         default: []
     },
-    rank: { 
-        type: Number, 
+    rank: {
+        type: Number,
         default: null,
         min: 1
     },
@@ -363,7 +363,27 @@ academicYearSchema.virtual('overallAverage').get(function () {
     const sum = activeTerms.reduce((total, term) => total + (term.average || 0), 0);
     return parseFloat((sum / activeTerms.length).toFixed(2));
 });
+academicYearSchema.virtual('overallAbsences').get(function () {
+    if (!this.terms || this.terms.length === 0) return 0;
 
+    let totalAbsences = 0;
+    let totalSequences = 0;
+
+    this.terms.forEach(term => {
+        const activeSequences = term.sequences?.filter(seq =>
+            seq.isActive && typeof seq.absences === 'number'
+        ) || [];
+
+        activeSequences.forEach(seq => {
+            totalAbsences += seq.absences;
+            totalSequences++;
+        });
+    });
+
+    // if (totalSequences === 0) return 0;
+
+    return totalAbsences;
+});
 // Virtual field for calculating total fees paid
 academicYearSchema.virtual('totalFeesPaid').get(function () {
     if (!this.fees || this.fees.length === 0) return 0;
@@ -414,7 +434,7 @@ academicYearSchema.virtual('activeSubjectsCount').get(function () {
 });
 
 // Pre-save middleware to ensure data consistency
-academicYearSchema.pre('save', function(next) {
+academicYearSchema.pre('save', function (next) {
     // Auto-update completion status
     if (this.overallAverage >= 10 && !this.hasFailingSubjects) {
         this.hasCompleted = true;
@@ -422,12 +442,12 @@ academicYearSchema.pre('save', function(next) {
             this.completionDate = new Date();
         }
     }
-    
+
     // Update overall status
     if (this.hasCompleted && this.status === 'Active') {
         this.status = 'Completed';
     }
-    
+
     next();
 });
 
@@ -435,7 +455,7 @@ academicYearSchema.pre('save', function(next) {
 academicYearSchema.methods.calculateAverages = async function () {
     const Classes = mongoose.model('Classes');
     const classDetail = await Classes.findById(this.classes).populate('subjects');
-    
+
     if (!classDetail) {
         throw new Error('Class not found');
     }
@@ -465,7 +485,7 @@ academicYearSchema.methods.calculateAverages = async function () {
                 sequenceCoefficientSum += coefficient;
             }
 
-            sequence.average = sequenceCoefficientSum > 0 ? 
+            sequence.average = sequenceCoefficientSum > 0 ?
                 parseFloat((sequenceTotal / sequenceCoefficientSum).toFixed(2)) : 0;
             sequence.discipline = getDiscipline(sequence.average);
 
@@ -475,7 +495,7 @@ academicYearSchema.methods.calculateAverages = async function () {
             }
         }
 
-        term.average = termCount > 0 ? 
+        term.average = termCount > 0 ?
             parseFloat((termTotal / termCount).toFixed(2)) : 0;
         term.discipline = getDiscipline(term.average);
     }
@@ -594,8 +614,17 @@ academicYearSchema.methods.updateMark = async function (termInfo, sequenceInfo, 
         throw new Error('Missing required parameters: termInfo, sequenceInfo, subjectInfo, newMark, modifiedBy');
     }
 
-    if (newMark < 0 || newMark > 20) {
-        throw new Error('Mark must be between 0 and 20');
+    if (subjectInfo === 'absences') {
+        // For absences, convert to integer and validate
+        newMark = parseInt(newMark);
+        if (isNaN(newMark) || newMark < 0) {
+            throw new Error('Absences must be a positive integer');
+        }
+    } else {
+        // For regular subjects, validate mark between 0 and 20
+        if (newMark < 0 || newMark > 20) {
+            throw new Error('Mark must be between 0 and 20');
+        }
     }
 
     try {
@@ -623,10 +652,10 @@ academicYearSchema.methods.updateMark = async function (termInfo, sequenceInfo, 
             // Find or create subject
             let subject = sequence.subjects.find(s => s.subjectInfo.toString() === subjectInfo.toString());
             if (!subject) {
-                subject = { 
-                    subjectInfo, 
-                    isActive: true, 
-                    marks: { currentMark: 0, isActive: true, modified: [] } 
+                subject = {
+                    subjectInfo,
+                    isActive: true,
+                    marks: { currentMark: 0, isActive: true, modified: [] }
                 };
                 sequence.subjects.push(subject);
             }
@@ -659,9 +688,9 @@ academicYearSchema.methods.updateMark = async function (termInfo, sequenceInfo, 
 
 // Optimized rank calculation methods
 academicYearSchema.statics.calculateRanksForClassYear = async function (classId, year) {
-    const academicYears = await this.find({ 
-        classes: classId, 
-        year 
+    const academicYears = await this.find({
+        classes: classId,
+        year
     }).populate('student', 'name');
 
     if (academicYears.length === 0) {
@@ -686,7 +715,7 @@ academicYearSchema.statics.calculateRanksForClassYear = async function (classId,
         // Term, sequence, and subject data
         student.terms.forEach(term => {
             const termKey = term.termInfo.toString();
-            
+
             if (!termRanksMap.has(termKey)) {
                 termRanksMap.set(termKey, []);
             }
@@ -699,7 +728,7 @@ academicYearSchema.statics.calculateRanksForClassYear = async function (classId,
                 if (!sequence.isActive) return;
 
                 const seqKey = `${termKey}_${sequence.sequenceInfo.toString()}`;
-                
+
                 if (!sequenceRanksMap.has(seqKey)) {
                     sequenceRanksMap.set(seqKey, []);
                 }
@@ -712,7 +741,7 @@ academicYearSchema.statics.calculateRanksForClassYear = async function (classId,
                     if (!subject.isActive || !subject.marks.isActive) return;
 
                     const subjKey = `${seqKey}_${subject.subjectInfo.toString()}`;
-                    
+
                     if (!subjectRanksMap.has(subjKey)) {
                         subjectRanksMap.set(subjKey, []);
                     }
@@ -787,8 +816,8 @@ academicYearSchema.statics.promoteStudents = async function (
 
     for (const academicYear of academicYears) {
         try {
-            const isPromoted = academicYear.overallAverage >= passingThreshold && 
-                             !academicYear.hasFailingSubjects;
+            const isPromoted = academicYear.overallAverage >= passingThreshold &&
+                !academicYear.hasFailingSubjects;
 
             const newAcademicYear = new this({
                 student: academicYear.student._id,
@@ -849,7 +878,7 @@ academicYearSchema.methods.getFeeSummary = function () {
     const paidAmount = this.fees
         .filter(fee => fee.status === 'Completed')
         .reduce((sum, fee) => sum + fee.amount, 0);
-    
+
     return {
         totalAmount,
         paidAmount,
@@ -870,9 +899,9 @@ academicYearSchema.statics.findStudentsAtRisk = async function (year, threshold 
             { 'terms.average': { $lt: threshold } }
         ]
     })
-    .populate('student', 'name email phone')
-    .populate('classes', 'name level')
-    .sort({ overallAverage: 1 });
+        .populate('student', 'name email phone')
+        .populate('classes', 'name level')
+        .sort({ overallAverage: 1 });
 };
 
 // Method to get academic performance summary
