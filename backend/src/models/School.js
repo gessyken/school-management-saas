@@ -6,7 +6,6 @@ const schoolSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-
     email: {
         type: String,
         required: true,
@@ -14,22 +13,30 @@ const schoolSchema = new mongoose.Schema({
         trim: true,
         match: [/^\S+@\S+\.\S+$/, 'Invalid email format']
     },
-
     phone: {
         type: String,
         trim: true
     },
-
     address: {
         type: String,
         trim: true
     },
-
+    motto: {
+        type: String,
+        trim: true
+    },
+    type: {
+        type: String,
+        trim: true
+    },
+    principal: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    },
     logoUrl: {
         type: String,
         trim: true
     },
-
     system_type: {
         type: String,
         sparse: true
@@ -43,7 +50,6 @@ const schoolSchema = new mongoose.Schema({
         enum: ['FREE', 'BASIC', 'PRO'],
         default: 'FREE'
     },
-
     billing: {
         currentInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: "Invoice" },
         nextInvoiceDue: { type: Date },
@@ -55,7 +61,6 @@ const schoolSchema = new mongoose.Schema({
         },
         trialEndsAt: { type: Date },
     },
-
     // Billing configuration
     billingRules: {
         baseMonthlyFee: { type: Number, default: 10000 },
@@ -71,7 +76,6 @@ const schoolSchema = new mongoose.Schema({
         // storageUsedMB: { type: Number, default: 0 },
         lastUsageCalculated: { type: Date },
     },
-
     accessStatus: {
         type: String,
         enum: ['active', 'suspended', 'blocked'],
@@ -86,7 +90,6 @@ const schoolSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
-
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

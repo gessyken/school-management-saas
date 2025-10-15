@@ -1,9 +1,9 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  BookOpen, 
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Users,
+  BookOpen,
   GraduationCap,
   Calendar,
   FileText,
@@ -54,15 +54,21 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleCollapse }) => {
   const location = useLocation();
   const { currentSchool, logout, user, switchSchool, userSchools } = useAuth();
+  const navigate = useNavigate();
 
   const handleSchoolChange = (school: any) => {
     switchSchool(school);
   };
 
+  const leaveSchool = () => {
+    localStorage.removeItem('schoolAuth');
+    navigate("/select-school");
+  };
+
   return (
     <div className={cn(
       'bg-gradient-to-b from-primary to-primary/90 text-white h-screen flex flex-col transition-all duration-300 relative',
-      isCollapsed ? 'w-16' : 'w-55'
+      isCollapsed ? 'w-16' : 'w-[50vh]'
     )}>
       {/* Collapse Toggle Button */}
       <button
@@ -181,7 +187,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleCollapse
                 )}
               </div>
             </div>
-            
+            <Button
+              onClick={leaveSchool}
+              variant="ghost"
+              className="w-full justify-start text-white hover:bg-white/20 hover:text-white border border-white/20"
+              size="sm"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Changer D'Ecole
+            </Button>
+
             <Button
               onClick={logout}
               variant="ghost"

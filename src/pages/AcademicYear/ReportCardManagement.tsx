@@ -24,21 +24,32 @@ import { useToast } from "@/components/ui/use-toast";
 import { usePagination } from "@/components/ui/usePagination";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { useAuth } from "@/context/AuthContext";
 
 const itemsPerPage = 5;
 
 // School information (you can customize this)
-const SCHOOL_INFO = {
-    name: "COLLÈGE SAINTE FAMILLE",
-    address: "BP 125 Yaoundé, Cameroun",
-    phone: "+237 6 99 99 99 99",
-    email: "contact@college-sainte-famille.cm",
-    principal: "M. Jean Paul MBAPPE",
-    motto: "Excellence et Discipline",
-    type: "Établissement Secondaire d'Enseignement Général"
-};
+// const SCHOOL_INFO = {
+//     name: "COLLÈGE SAINTE FAMILLE",
+//     address: "BP 125 Yaoundé, Cameroun",
+//     phone: "+237 6 99 99 99 99",
+//     email: "contact@college-sainte-famille.cm",
+//     principal: "M. Jean Paul MBAPPE",
+//     motto: "Excellence et Discipline",
+//     type: "Établissement Secondaire d'Enseignement Général"
+// };
 
 export default function ReportCardManagement() {
+    const { currentSchool } = useAuth();
+    const SCHOOL_INFO = {
+        name: currentSchool?.name,
+        address: currentSchool?.address,
+        phone: currentSchool?.phone,
+        email: currentSchool?.email,
+        principal: currentSchool?.principal,
+        motto: currentSchool?.motto,
+        type: currentSchool?.type
+    };
     const context = useOutletContext<{
         academicYear: string;
         educationSystem: string;
@@ -680,6 +691,51 @@ export default function ReportCardManagement() {
                                                         </tr>
                                                     </tbody>
                                                 </table>
+                                            </div>
+                                        )}
+
+                                        {displayMode === 'term' && term && (
+                                            <div className="space-y-6">
+                                                {selectedStudent.terms?.filter(t => t.termInfo === term)?.map((termRecord: any) => (
+                                                    <div key={termRecord.termInfo} className="border border-gray-300">
+                                                        <div className="bg-gray-100 border-b border-gray-300 px-4 py-2 font-bold">
+                                                            {termsData.find(t => t?._id === termRecord?.termInfo || t?.id === termRecord?.termInfo)?.name} - Moyenne: {selectedStudent.termAverages[termRecord.termInfo]?.toFixed(2)}/20
+                                                        </div>
+                                                        {termRecord.sequences?.map((sequenceRecord: any) => (
+                                                            <div key={sequenceRecord.sequenceInfo} className="border-b border-gray-300 last:border-b-0">
+                                                                <div className="bg-gray-50 px-4 py-1 font-semibold">
+                                                                    {termsData.find(t => t?._id === termRecord?.termInfo || t?.id === termRecord?.termInfo)?.sequences?.find(s => s._id === sequenceRecord?.sequenceInfo || s.id === sequenceRecord?.sequenceInfo)?.name} - Moyenne: {selectedStudent.sequenceAverages[`${termRecord.termInfo}-${sequenceRecord.sequenceInfo}`]?.toFixed(2)}/20
+                                                                </div>
+                                                                <table className="w-full border-collapse text-xs">
+                                                                    <thead>
+                                                                        <tr className="bg-gray-100">
+                                                                            <th className="border border-gray-300 px-2 py-1">Matières</th>
+                                                                            <th className="border border-gray-300 px-2 py-1">Notes</th>
+                                                                            <th className="border border-gray-300 px-2 py-1">Coef.</th>
+                                                                            <th className="border border-gray-300 px-2 py-1">Appréciations</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        {sequenceRecord.subjects?.map((subjectRecord: any) => (
+                                                                            <tr key={subjectRecord.subjectInfo}>
+                                                                                <td className="border border-gray-300 px-2 py-1">{subjectsData.find(s => s.id === subjectRecord?.subjectInfo || s._id === subjectRecord?.subjectInfo)?.name || 'Matière'}</td>
+                                                                                <td className="border border-gray-300 px-2 py-1 text-center">{subjectRecord.marks?.currentMark?.toFixed(2) || '0.00'}</td>
+                                                                                <td className="border border-gray-300 px-2 py-1 text-center">{subjectRecord.coefficient || 1}</td>
+                                                                                <td className="border border-gray-300 px-2 py-1 text-center">{getAppreciation(subjectRecord.marks?.currentMark || 0)}</td>
+                                                                            </tr>
+                                                                        ))}
+                                                                        <tr >
+                                                                            <td className="border border-gray-300 px-2 py-1">Absensces</td>
+                                                                            <td className="border border-gray-300 px-2 py-1 text-center">{sequenceRecord.absences?.toFixed(2) || '0.00'}</td>
+                                                                            <td className="border border-gray-300 px-2 py-1 text-center"></td>
+                                                                            <td className="border border-gray-300 px-2 py-1 text-center">{getAbsencePerformanceLevel(sequenceRecord.absences || 0)?.level}</td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
 

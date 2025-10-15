@@ -3,48 +3,234 @@ import User from '../models/User.js';
 import { generateRandom8Char } from '../utils/helper.js';
 import { generateToken } from '../utils/jwtUtils.js';
 
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Configure multer for logo uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../../uploads/school-logos/'));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'school-logo-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// File filter for images only
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed!'), false);
+  }
+};
+
+export const uploadLogo = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
 // Register a new school
 export const registerSchool = async (req, res) => {
+
   try {
     const user = await User.findById(req.userId);
-    if (!user) return res.status(403).json({ message: 'Invalid user' });
+    if (!user) {
+      return res.status(403).json({ message: 'Invalid user' });
+    }
 
-    const { name, email, phone, address, system_type } = req.body;
+    const { 
+      name, 
+      email, 
+      phone, 
+      address, 
+      system_type, 
+      motto, 
+      type,
+      plan = 'FREE'
+    } = req.body;
 
-    // const existingSchool = await School.findOne({ email });
-    // if (existingSchool) return res.status(400).json({ message: 'School already exists' });
+    // Check if school with email already exists
+    const existingSchool = await School.findOne({ email });
+    if (existingSchool) {
+      return res.status(400).json({ message: 'School with this email already exists' });
+    }
 
-    const school = await School.create({
+    // Set trial period (30 days from now)
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 30);
+
+    // Prepare school data
+    const schoolData = {
       name,
-      email,
+      email: email.toLowerCase(),
       phone,
       address,
       system_type,
+      motto,
+      type,
+      plan,
       members: [user._id],
-      createdBy: user._id
-    });
+      createdBy: user._id,
+      principal: user._id, // Set creator as principal initially
+      billing: {
+        status: "trialing",
+        trialEndsAt: trialEndsAt
+      },
+      usage: {
+        studentsCount: 0, // Start with 0
+        staffCount: 1, // Include the creator
+        classCount: 0,
+        lastUsageCalculated: new Date()
+      }
+    };
 
-    // Add school membership to user
+    // Add logo URL if file was uploaded
+    if (req.file) {
+      schoolData.logoUrl = `/uploads/school-logos/${req.file.filename}`;
+    }
+
+    const school = await School.create([schoolData]);
+
+    // Add school membership to user with ADMIN and DIRECTOR roles
     user.memberships.push({
-      school: school._id,
+      school: school[0]._id,
       roles: ['ADMIN', 'DIRECTOR'],
       status: 'active'
     });
-    console.log(user.memberships)
+
     await user.save();
 
-    const token = generateToken(user._id, school._id); // now user is tied to school
-    res.status(201).json({ token, user, school });
+    const token = generateToken(user._id, school[0]._id);
+    
+    res.status(201).json({ 
+      success: true,
+      message: 'School registered successfully',
+      token, 
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email
+      }, 
+      school: school[0] 
+    });
+
   } catch (err) {
-    console.log(err)
-    res.status(500).json({ message: 'Failed to create school', error: err.message });
+    console.error('School registration error:', err);
+    
+    if (err.code === 11000) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'School with this email already exists' 
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to create school', 
+      error: err.message 
+    });
+  } 
+};
+
+// Update school logo
+export const updateSchoolLogo = async (req, res) => {
+  try {
+    const { schoolId } = req.params;
+    const user = await User.findById(req.userId);
+    
+    // Check if user has permission to update this school
+    const userMembership = user.memberships.find(
+      membership => membership.school.toString() === schoolId && 
+      membership.roles.includes('ADMIN')
+    );
+    
+    if (!userMembership) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Unauthorized to update school logo' 
+      });
+    }
+
+    const school = await School.findById(schoolId);
+    if (!school) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'School not found' 
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'No logo file provided' 
+      });
+    }
+
+    // Update logo URL
+    school.logoUrl = `/uploads/school-logos/${req.file.filename}`;
+    await school.save();
+
+    res.json({
+      success: true,
+      message: 'School logo updated successfully',
+      logoUrl: school.logoUrl
+    });
+
+  } catch (err) {
+    console.error('Update logo error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to update school logo', 
+      error: err.message 
+    });
   }
 };
+
+// Get school profile
+export const getSchoolProfile = async (req, res) => {
+  try {
+    const school = await School.findById(req.schoolId)
+      .populate('principal', 'name email')
+      .populate('members', 'name email')
+      .populate('createdBy', 'name email');
+
+    if (!school) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'School not found' 
+      });
+    }
+
+    res.json({
+      success: true,
+      school
+    });
+
+  } catch (err) {
+    console.error('Get school profile error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to fetch school profile', 
+      error: err.message 
+    });
+  }
+};
+/**End here */
 
 // Get all schools (for admin panel)
 export const getAllSchools = async (req, res) => {
   try {
     const schools = await School.find().sort({ createdAt: -1 })
+      .populate('principal')
       .populate('members');
     res.status(200).json(schools);
   } catch (err) {
@@ -62,6 +248,7 @@ export const getUserSchools = async (req, res) => {
         { createdBy: userId }
       ]
     })
+      .populate('principal')
       .sort({ createdAt: -1 });
     res.status(200).json(schools);
   } catch (err) {
@@ -266,6 +453,7 @@ export const getSchoolById = async (req, res) => {
 
   try {
     const school = await School.findById(schoolId)
+      .populate('principal', "name email")
       .populate("members", "name email") // Optional: populate basic member info
       .populate("createdBy", "name email"); // Optional
 
@@ -289,33 +477,156 @@ export const updateSchool = async (req, res) => {
   try {
     const school = await School.findById(schoolId);
     if (!school) {
-      return res.status(404).json({ message: "School not found." });
+      return res.status(404).json({ 
+        success: false,
+        message: "School not found." 
+      });
     }
 
-    // Only creator or admin can update
-    if (
-      school.createdBy.toString() !== userId.toString() &&
-      !req.roles.includes("ADMIN") &&
-      !req.roles.includes("DIRECTOR")
-    ) {
-      console.log("Unauthorized to edit this school.")
-      return res.status(403).json({ message: "Unauthorized to edit this school." });
+    // Check user permissions
+    const user = await User.findById(userId);
+    const userMembership = user.memberships.find(
+      membership => membership.school.toString() === schoolId
+    );
+
+    const isCreator = school.createdBy.toString() === userId.toString();
+    const isPrincipal = school.principal.toString() === userId.toString();
+    const hasAdminRole = userMembership?.roles.includes("ADMIN");
+    const hasDirectorRole = userMembership?.roles.includes("DIRECTOR");
+
+    if (!isCreator && !isPrincipal && !hasAdminRole && !hasDirectorRole) {
+      return res.status(403).json({ 
+        success: false,
+        message: "Unauthorized to edit this school." 
+      });
     }
 
+    // Handle logo upload if file is provided
+    if (req.file) {
+      if (!isCreator && !hasAdminRole && !isPrincipal) {
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized to update school logo"
+        });
+      }
+      updates.logoUrl = `/uploads/school-logos/${req.file.filename}`;
+    }
 
-    // Apply allowed updates
-    const allowedFields = ["name", "email", "phone", "address", "subdomain", "logoUrl"];
-    allowedFields.forEach((field) => {
-      if (updates[field] !== undefined) {
-        school[field] = updates[field];
+    // Define allowed fields based on user role
+    let allowedFields = ["name", "phone", "address", "motto", "type"];
+    
+    if (isCreator || hasAdminRole || isPrincipal) {
+      allowedFields = [
+        ...allowedFields,
+        "email", 
+        "system_type", 
+        "logoUrl",
+        "memberShipAccessStatus"
+      ];
+    }
+
+    if (isCreator || req.roles?.includes("SUPER_ADMIN")) {
+      allowedFields = [
+        ...allowedFields,
+        "plan",
+        "billing.status",
+        "billingRules.baseMonthlyFee",
+        "billingRules.perStudentFee",
+        "billingRules.perStaffFee",
+        "billingRules.perClassFee"
+      ];
+    }
+
+    // Apply updates with validation
+    Object.keys(updates).forEach((field) => {
+      if (allowedFields.includes(field)) {
+        if (field.includes('.')) {
+          const [parent, child] = field.split('.');
+          if (school[parent] && school[parent][child] !== undefined) {
+            school[parent][child] = updates[field];
+          }
+        } else {
+          if (field === 'email') {
+            const emailRegex = /^\S+@\S+\.\S+$/;
+            if (!emailRegex.test(updates[field])) {
+              throw new Error('Invalid email format');
+            }
+            school[field] = updates[field].toLowerCase();
+          } else if (field === 'plan' && !['FREE', 'BASIC', 'PRO'].includes(updates[field])) {
+            throw new Error('Invalid plan type');
+          } else {
+            school[field] = updates[field];
+          }
+        }
       }
     });
 
+    // Handle principal assignment
+    if (updates.principal && (isCreator || hasAdminRole)) {
+      const newPrincipal = await User.findById(updates.principal);
+      const isMember = newPrincipal.memberships.some(
+        membership => membership.school.toString() === schoolId
+      );
+      
+      if (!isMember) {
+        return res.status(400).json({
+          success: false,
+          message: "New principal must be a member of the school"
+        });
+      }
+      
+      school.principal = updates.principal;
+    }
+
+    // Handle access status changes
+    if (updates.accessStatus && (isCreator || hasAdminRole)) {
+      if (['active', 'suspended', 'blocked'].includes(updates.accessStatus)) {
+        school.accessStatus = updates.accessStatus;
+        if (updates.accessStatus === 'active') {
+          school.blockReason = '';
+        } else if (updates.blockReason) {
+          school.blockReason = updates.blockReason;
+        }
+      }
+    }
+
     await school.save();
-    res.json({ message: "School updated successfully", school });
+
+    // Populate and return updated school
+    const updatedSchool = await School.findById(schoolId)
+      .populate('principal', 'name email')
+      .populate('createdBy', 'name email')
+      .populate('members', 'name email');
+
+    res.json({ 
+      success: true,
+      message: "School updated successfully", 
+      school: updatedSchool 
+    });
+
   } catch (error) {
     console.error("Update school error:", error);
-    res.status(500).json({ message: "Internal server error." });
+    
+    // Handle specific errors
+    if (error.message.includes('Invalid') || error.message.includes('invalid')) {
+      return res.status(400).json({ 
+        success: false,
+        message: error.message 
+      });
+    }
+
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Email already exists" 
+      });
+    }
+
+    res.status(500).json({ 
+      success: false,
+      message: "Internal server error.",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 

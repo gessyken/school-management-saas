@@ -31,9 +31,13 @@ export interface InviteMemberRequest {
 
 export const schoolService = {
   // Créer une nouvelle école
-  async createSchool(schoolData: SchoolInput): Promise<CreateSchoolResponse> {
+  async createSchool(formData: FormData): Promise<CreateSchoolResponse> {
     try {
-      const response = await api.post<CreateSchoolResponse>('/schools/register', schoolData);
+      const response = await api.post('/schools/register', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data;
     } catch (error) {
       console.error('Error creating school:', error);

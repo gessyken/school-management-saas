@@ -8,7 +8,9 @@ import {
   getJoinRequests,
   approveJoinRequest,
   rejectJoinRequest,
-  getSchoolById,
+  updateSchoolLogo, 
+  getSchoolProfile,
+  uploadLogo,
   updateSchool,
   getSchoolMembers,
   updateMemberRoles,
@@ -27,12 +29,13 @@ import { getUserRolesForSchool, protect } from '../middleware/auth.middleware.js
 const router = express.Router();
 
 // Create a new school (logged-in user becomes admin)
-router.post('/register', protect, registerSchool);
+router.post('/register', protect,uploadLogo.single('logo'), registerSchool);
+router.patch('/:schoolId/logo', protect, uploadLogo.single('logo'), updateSchoolLogo);
 
 // Get list of all schools (admin panel)
 router.get('/', protect, getAllSchools);
 router.get("/my-schools", protect, getUserSchools);
-router.get("/detail-school/:schoolId", protect, getSchoolById);
+router.get("/detail-school/:schoolId", protect, getSchoolProfile);
 
 // Block or unblock a school by ID
 router.put('/:id/access', protect, updateSchoolAccess);
@@ -45,7 +48,7 @@ router.get("/:schoolId/join-requests", protect, getJoinRequests);
 router.post("/:schoolId/join-requests/:userId/approve", protect,getUserRolesForSchool, approveJoinRequest);
 router.delete("/:schoolId/join-requests/:userId/reject", protect, rejectJoinRequest);
 // router.get("/:schoolId", protect, getSchoolById);
-router.put("/:schoolId", protect,getUserRolesForSchool, updateSchool);
+router.put("/:schoolId", protect,getUserRolesForSchool,uploadLogo.single('logo'), updateSchool);
 router.get("/:schoolId/members", protect, getSchoolMembers);
 router.patch("/:schoolId/members/:memberId/roles", protect,getUserRolesForSchool, updateMemberRoles);
 
