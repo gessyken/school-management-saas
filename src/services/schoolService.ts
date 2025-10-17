@@ -141,7 +141,7 @@ export const schoolService = {
   },
 
   // Mettre à jour une école
-  async updateSchool(id: string, schoolData: Partial<SchoolInput>): Promise<School> {
+  async updateSchool(id: string, schoolData: FormData): Promise<School> {
     try {
       const response = await api.put<{ school: School }>(`/schools/${id}`, schoolData);
       return response.data.school;
@@ -150,7 +150,19 @@ export const schoolService = {
       throw error;
     }
   },
-
+async updateSchoolLogo(id: string, schoolData: FormData): Promise<School> {
+    try {
+      const response = await api.post(`/schools/${id}/logo`, schoolData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+      return response.data.school;
+    } catch (error) {
+      console.error('Error updating school:', error);
+      throw error;
+    }
+  },
   // Obtenir les détails d'une école
   async getSchoolById(id: string): Promise<School> {
     try {

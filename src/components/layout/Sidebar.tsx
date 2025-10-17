@@ -18,6 +18,7 @@ import {
 import { cn, formatEmail } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
+import { baseURL } from '@/lib/api';
 
 const navigation = [
   {
@@ -29,9 +30,9 @@ const navigation = [
   {
     group: "Pédagogie",
     items: [
-      { name: 'Élèves', href: '/students', icon: Users },
-      { name: 'Classes', href: '/classes', icon: BookOpen },
       { name: 'Matières', href: '/subjects', icon: GraduationCap },
+      { name: 'Classes', href: '/classes', icon: BookOpen },
+      { name: 'Élèves', href: '/students', icon: Users },
       { name: 'Années académiques', href: '/academic-years', icon: Calendar },
       { name: 'Bulletins', href: '/reports', icon: FileText },
     ]
@@ -55,7 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleCollapse
   const location = useLocation();
   const { currentSchool, logout, user, switchSchool, userSchools } = useAuth();
   const navigate = useNavigate();
-
+  console.log("currentSchool", currentSchool)
   const handleSchoolChange = (school: any) => {
     switchSchool(school);
   };
@@ -84,9 +85,24 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleCollapse
       {/* Header */}
       <div className="p-4 border-b border-white/20">
         <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10">
-            <School className="w-6 h-6" />
+          <div className="w-6 h-6 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10">
+            {currentSchool.logoUrl ? (
+              <div className="relative">
+                <img
+                  src={!currentSchool.logoUrl.startsWith('/upload') ?
+                    currentSchool.logoUrl :
+                    `${baseURL}/../document${currentSchool.logoUrl}`}
+                  alt="Logo de l'école"
+                  className="w-6 h-6 rounded-xl object-cover border-4 border-white shadow-lg"
+                />
+              </div>
+            ) : (
+              <div className="w-6 h-6 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 border-4 border-white shadow-lg flex items-center justify-center">
+                <School className="w-6 h-6" />
+              </div>
+            )}
           </div>
+
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
               <h1 className="font-bold text-lg truncate">
@@ -173,20 +189,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleCollapse
       <div className="p-4 border-t border-white/20 bg-white/5 backdrop-blur-sm">
         {!isCollapsed ? (
           <>
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center border border-white/10">
-                <User className="w-5 h-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{user?.name}</p>
-                <p className="text-xs opacity-80 truncate">{formatEmail(user?.email)}</p>
-                {currentSchool && (
-                  <p className="text-xs opacity-60 truncate mt-1">
-                    {currentSchool.name}
-                  </p>
-                )}
-              </div>
-            </div>
             <Button
               onClick={leaveSchool}
               variant="ghost"

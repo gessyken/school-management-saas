@@ -47,13 +47,13 @@ export const registerSchool = async (req, res) => {
       return res.status(403).json({ message: 'Invalid user' });
     }
 
-    const { 
-      name, 
-      email, 
-      phone, 
-      address, 
-      system_type, 
-      motto, 
+    const {
+      name,
+      email,
+      phone,
+      address,
+      system_type,
+      motto,
       type,
       plan = 'FREE'
     } = req.body;
@@ -110,35 +110,35 @@ export const registerSchool = async (req, res) => {
     await user.save();
 
     const token = generateToken(user._id, school[0]._id);
-    
-    res.status(201).json({ 
+
+    res.status(201).json({
       success: true,
       message: 'School registered successfully',
-      token, 
+      token,
       user: {
         _id: user._id,
         name: user.name,
         email: user.email
-      }, 
-      school: school[0] 
+      },
+      school: school[0]
     });
 
   } catch (err) {
     console.error('School registration error:', err);
-    
+
     if (err.code === 11000) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'School with this email already exists' 
+        message: 'School with this email already exists'
       });
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       success: false,
-      message: 'Failed to create school', 
-      error: err.message 
+      message: 'Failed to create school',
+      error: err.message
     });
-  } 
+  }
 };
 
 // Update school logo
@@ -146,32 +146,33 @@ export const updateSchoolLogo = async (req, res) => {
   try {
     const { schoolId } = req.params;
     const user = await User.findById(req.userId);
-    
+
     // Check if user has permission to update this school
     const userMembership = user.memberships.find(
-      membership => membership.school.toString() === schoolId && 
-      membership.roles.includes('ADMIN')
+      membership => membership.school.toString() === schoolId &&
+        membership.roles.includes('ADMIN')
     );
-    
+
     if (!userMembership) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         success: false,
-        message: 'Unauthorized to update school logo' 
+        message: 'Unauthorized to update school logo'
       });
     }
 
     const school = await School.findById(schoolId);
     if (!school) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'School not found' 
+        message: 'School not found'
       });
     }
-
+    console.log("req.file", req.file)
+    console.log("req.file", req.files)
     if (!req.file) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'No logo file provided' 
+        message: 'No logo file provided'
       });
     }
 
@@ -187,10 +188,10 @@ export const updateSchoolLogo = async (req, res) => {
 
   } catch (err) {
     console.error('Update logo error:', err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Failed to update school logo', 
-      error: err.message 
+      message: 'Failed to update school logo',
+      error: err.message
     });
   }
 };
@@ -204,9 +205,9 @@ export const getSchoolProfile = async (req, res) => {
       .populate('createdBy', 'name email');
 
     if (!school) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'School not found' 
+        message: 'School not found'
       });
     }
 
@@ -217,10 +218,10 @@ export const getSchoolProfile = async (req, res) => {
 
   } catch (err) {
     console.error('Get school profile error:', err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Failed to fetch school profile', 
-      error: err.message 
+      message: 'Failed to fetch school profile',
+      error: err.message
     });
   }
 };
@@ -282,13 +283,17 @@ export const switchSchool = async (req, res) => {
   const membership = user.memberships.find(m => m.school.toString() === schoolId);
 
   console.log(user.memberships)
+  const school = await School.findById(schoolId)
+    .populate('principal', 'firstName lastName email')
+    .populate('members', 'firstName lastName email')
+    .populate('createdBy', 'firstName lastName email');
 
   if (!membership) {
     return res.status(403).json({ message: 'User not part of this school' });
   }
 
-  const token = generateToken(user._id, schoolId);
-  res.status(200).json({ message: 'Switched school', token });
+  const token = generateToken(user._id, school._id);
+  res.status(200).json({ message: 'Switched school', token: token, newSchool: school });
 };
 
 
@@ -473,13 +478,13 @@ export const updateSchool = async (req, res) => {
   const { schoolId } = req.params;
   const userId = req.user._id;
   const updates = req.body;
-
+  console.log("updates", updates)
   try {
     const school = await School.findById(schoolId);
     if (!school) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: "School not found." 
+        message: "School not found."
       });
     }
 
@@ -489,15 +494,15 @@ export const updateSchool = async (req, res) => {
       membership => membership.school.toString() === schoolId
     );
 
-    const isCreator = school.createdBy.toString() === userId.toString();
-    const isPrincipal = school.principal.toString() === userId.toString();
-    const hasAdminRole = userMembership?.roles.includes("ADMIN");
-    const hasDirectorRole = userMembership?.roles.includes("DIRECTOR");
+    const isCreator = school?.createdBy?.toString() === userId?.toString();
+    const isPrincipal = school?.principal?.toString() === userId?.toString();
+    const hasAdminRole = userMembership?.roles?.includes("ADMIN");
+    const hasDirectorRole = userMembership?.roles?.includes("DIRECTOR");
 
     if (!isCreator && !isPrincipal && !hasAdminRole && !hasDirectorRole) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         success: false,
-        message: "Unauthorized to edit this school." 
+        message: "Unauthorized to edit this school."
       });
     }
 
@@ -514,12 +519,12 @@ export const updateSchool = async (req, res) => {
 
     // Define allowed fields based on user role
     let allowedFields = ["name", "phone", "address", "motto", "type"];
-    
+
     if (isCreator || hasAdminRole || isPrincipal) {
       allowedFields = [
         ...allowedFields,
-        "email", 
-        "system_type", 
+        "email",
+        "system_type",
         "logoUrl",
         "memberShipAccessStatus"
       ];
@@ -567,14 +572,14 @@ export const updateSchool = async (req, res) => {
       const isMember = newPrincipal.memberships.some(
         membership => membership.school.toString() === schoolId
       );
-      
+
       if (!isMember) {
         return res.status(400).json({
           success: false,
           message: "New principal must be a member of the school"
         });
       }
-      
+
       school.principal = updates.principal;
     }
 
@@ -598,31 +603,31 @@ export const updateSchool = async (req, res) => {
       .populate('createdBy', 'name email')
       .populate('members', 'name email');
 
-    res.json({ 
+    res.json({
       success: true,
-      message: "School updated successfully", 
-      school: updatedSchool 
+      message: "School updated successfully",
+      school: updatedSchool
     });
 
   } catch (error) {
     console.error("Update school error:", error);
-    
+
     // Handle specific errors
     if (error.message.includes('Invalid') || error.message.includes('invalid')) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: error.message 
+        message: error.message
       });
     }
 
     if (error.code === 11000) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: "Email already exists" 
+        message: "Email already exists"
       });
     }
 
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: "Internal server error.",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -636,13 +641,13 @@ export const getSchoolMembers = async (req, res) => {
 
   try {
     const school = await School.findById(schoolId)
-      .populate("members", "name email roles memberships")
+      .populate("members", "name email firstName lastName roles memberships")
       .populate("members.memberships", "name email roles");
 
     if (!school) {
       return res.status(404).json({ message: "School not found" });
     }
-
+    console.log("school.members", school.members)
     res.status(200).json(school.members);
   } catch (error) {
     console.error("Error fetching school members:", error);

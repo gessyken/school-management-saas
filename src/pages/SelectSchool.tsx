@@ -9,6 +9,7 @@ import { School as SchoolType } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { schoolService } from '@/services/schoolService';
 import { joinRequestService } from '@/services/joinRequestService';
+import { baseURL } from '@/lib/api';
 
 const SelectSchool: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +29,7 @@ const SelectSchool: React.FC = () => {
 
       try {
         setIsFetchingData(true);
-        
+
         // Fetch user's schools
         const userSchools = await schoolService.getUserSchools();
         setSchools(userSchools);
@@ -114,7 +115,7 @@ const SelectSchool: React.FC = () => {
     try {
       // Accept the invitation
       await joinRequestService.acceptInvitation(invitation?.school?._id);
-      
+
       toast({
         title: 'Invitation acceptée',
         description: `Vous avez rejoint l'école ${invitation.school.name}.`,
@@ -122,14 +123,14 @@ const SelectSchool: React.FC = () => {
 
       // Remove the invitation from the list
       setInvitations(prev => prev.filter(inv => inv._id !== invitation._id));
-      
+
       // Refresh schools list to show the newly joined school
       const userSchools = await schoolService.getUserSchools();
       setSchools(userSchools);
 
     } catch (error: any) {
       console.error('Error accepting invitation:', error);
-      
+
       let errorMessage = 'Impossible d\'accepter l\'invitation.';
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
@@ -149,8 +150,8 @@ const SelectSchool: React.FC = () => {
     setActionLoadingId(invitation._id);
     try {
       // Decline the invitation
-      await joinRequestService.cancelInvitation(invitation?.school?._id,invitation?._id);
-      
+      await joinRequestService.cancelInvitation(invitation?.school?._id, invitation?._id);
+
       toast({
         title: 'Invitation déclinée',
         description: 'Vous avez décliné l\'invitation.',
@@ -161,7 +162,7 @@ const SelectSchool: React.FC = () => {
 
     } catch (error: any) {
       console.error('Error declining invitation:', error);
-      
+
       let errorMessage = 'Impossible de décliner l\'invitation.';
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
@@ -215,11 +216,11 @@ const SelectSchool: React.FC = () => {
               Sélectionner une école
             </CardTitle>
             <CardDescription className="text-muted-foreground">
-              {hasSchools 
+              {hasSchools
                 ? 'Choisissez une école ou créez-en une nouvelle'
                 : hasInvitations
-                ? 'Vous avez des invitations en attente'
-                : 'Créez votre première école pour commencer'
+                  ? 'Vous avez des invitations en attente'
+                  : 'Créez votre première école pour commencer'
               }
             </CardDescription>
           </div>
@@ -235,7 +236,7 @@ const SelectSchool: React.FC = () => {
                   <h3 className="font-medium text-sm text-blue-900">Invitations en attente</h3>
                   <Badge variant="outline" className="ml-auto">{invitations.length}</Badge>
                 </div>
-                
+
                 {invitations.map((invitation) => (
                   <div key={invitation._id} className="p-3 border border-blue-200 rounded-lg bg-blue-50">
                     <div className="flex items-start justify-between mb-2">
@@ -257,7 +258,7 @@ const SelectSchool: React.FC = () => {
                         <span>Expire le {formatDate(invitation.expiredAt)}</span>
                       </Badge>
                     </div>
-                    
+
                     <div className="flex space-x-2">
                       <Button
                         size="sm"
@@ -300,26 +301,75 @@ const SelectSchool: React.FC = () => {
                   <h3 className="font-medium text-sm text-green-900">Vos écoles</h3>
                   <Badge variant="outline" className="ml-auto">{schools.length}</Badge>
                 </div>
-                
+
                 {schools.map((school) => (
                   <div
                     key={school.id || (school as any)._id}
-                    className="p-4 border border-green-200 rounded-lg hover:bg-green-50 cursor-pointer transition-colors"
+                    className="flex items-start p-4 border border-green-200 rounded-lg hover:bg-green-50 cursor-pointer transition-colors group"
                     onClick={() => handleSelectSchool(school)}
                   >
-                    <h3 className="font-medium">{school.name}</h3>
-                    {school.address && (
-                      <p className="text-sm text-muted-foreground">{school.address}</p>
-                    )}
-                    <div className="flex items-center space-x-2 mt-2">
-                      <Badge variant="secondary" className="text-xs">
-                        Membre
-                      </Badge>
-                      {school.system_type && (
-                        <Badge variant="outline" className="text-xs">
-                          {school.system_type}
-                        </Badge>
+                    {/* School Logo */}
+                    <div className="flex-shrink-0 mr-4">
+                      {school.logoUrl ? (
+                        <img
+                          src={`${baseURL}/../document${school.logoUrl}`}
+                          alt={`${school.name} logo`}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-green-100 group-hover:border-green-200 transition-colors"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-100 to-green-200 border-2 border-green-200 flex items-center justify-center group-hover:from-green-200 group-hover:to-green-300 transition-colors">
+                          <School className="w-5 h-5 text-green-600" />
+                        </div>
                       )}
+                    </div>
+
+                    {/* School Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-gray-900 truncate">{school.name}</h3>
+                          {school.motto && (
+                            <p className="text-sm text-green-700 mt-1 italic">"{school.motto}"</p>
+                          )}
+                          {school.address && (
+                            <p className="text-sm text-muted-foreground mt-1 truncate">{school.address}</p>
+                          )}
+                        </div>
+
+                        {/* Plan Badge */}
+                        {school.plan && school.plan !== 'FREE' && (
+                          <Badge variant="default" className="ml-2 bg-blue-100 text-blue-800 border-blue-200 text-xs">
+                            {school.plan}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Badges */}
+                      <div className="flex items-center space-x-2 mt-2">
+                        <Badge variant="secondary" className="text-xs">
+                          Membre
+                        </Badge>
+                        {school.system_type && (
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {school.system_type}
+                          </Badge>
+                        )}
+                        {school.type && (
+                          <Badge variant="outline" className="text-xs">
+                            {school.type}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Additional Info */}
+                      <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
+                        {school.email && (
+                          <span className="truncate">{school.email}</span>
+                        )}
+                        {school.phone && (
+                          <span>{school.phone}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -354,8 +404,8 @@ const SelectSchool: React.FC = () => {
                 </Button>
               )}
 
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 className="w-full"
                 onClick={() => window.location.reload()}
               >

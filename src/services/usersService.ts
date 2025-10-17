@@ -4,13 +4,15 @@ export type Teacher = {
   id: string;
   name: string;
   email?: string;
-  firstName?:string;
-  lastName?:string;
-  fullName?:string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
 };
 
 export type User = {
   _id: string;
+  avatar: string;
+  fullName: string;
   firstName: string;
   lastName: string;
   email: string;

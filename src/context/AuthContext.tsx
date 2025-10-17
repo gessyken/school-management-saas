@@ -214,26 +214,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const switchSchool = async (school: SchoolWithId): Promise<void> => {
     try {
       // Appel à l'API pour changer d'école et obtenir un nouveau token
-      const response = await api.post<{ token: string; message: string }>('/schools/switch', {
+      const response = await api.post<{ token: string; newSchool:any; message: string }>('/schools/switch', {
         schoolId: school?.id || school?._id
       });
       
-      const { token } = response.data;
-      
+      const { token,newSchool } = response.data;
+      console.log("response.data",response.data)
       // Mettre à jour le token JWT
       localStorage.setItem('token', token);
       
       // Mettre à jour les données d'authentification locales
       const authData = JSON.parse(localStorage.getItem('schoolAuth') || '{}');
-      authData.currentSchool = school;
+      authData.currentSchool = newSchool;
       localStorage.setItem('schoolAuth', JSON.stringify(authData));
       
       // Mettre à jour le state
-      dispatch({ type: 'SWITCH_SCHOOL', payload: school });
+      dispatch({ type: 'SWITCH_SCHOOL', payload: newSchool });
       
       toast({
         title: 'École changée',
-        description: `Vous avez sélectionné l'école ${school.name}.`,
+        description: `Vous avez sélectionné l'école ${newSchool.name}.`,
       });
     } catch (error) {
       console.error('Erreur lors du changement d\'école:', error);

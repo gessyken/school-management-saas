@@ -19,6 +19,7 @@ import schoolRoutes from './src/routes/schoolRoutes.js';
 import authRoutes from './src/routes/authRoutes.js';
 import "express-async-errors";
 import { requestLogger } from "./src/middleware/requestLogger.js";
+import path from "path";
 
 // Create Express app
 const app = express();
@@ -54,6 +55,7 @@ app.use((req, res, next) => {
 
 // 🔥 Add global request logger
 app.use(requestLogger);
+app.use("/document", express.static(path.join(process.cwd())));
 
 // Register API routes
 app.use('/api/users', userRoutes);

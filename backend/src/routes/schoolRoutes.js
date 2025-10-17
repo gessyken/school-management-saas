@@ -30,7 +30,7 @@ const router = express.Router();
 
 // Create a new school (logged-in user becomes admin)
 router.post('/register', protect,uploadLogo.single('logo'), registerSchool);
-router.patch('/:schoolId/logo', protect, uploadLogo.single('logo'), updateSchoolLogo);
+router.post('/:schoolId/logo', protect, uploadLogo.single('logo'), updateSchoolLogo);
 
 // Get list of all schools (admin panel)
 router.get('/', protect, getAllSchools);

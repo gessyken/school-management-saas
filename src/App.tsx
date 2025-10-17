@@ -147,41 +147,10 @@ const AppRoutes = () => {
           <Route path="fees-statis" element={<FeesStatistics />} />
           <Route path="ranks" element={<ClassmentManagement />} />
           <Route path="reports" element={<ReportCardManagement />} />
-          {/* <Route path="bulk" element={<BulkGradeManagement />} />
-          <Route path="analytics" element={<AcademicAnalytics />} />
-          <Route path="promotion" element={<StudentPromotion />} />
-          <Route path="student/:studentId" element={<StudentPerformanceDetail />} />
-          <Route path="class/:classId" element={<ClassAcademicOverview />} /> */}
-
+          
           {/* Default route */}
           <Route index element={<AcademicYearOverview />} />
         </Route>
-        {/* <Route path="/academic-years" element={
-          <ProtectedLayout>
-            <AcademicYearLayout />
-          </ProtectedLayout>
-        }>
-          <Route path=":academicYear?/:educationSystem?/:level?/:class?/:term?/:sequence?/:subject?/:tab?" element={
-            <div className="min-h-[400px]">
-              <Outlet />
-            </div>
-          }>
-            <Route path="overview" element={<AcademicYearOverview />} />
-            <Route path="grades" element={<GradesManagement />} />
-            <Route path="bulk" element={<BulkGradeManagement />} />
-            <Route path="analytics" element={<AcademicAnalytics />} />
-            <Route path="fees" element={<FeeManagement />} />
-            <Route path="ranks" element={<RankManagement />} />
-            <Route path="promotion" element={<StudentPromotion />} />
-            <Route path="reports" element={<ReportCards />} />
-            <Route path="student/:studentId" element={<StudentPerformanceDetail />} />
-            <Route path="class/:classId" element={<ClassAcademicOverview />} /> 
-
-            <Route index element={<Navigate to="overview" replace />} />
-          </Route>
-
-          <Route index element={<Navigate to="overview" replace />} />
-        </Route> */}
         <Route
           path="/reports"
           element={

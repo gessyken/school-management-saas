@@ -39,12 +39,14 @@ export interface School {
   principal: any;
   motto: string;
   type: string;
-  logo?: string;
+  logoUrl?: string;
   system_type: 'francophone' | 'anglophone';
   region?: string;
   department?: string;
   created_at: string;
   updated_at: string;
+  accessStatus: string;
+  plan: any;
 }
 
 // Création/Mise à jour d'école
