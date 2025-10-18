@@ -80,6 +80,7 @@ interface ClassModalProps {
   classData?: Class | null;
   mode: 'create' | 'edit' | 'view';
   isLoading?: boolean;
+  currentAcademicYears?: string;
 }
 
 // Default form data
@@ -106,6 +107,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
   onClose,
   onSave,
   classData,
+  currentAcademicYears,
   mode,
   isLoading = false
 }) => {
@@ -151,6 +153,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
     setLoadingSubjects(true);
     try {
       const subjects = await subjectsService.getSubjects({
+        year: formData.year,
         educationSystem: formData.educationSystem,
         level: formData.level,
         isActive: true
@@ -303,7 +306,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
         name: formData.name || generateClassName(),
         subjectDetails,
         // S'assurer que les champs requis par le backend sont présents
-        year: formData.year || defaultFormData.year,
+        year: formData.year || currentAcademicYears || defaultFormData.year,
         status: formData.status || defaultFormData.status,
         amountFee: formData.amountFee || 0,
         mainTeacher: formData.mainTeacher || undefined
@@ -326,8 +329,8 @@ const ClassModal: React.FC<ClassModalProps> = ({
       setFormErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
-      // console.log("formData 1", formData)
-    // console.log("FormErrors 1", formErrors)
+  // console.log("formData 1", formData)
+  // console.log("FormErrors 1", formErrors)
 
   const handleSystemChange = (system: 'francophone' | 'anglophone' | 'bilingue') => {
     setFormData(prev => ({
@@ -866,7 +869,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
               </div>
 
               {/* Étudiants actuels (édition seulement) */}
-              {mode === 'edit' && (
+              {/* {mode === 'edit' && ( */}
                 <div>
                   <Label htmlFor="amountFee">Frais schoolar</Label>
                   <Input
@@ -882,7 +885,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
                     <p className="text-destructive text-xs mt-1">{formErrors.amountFee}</p>
                   )}
                 </div>
-              )}
+              {/* )} */}
             </div>
 
             {/* Description */}

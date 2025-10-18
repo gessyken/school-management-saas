@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usersService, type Teacher as TeacherOption } from '@/services/usersService';
+import { subjectsService } from '@/services/subjectsService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export interface BulkClassItem {
@@ -46,6 +47,14 @@ export interface BulkClassItem {
   room: string;
   description?: string;
   year?: string;
+  subjects?: string[];
+  subjectDetails?: Array<{
+    subject: string;
+    coefficient: number;
+    teacher?: string;
+    weeklyHours: number;
+    isActive: boolean;
+  }>;
 }
 
 interface BulkClassModalProps {
@@ -53,6 +62,7 @@ interface BulkClassModalProps {
   onClose: () => void;
   onSave: (items: BulkClassItem[]) => Promise<void> | void;
   isSubmitting?: boolean;
+  academicYear?: string;
 }
 
 interface SectionOverride {
@@ -63,10 +73,27 @@ interface SectionOverride {
   enabled: boolean;
 }
 
+interface SubjectItem {
+  id?: string;
+  _id?: string;
+  name: string;
+  code: string;
+  coefficient: number;
+  coefficients: Array<{ level: string; value: number }>;
+  weeklyHours: number;
+  teacher: string;
+  educationSystem?: string;
+  levels?: string[];
+  required?: boolean;
+  isActive: boolean;
+  color: string;
+}
+
 const BulkClassModal: React.FC<BulkClassModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  academicYear,
   isSubmitting = false
 }) => {
   // State for form fields
@@ -79,7 +106,7 @@ const BulkClassModal: React.FC<BulkClassModalProps> = ({
   const [defaultRoom, setDefaultRoom] = useState<string>('');
   const [defaultCapacity, setDefaultCapacity] = useState<number>(30);
   const [description, setDescription] = useState<string>('');
-  const [academicYear, setAcademicYear] = useState<string>('');
+  // const [academicYear, setAcademicYear] = useState<string>('');
 
   // State for section overrides
   const [sectionOverrides, setSectionOverrides] = useState<Record<string, SectionOverride>>({});
@@ -87,13 +114,14 @@ const BulkClassModal: React.FC<BulkClassModalProps> = ({
   const [teacherOptions, setTeacherOptions] = useState<TeacherOption[]>([]);
   const [loadingTeachers, setLoadingTeachers] = useState(false);
 
-  // Initialize academic year
-  useEffect(() => {
-    const currentYear = new Date().getFullYear();
-    const month = new Date().getMonth() + 1;
-    const defaultYear = month >= 8 ? `${currentYear}-${currentYear + 1}` : `${currentYear - 1}-${currentYear}`;
-    setAcademicYear(defaultYear);
-  }, []);
+  // New state for subjects
+  const [availableSubjects, setAvailableSubjects] = useState<SubjectItem[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [subjectCoefficients, setSubjectCoefficients] = useState<Record<string, number>>({});
+  const [subjectTeachers, setSubjectTeachers] = useState<Record<string, string>>({});
+  const [autoAssignSubjects, setAutoAssignSubjects] = useState<boolean>(true);
+
 
   // Load teachers when modal opens
   useEffect(() => {
@@ -111,6 +139,54 @@ const BulkClassModal: React.FC<BulkClassModalProps> = ({
     };
     loadTeachers();
   }, [isOpen]);
+
+  // Load available subjects when level or education system changes
+  useEffect(() => {
+    const loadAvailableSubjects = async () => {
+      if (!level || !educationSystem) {
+        setAvailableSubjects([]);
+        setSelectedSubjects([]);
+        return;
+      }
+
+      setLoadingSubjects(true);
+      try {
+        const subjects = await subjectsService.getSubjects({
+          year: academicYear,
+          educationSystem: educationSystem,
+          level: level,
+          isActive: true
+        });
+        setAvailableSubjects(subjects);
+
+        // Auto-select all subjects by default
+        if (autoAssignSubjects && subjects.length > 0) {
+          const subjectIds = subjects.map(subject => subject.id || subject._id).filter(Boolean) as string[];
+          setSelectedSubjects(subjectIds);
+
+          // Initialize default coefficients
+          const newCoefficients: Record<string, number> = {};
+          subjects.forEach(subject => {
+            const subjectId = subject.id || subject._id;
+            if (subjectId) {
+              newCoefficients[subjectId] = getDefaultCoefficient(subject);
+            }
+          });
+          setSubjectCoefficients(newCoefficients);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des matières:', error);
+        setAvailableSubjects([]);
+        setSelectedSubjects([]);
+      } finally {
+        setLoadingSubjects(false);
+      }
+    };
+
+    if (isOpen && level && educationSystem) {
+      loadAvailableSubjects();
+    }
+  }, [isOpen, level, educationSystem, academicYear, autoAssignSubjects]);
 
   // Get available levels based on education system
   const getAvailableLevels = useCallback(() => {
@@ -140,6 +216,20 @@ const BulkClassModal: React.FC<BulkClassModalProps> = ({
     }
   }, [educationSystem]);
 
+  // Get default coefficient for a subject
+  const getDefaultCoefficient = (subject: SubjectItem): number => {
+    if (!subject.coefficients || subject.coefficients.length === 0) {
+      return subject.coefficient || 1;
+    }
+
+    // Find coefficient for the current level
+    const levelCoefficient = subject.coefficients.find(
+      (coeff) => coeff.level === level
+    );
+
+    return levelCoefficient ? levelCoefficient.value : (subject.coefficient || 1);
+  };
+
   const levels = getAvailableLevels();
   const availableSections = getAvailableSections();
   const specialties = getAvailableSpecialties(educationSystem, level);
@@ -157,6 +247,9 @@ const BulkClassModal: React.FC<BulkClassModalProps> = ({
       setDescription('');
       setSectionOverrides({});
       setFormErrors({});
+      setSelectedSubjects([]);
+      setSubjectCoefficients({});
+      setSubjectTeachers({});
     }
   }, [isOpen]);
 
@@ -210,11 +303,59 @@ const BulkClassModal: React.FC<BulkClassModalProps> = ({
     }));
   };
 
+  // Toggle subject selection
+  const toggleSubject = (subjectId: string) => {
+    setSelectedSubjects(prev =>
+      prev.includes(subjectId)
+        ? prev.filter(id => id !== subjectId)
+        : [...prev, subjectId]
+    );
+  };
+
+  // Select all subjects
+  const selectAllSubjects = () => {
+    const allSubjectIds = availableSubjects.map(subject => subject.id || subject._id).filter(Boolean) as string[];
+    setSelectedSubjects(allSubjectIds);
+
+    // Initialize coefficients for all subjects
+    const newCoefficients: Record<string, number> = {};
+    availableSubjects.forEach(subject => {
+      const subjectId = subject.id || subject._id;
+      if (subjectId) {
+        newCoefficients[subjectId] = getDefaultCoefficient(subject);
+      }
+    });
+    setSubjectCoefficients(newCoefficients);
+  };
+
+  // Clear all subjects
+  const clearAllSubjects = () => {
+    setSelectedSubjects([]);
+    setSubjectCoefficients({});
+    setSubjectTeachers({});
+  };
+
+  // Update subject coefficient
+  const updateSubjectCoefficient = (subjectId: string, coefficient: number) => {
+    setSubjectCoefficients(prev => ({
+      ...prev,
+      [subjectId]: coefficient
+    }));
+  };
+
+  // Update subject teacher
+  const updateSubjectTeacher = (subjectId: string, teacherId: string) => {
+    setSubjectTeachers(prev => ({
+      ...prev,
+      [subjectId]: teacherId
+    }));
+  };
+
   // Get teacher display name
   const getTeacherDisplayName = (teacherId: string): string => {
     const teacher = teacherOptions.find(t => t.id === teacherId);
     if (!teacher) return teacherId;
-    
+
     const name = `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim();
     return name || teacher.email || teacherId;
   };
@@ -274,6 +415,18 @@ const BulkClassModal: React.FC<BulkClassModalProps> = ({
         const teacherId = useOverride ? override.teacher! : defaultTeacher;
         const teacherName = getTeacherDisplayName(teacherId);
 
+        // Prepare subject details
+        const subjectDetails = selectedSubjects.map(subjectId => {
+          const subject = availableSubjects.find(s => s.id === subjectId || s._id === subjectId);
+          return {
+            subject: subjectId,
+            coefficient: subjectCoefficients[subjectId] || getDefaultCoefficient(subject || { coefficient: 1 } as SubjectItem),
+            teacher: subjectTeachers[subjectId] || undefined,
+            weeklyHours: subject?.weeklyHours || 4,
+            isActive: true
+          };
+        });
+
         return {
           educationSystem,
           level,
@@ -285,7 +438,9 @@ const BulkClassModal: React.FC<BulkClassModalProps> = ({
           capacity: useOverride ? (override.capacity || defaultCapacity) : defaultCapacity,
           description: description || undefined,
           year: academicYear,
-          name: className.trim()
+          name: className.trim(),
+          subjects: selectedSubjects,
+          subjectDetails
         };
       });
 
@@ -337,6 +492,7 @@ const BulkClassModal: React.FC<BulkClassModalProps> = ({
                       setLevel('');
                       setSpecialty('');
                       setSelectedSections([]);
+                      setSelectedSubjects([]);
                     }}
                     className="sr-only"
                   />
@@ -369,6 +525,7 @@ const BulkClassModal: React.FC<BulkClassModalProps> = ({
                 onChange={(e) => {
                   setLevel(e.target.value);
                   setSpecialty('');
+                  setSelectedSubjects([]);
                 }}
                 className={cn(
                   "w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring",
@@ -468,6 +625,159 @@ const BulkClassModal: React.FC<BulkClassModalProps> = ({
               ))}
             </div>
           </div>
+
+          {/* Subjects Selection */}
+          {level && educationSystem && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Matières à assigner
+                </Label>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="autoAssignSubjects"
+                      checked={autoAssignSubjects}
+                      onChange={(e) => setAutoAssignSubjects(e.target.checked)}
+                      className="rounded border-input"
+                    />
+                    <Label htmlFor="autoAssignSubjects" className="text-sm">
+                      Auto-assigner
+                    </Label>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={selectAllSubjects}
+                    >
+                      Tout sélectionner
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={clearAllSubjects}
+                    >
+                      Tout désélectionner
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {loadingSubjects ? (
+                <div className="flex items-center justify-center p-8 border rounded-lg">
+                  <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                  <span>Chargement des matières...</span>
+                </div>
+              ) : availableSubjects.length > 0 ? (
+                <div className="border rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto">
+                    {availableSubjects.map((subject) => {
+                      const subjectId = subject.id || subject._id;
+                      const isSelected = subjectId ? selectedSubjects.includes(subjectId) : false;
+                      const coefficient = subjectId ? subjectCoefficients[subjectId] : getDefaultCoefficient(subject);
+                      const teacherId = subjectId ? subjectTeachers[subjectId] : '';
+
+                      return (
+                        <div
+                          key={subjectId}
+                          className={cn(
+                            "p-3 border rounded-lg transition-all cursor-pointer",
+                            isSelected ? 'border-primary bg-primary/5' : 'border-input bg-background hover:bg-muted/50'
+                          )}
+                          onClick={() => subjectId && toggleSubject(subjectId)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium">{subject.name}</span>
+                                {subject.color && (
+                                  <div
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: subject.color }}
+                                  />
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                                <Badge variant="outline">{subject.code}</Badge>
+                                <span>Coef. {getDefaultCoefficient(subject)}</span>
+                                <span>{subject.weeklyHours}h/semaine</span>
+                              </div>
+
+                              {isSelected && (
+                                <div className="space-y-2 mt-2 p-2 bg-muted/30 rounded">
+                                  <div className="flex items-center gap-2">
+                                    <Label htmlFor={`coef-${subjectId}`} className="text-xs w-20">
+                                      Coefficient:
+                                    </Label>
+                                    <Input
+                                      id={`coef-${subjectId}`}
+                                      type="number"
+                                      min="0.5"
+                                      max="10"
+                                      step="0.5"
+                                      value={coefficient}
+                                      onChange={(e) => subjectId && updateSubjectCoefficient(subjectId, parseFloat(e.target.value) || 1)}
+                                      className="h-6 text-xs"
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Label htmlFor={`teacher-${subjectId}`} className="text-xs w-20">
+                                      Professeur:
+                                    </Label>
+                                    <Select
+                                      value={teacherId}
+                                      onValueChange={(value) => subjectId && updateSubjectTeacher(subjectId, value)}
+                                      disabled={loadingTeachers}
+                                    >
+                                      <SelectTrigger className="h-6 text-xs" onClick={(e) => e.stopPropagation()}>
+                                        <SelectValue placeholder="Par défaut" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value={null}>Professeur par défaut</SelectItem>
+                                        {teacherOptions.map((teacher) => (
+                                          <SelectItem key={teacher.id} value={teacher.id}>
+                                            {`${teacher.firstName || ''} ${teacher.lastName || ''}`.trim()}
+                                            {teacher.email && ` (${teacher.email})`}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div className={cn(
+                              "w-4 h-4 border rounded mt-1 flex-shrink-0",
+                              isSelected ? "bg-primary border-primary" : "border-input"
+                            )}>
+                              {isSelected && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-3 text-sm text-muted-foreground">
+                    {selectedSubjects.length} matière{selectedSubjects.length !== 1 ? 's' : ''} sélectionnée{selectedSubjects.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              ) : (
+                <Alert>
+                  <AlertTriangle className="w-4 h-4" />
+                  <AlertDescription>
+                    Aucune matière disponible pour {level} ({educationSystem}).
+                    Les classes seront créées sans matières assignées.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
 
           {/* Default Values */}
           <div className="space-y-4">
@@ -744,6 +1054,7 @@ const BulkClassModal: React.FC<BulkClassModalProps> = ({
                         <div className="text-xs text-muted-foreground space-y-1">
                           <div>Prof: {teacherName}</div>
                           <div>Salle: {useOverride ? override.room : defaultRoom}</div>
+                          <div>Matières: {selectedSubjects.length}</div>
                         </div>
                       </div>
                       <Badge variant="outline" className="flex-shrink-0">
@@ -763,6 +1074,7 @@ const BulkClassModal: React.FC<BulkClassModalProps> = ({
               <>
                 <strong>{selectedSections.length}</strong> classe{selectedSections.length > 1 ? 's' : ''} seront créée{selectedSections.length > 1 ? 's' : ''}
                 {specialty && ` avec la spécialité ${specialty}`}
+                {selectedSubjects.length > 0 && ` et ${selectedSubjects.length} matière${selectedSubjects.length > 1 ? 's' : ''}`}
               </>
             ) : (
               "Sélectionnez au moins une section pour continuer"

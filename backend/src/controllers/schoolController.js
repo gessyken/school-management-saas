@@ -291,7 +291,8 @@ export const switchSchool = async (req, res) => {
   if (!membership) {
     return res.status(403).json({ message: 'User not part of this school' });
   }
-
+  school.id = school._id;
+  console.log(school.id)
   const token = generateToken(user._id, school._id);
   res.status(200).json({ message: 'Switched school', token: token, newSchool: school });
 };

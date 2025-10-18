@@ -9,6 +9,9 @@ import SubjectModal from '@/components/modals/SubjectModal';
 import DeleteConfirmModal from '@/components/modals/DeleteConfirmModal';
 import { useToast } from '@/hooks/use-toast';
 import { subjectsService } from '@/services/subjectsService';
+import settingsService from '@/services/settingsService';
+import { AcademicYear } from '@/types/settings';
+import { Label } from '@/components/ui/label';
 
 interface Coefficient {
   level: string;
@@ -42,6 +45,7 @@ const Subjects: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSystem, setFilterSystem] = useState('all');
+  const [filterAcademicYear, setFilterAcademicYear] = useState('all');
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [subjectModal, setSubjectModal] = useState<{
@@ -61,17 +65,57 @@ const Subjects: React.FC = () => {
     subject: null
   });
   const { toast } = useToast();
+  const [currentAcademicYears, setCurrentAcademicYears] = useState<AcademicYear>();
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+
+  // Load academic years on component mount
+  useEffect(() => {
+    getCurrentAcademicYear();
+  }, []);
+
+  const getCurrentAcademicYear = async () => {
+    try {
+      const academicYearsData = await settingsService.getAcademicYears();
+      console.log("academicYearsData", academicYearsData);
+      setAcademicYears(academicYearsData);
+      const currentYear = academicYearsData.find(t => t.isCurrent);
+      setCurrentAcademicYears(currentYear);
+
+      // Set the current academic year as default filter
+      if (currentYear) {
+        setFilterAcademicYear(currentYear.name);
+      } else if (academicYearsData.length > 0) {
+        // Fallback to first available year
+        setFilterAcademicYear(academicYearsData[0].name);
+      }
+    } catch (error) {
+      console.error('Error loading Annee:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les années académiques',
+        variant: "destructive"
+      });
+    }
+  };
 
   const loadSubjects = async (filters = {}) => {
     try {
       setIsLoading(true);
-      const data = await subjectsService.getSubjects({
+
+      // Prepare filter parameters including academic year
+      const filterParams = {
         search: searchTerm || undefined,
+        year: filterAcademicYear !== 'all' ? filterAcademicYear : undefined,
         status: filterStatus !== 'all' ? filterStatus : undefined,
         system: filterSystem !== 'all' ? filterSystem : undefined,
         ...filters
-      });
-      console.log("data",data)
+      };
+
+      console.log("Loading subjects with filters:", filterParams);
+
+      const data = await subjectsService.getSubjects(filterParams);
+      console.log("API response data:", data);
+
       const normalized: SubjectItem[] = (data || []).map((s: any) => ({
         id: s._id || s.id,
         name: s.name,
@@ -80,10 +124,10 @@ const Subjects: React.FC = () => {
         year: s.year,
         baseCoefficient: s.baseCoefficient ?? s.coefficient ?? 1,
         coefficient: Number(s.coefficient ?? s.baseCoefficient ?? 1),
-        coefficients: s.coefficients,
+        coefficients: s.coefficients || [],
         coefficientsByLevel: s.coefficientsByLevel || {},
         weeklyHours: Number(s.weeklyHours ?? 0),
-        teacher:  s.mainTeacher?.firstName || 'Non assigné',
+        teacher: s.mainTeacher?.firstName || s.teacher || 'Non assigné',
         teachers: Array.isArray(s.teachers) ? s.teachers.map((t: any) => ({
           id: t._id || t.id,
           name: `${t.firstName || ''} ${t.lastName || ''}`.trim() || t.name || 'Inconnu',
@@ -102,32 +146,34 @@ const Subjects: React.FC = () => {
           email: s.mainTeacher.email
         } : undefined
       }));
-      console.log("normalized",normalized)
+
+      console.log("Normalized subjects:", normalized);
       setSubjects(normalized);
     } catch (error: any) {
       console.error('Error loading subjects:', error);
-      toast({ 
-        title: 'Erreur de chargement', 
-        description: 'Impossible de charger les matières. Veuillez réessayer.', 
-        variant: 'destructive' 
+      toast({
+        title: 'Erreur de chargement',
+        description: 'Impossible de charger les matières. Veuillez réessayer.',
+        variant: 'destructive'
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Load subjects when component mounts
   useEffect(() => {
     loadSubjects();
   }, []);
 
-  // Debounced search effect
+  // Debounced search effect with all filters
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       loadSubjects();
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, filterStatus, filterSystem]);
+  }, [searchTerm, filterAcademicYear, filterStatus, filterSystem]);
 
   const handleOpenModal = (mode: 'create' | 'edit' | 'view', subject?: SubjectItem) => {
     setSubjectModal({ isOpen: true, mode, subject });
@@ -138,7 +184,7 @@ const Subjects: React.FC = () => {
   };
 
   const handleSaveSubject = async (subjectData: any) => {
-        console.log("update",subjectModal.mode,subjectData)
+    console.log("Saving subject:", subjectModal.mode, subjectData);
     try {
       if (subjectModal.mode === 'create') {
         const response = await subjectsService.createSubject(subjectData);
@@ -150,10 +196,10 @@ const Subjects: React.FC = () => {
         });
         loadSubjects(); // Reload to get fresh data with populated fields
       } else if (subjectModal.mode === 'edit' && subjectData.id) {
-        console.log("update")
+        console.log("Updating subject");
         const response = await subjectsService.updateSubject(subjectData.id, subjectData);
         const updatedSubject = response.subject || response;
-        setSubjects(prev => prev.map(s => 
+        setSubjects(prev => prev.map(s =>
           s.id === subjectData.id ? { ...subjectData, ...updatedSubject } : s
         ));
         toast({
@@ -201,11 +247,11 @@ const Subjects: React.FC = () => {
 
   const handleToggleStatus = async (subject: SubjectItem) => {
     if (!subject.id) return;
-    
+
     try {
       const response = await subjectsService.toggleActiveStatus(subject.id);
       const updatedSubject = response.subject || response;
-      setSubjects(prev => prev.map(s => 
+      setSubjects(prev => prev.map(s =>
         s.id === subject.id ? { ...s, isActive: !s.isActive } : s
       ));
       toast({
@@ -240,18 +286,359 @@ const Subjects: React.FC = () => {
 
   const handleImport = async () => {
     try {
-      // This would call an import service when implemented
-      toast({
-        title: "Import en cours",
-        description: "Import des matières depuis le fichier...",
-      });
+      // Create a file input element
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.csv,.xlsx,.xls';
+      input.style.display = 'none';
+
+      input.onchange = async (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+
+        if (!file) {
+          toast({
+            title: "Aucun fichier sélectionné",
+            description: "Veuillez sélectionner un fichier CSV à importer.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Validate file type
+        const validTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+        if (!validTypes.includes(file.type) && !file.name.match(/\.(csv|xlsx|xls)$/i)) {
+          toast({
+            title: "Format de fichier non supporté",
+            description: "Veuillez sélectionner un fichier CSV ou Excel.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Show loading toast
+        const loadingToast = toast({
+          title: "Import en cours",
+          description: "Traitement du fichier...",
+        });
+
+        try {
+          // Read and parse the CSV file
+          const text = await file.text();
+          const subjectsArray = parseCSVToSubjects(text);
+
+          if (subjectsArray.length === 0) {
+            toast({
+              title: "Aucune donnée valide",
+              description: "Le fichier ne contient aucune matière valide.",
+              variant: "destructive"
+            });
+            return;
+          }
+          console.log("subjectsArray", subjectsArray)
+          // Send to backend bulk endpoint
+          const response = await subjectsService.createManySubjects(subjectsArray);
+
+          // Show success message
+          toast({
+            title: "Import réussi",
+            description: `${response.subjects?.length || response.createdCount || subjectsArray.length} matières importées avec succès.`,
+          });
+
+          // Reload the subjects list
+          loadSubjects();
+
+        } catch (error: any) {
+          console.error('Import error:', error);
+
+          // Handle partial success (207 status)
+          if (error.response?.status === 207) {
+            const errorData = error.response.data;
+            toast({
+              title: "Import partiellement réussi",
+              description: `${errorData.createdCount} matières créées, ${errorData.errors?.length || 0} erreurs.`,
+              variant: "default"
+            });
+          } else {
+            const errorMessage = error.response?.data?.message || error.message || 'Erreur lors de l\'import du fichier.';
+            toast({
+              title: "Erreur d'import",
+              description: errorMessage,
+              variant: "destructive"
+            });
+          }
+        } finally {
+          // Clean up
+          document.body.removeChild(input);
+        }
+      };
+
+      // Add to DOM and trigger click
+      document.body.appendChild(input);
+      input.click();
+
     } catch (error) {
+      console.error('Error in handleImport:', error);
       toast({
         title: "Erreur d'import",
-        description: "Impossible d'importer les matières.",
+        description: "Une erreur inattendue est survenue.",
         variant: "destructive"
       });
     }
+  };
+
+  // CSV parsing function
+  const parseCSVToSubjects = (csvText: string): any[] => {
+    const lines = csvText.split('\n').filter(line => line.trim());
+
+    if (lines.length <= 1) {
+      return [];
+    }
+
+    const headers = lines[0].split(',').map(header =>
+      header.trim().toLowerCase().replace(/\s+/g, '')
+    );
+
+    const subjects = [];
+    const errors: string[] = [];
+
+    // Valid enums from schema
+    const validLevels = [
+      '6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Terminale',
+      'Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth', 'Upper Sixth'
+    ];
+
+    const validSystems = ['francophone', 'anglophone', 'bilingue', 'both'];
+
+    const validSpecialties = [
+      'A', 'B', 'C', 'D', 'E', 'F', 'F1', 'F2', 'F3', 'F4', 'G1', 'G2', 'G3', 'TI',
+      'Arts', 'Commercial', 'Industrial', 'Science', 'GCE A-Level Arts', 'GCE A-Level Science'
+    ];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const values = parseCSVLine(line);
+      const subjectData: any = {};
+      const rowErrors: string[] = [];
+
+      headers.forEach((header, index) => {
+        const value = values[index]?.trim() || '';
+
+        switch (header) {
+          case 'name':
+            subjectData.name = value;
+            if (!value || value.length > 100) {
+              rowErrors.push(`Name is required and must be ≤100 characters (row ${i + 1})`);
+            }
+            break;
+          case 'code':
+            subjectData.code = value.toUpperCase();
+            if (!value || value.length > 10) {
+              rowErrors.push(`Code is required and must be ≤10 characters (row ${i + 1})`);
+            }
+            break;
+          case 'year':
+            subjectData.year = value;
+            if (!value || !/^\d{4}-\d{4}$/.test(value)) {
+              rowErrors.push(`Year must be in format YYYY-YYYY (row ${i + 1})`);
+            }
+            break;
+          case 'description':
+            subjectData.description = value;
+            if (value.length > 500) {
+              rowErrors.push(`Description must be ≤500 characters (row ${i + 1})`);
+            }
+            break;
+          case 'weeklyhours':
+            const weeklyHours = Number(value);
+            if (isNaN(weeklyHours) || weeklyHours < 1 || weeklyHours > 20) {
+              rowErrors.push(`Weekly hours must be between 1-20 (row ${i + 1})`);
+            } else {
+              subjectData.weeklyHours = weeklyHours;
+            }
+            break;
+          case 'maintteacher':
+          case 'maintteacherid':
+          case 'mainTeacher':
+            if (value) {
+              console.log("value T", value)
+              subjectData.mainTeacher = value;
+            }
+            break;
+          case 'teachers':
+            if (value) {
+              const teacherIds = value.split(';').map((id: string) => id.trim()).filter((id: string) => id);
+              subjectData.teachers = teacherIds;
+            } else {
+              subjectData.teachers = [];
+            }
+            break;
+          case 'levels':
+            if (value) {
+              const levels = value.split(';').map((level: string) => level.trim()).filter((level: string) => level);
+              const invalidLevels = levels.filter((level: string) => !validLevels.includes(level));
+              if (invalidLevels.length > 0) {
+                rowErrors.push(`Invalid levels: ${invalidLevels.join(', ')}. Valid: ${validLevels.join(', ')} (row ${i + 1})`);
+              } else {
+                subjectData.levels = levels;
+              }
+            } else {
+              subjectData.levels = [];
+            }
+            break;
+          case 'coefficients':
+            if (value) {
+              try {
+                subjectData.coefficients = value.split(';').map((coef: string) => {
+                  const [level, coefValue] = coef.split(':');
+                  const numericValue = Number(coefValue?.trim());
+
+                  if (!level?.trim() || isNaN(numericValue) || numericValue < 0.5 || numericValue > 10) {
+                    rowErrors.push(`Invalid coefficient format or value: ${coef}. Must be Level:Value (0.5-10) (row ${i + 1})`);
+                    return null;
+                  }
+
+                  return {
+                    level: level.trim(),
+                    value: numericValue
+                  };
+                }).filter((coef: any) => coef !== null);
+              } catch (e) {
+                rowErrors.push(`Invalid coefficients format (row ${i + 1})`);
+                subjectData.coefficients = [];
+              }
+            } else {
+              subjectData.coefficients = [];
+            }
+            break;
+          case 'educationsystem':
+            subjectData.educationSystem = value.toLowerCase();
+            if (value && !validSystems.includes(value.toLowerCase())) {
+              rowErrors.push(`Invalid education system: ${value}. Valid: ${validSystems.join(', ')} (row ${i + 1})`);
+            } else {
+              subjectData.educationSystem = value || 'bilingue';
+            }
+            break;
+          case 'specialties':
+            if (value) {
+              const specialties = value.split(';').map((spec: string) => spec.trim()).filter((spec: string) => spec);
+              const invalidSpecialties = specialties.filter((spec: string) => !validSpecialties.includes(spec));
+              if (invalidSpecialties.length > 0) {
+                rowErrors.push(`Invalid specialties: ${invalidSpecialties.join(', ')} (row ${i + 1})`);
+              } else {
+                subjectData.specialties = specialties;
+              }
+            } else {
+              subjectData.specialties = [];
+            }
+            break;
+          case 'isrequired':
+          case 'required':
+            subjectData.isRequired = value.toLowerCase() === 'true' || value === '1';
+            break;
+          case 'isactive':
+          case 'active':
+            subjectData.isActive = value.toLowerCase() !== 'false' && value !== '0';
+            break;
+          case 'color':
+            if (value && !/^#[0-9A-F]{6}$/i.test(value)) {
+              rowErrors.push(`Invalid color format: ${value}. Must be #RRGGBB (row ${i + 1})`);
+            } else {
+              subjectData.color = value || '#3B82F6';
+            }
+            break;
+        }
+      });
+
+      // Validate level-system compatibility
+      if (subjectData.levels && subjectData.levels.length > 0 && subjectData.educationSystem) {
+        const incompatibleLevels = subjectData.levels.filter((level: string) => {
+          const francophoneLevels = ['6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Terminale'];
+          const anglophoneLevels = ['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth', 'Upper Sixth'];
+
+          if (subjectData.educationSystem === 'francophone' && !francophoneLevels.includes(level)) {
+            return true;
+          }
+          if (subjectData.educationSystem === 'anglophone' && !anglophoneLevels.includes(level)) {
+            return true;
+          }
+          return false;
+        });
+
+        if (incompatibleLevels.length > 0) {
+          rowErrors.push(`Levels ${incompatibleLevels.join(', ')} are incompatible with ${subjectData.educationSystem} system (row ${i + 1})`);
+        }
+      }
+
+      // Validate required fields
+      if (!subjectData.name) {
+        rowErrors.push(`Name is required (row ${i + 1})`);
+      }
+      if (!subjectData.code) {
+        rowErrors.push(`Code is required (row ${i + 1})`);
+      }
+      if (!subjectData.year) {
+        rowErrors.push(`Year is required (row ${i + 1})`);
+      }
+      console.log("subjectData", i + 1, " Test ", subjectData)
+      if (!subjectData.mainTeacher) {
+        rowErrors.push(`Main teacher is required (row ${i + 1})`);
+      }
+
+      if (rowErrors.length === 0) {
+        // Set default values
+        subjectData.weeklyHours = subjectData.weeklyHours || 4;
+        subjectData.isActive = subjectData.isActive !== undefined ? subjectData.isActive : true;
+        subjectData.isRequired = subjectData.isRequired || false;
+        subjectData.educationSystem = subjectData.educationSystem || 'bilingue';
+        subjectData.color = subjectData.color || '#3B82F6';
+        subjectData.teachers = subjectData.teachers || [];
+        subjectData.levels = subjectData.levels || [];
+        subjectData.specialties = subjectData.specialties || [];
+        subjectData.coefficients = subjectData.coefficients || [];
+
+        subjects.push(subjectData);
+      } else {
+        errors.push(...rowErrors);
+      }
+    }
+
+    // Show validation errors
+    if (errors.length > 0) {
+      toast({
+        title: "Erreurs de validation",
+        description: `${errors.length} erreur(s) trouvée(s) dans le fichier CSV`,
+        variant: "destructive"
+      });
+      console.error('CSV Validation errors:', errors);
+    }
+
+    return subjects;
+  };
+
+  // Helper function to parse CSV lines with quoted values
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    result.push(current);
+    return result;
   };
 
   const getStatusBadge = (isActive: boolean) => {
@@ -286,14 +673,17 @@ const Subjects: React.FC = () => {
 
   const filteredSubjects = subjects.filter((subject) => {
     const matchesSearch = (subject.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (subject.code || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (subject.teacher || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'active' && subject.isActive) ||
-                         (filterStatus === 'inactive' && !subject.isActive);
-    const matchesSystem = filterSystem === 'all' || 
-                         subject.educationSystem === filterSystem;
-    return matchesSearch && matchesStatus && matchesSystem;
+      (subject.code || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (subject.teacher || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' ||
+      (filterStatus === 'active' && subject.isActive) ||
+      (filterStatus === 'inactive' && !subject.isActive);
+    const matchesSystem = filterSystem === 'all' ||
+      subject.educationSystem === filterSystem;
+    const matchesYear = filterAcademicYear === 'all' ||
+      subject.year === filterAcademicYear;
+
+    return matchesSearch && matchesStatus && matchesSystem && matchesYear;
   });
 
   return (
@@ -304,6 +694,7 @@ const Subjects: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">Gestion des matières</h1>
           <p className="text-muted-foreground mt-2">
             {subjects.length} matières • {filteredSubjects.length} affichées
+            {filterAcademicYear !== 'all' && ` • Année: ${filterAcademicYear}`}
             {isLoading && ' • Chargement...'}
           </p>
         </div>
@@ -316,7 +707,7 @@ const Subjects: React.FC = () => {
             <Upload className="w-4 h-4 mr-2" />
             Importer CSV
           </Button>
-          <Button 
+          <Button
             className="bg-primary hover:bg-primary/90"
             onClick={() => handleOpenModal('create')}
           >
@@ -329,7 +720,7 @@ const Subjects: React.FC = () => {
       {/* Filtres */}
       <Card className="shadow-sm">
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -338,6 +729,27 @@ const Subjects: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
+            </div>
+
+            {/* Academic Year Filter */}
+            <div className="space-y-2">
+              <Label>Année académique</Label>
+              <Select
+                value={filterAcademicYear}
+                onValueChange={setFilterAcademicYear}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionnez une année" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les années</SelectItem>
+                  {academicYears?.map((year) => (
+                    <SelectItem key={year.name} value={year.name}>
+                      {year.name} {year.isCurrent && '(Actuelle)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -383,32 +795,32 @@ const Subjects: React.FC = () => {
               <Card key={subject.id} className="hover:shadow-md transition-shadow group">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between mb-2">
-                    <div 
+                    <div
                       className="w-40 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm"
                       style={{ backgroundColor: subject.color }}
                     >
                       {subject.code}
                     </div>
                     <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={() => handleOpenModal('view', subject)}
                         className="h-8 w-8 p-0"
                       >
                         <Eye className="w-3 h-3" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={() => handleOpenModal('edit', subject)}
                         className="h-8 w-8 p-0"
                       >
                         <Edit className="w-3 h-3" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                         onClick={() => handleDeleteSubject(subject)}
                       >
@@ -430,11 +842,6 @@ const Subjects: React.FC = () => {
                 </CardHeader>
 
                 <CardContent className="space-y-3 pt-0">
-                  {/* <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Coefficient:</span>
-                    <span className="font-semibold text-primary">{subject.coefficient}</span>
-                  </div> */}
-                  
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Heures/semaine:</span>
                     <span>{subject.weeklyHours}h</span>
@@ -477,7 +884,7 @@ const Subjects: React.FC = () => {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Aucune matière trouvée</h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm || filterStatus !== 'all' || filterSystem !== 'all' 
+                  {searchTerm || filterStatus !== 'all' || filterSystem !== 'all' || filterAcademicYear !== 'all'
                     ? "Aucune matière ne correspond à vos critères de recherche."
                     : "Aucune matière n'a été créée pour le moment."
                   }
@@ -498,6 +905,7 @@ const Subjects: React.FC = () => {
         onClose={handleCloseModal}
         onSave={handleSaveSubject}
         subject={subjectModal.subject}
+        academicYear={academicYears?.find(a => a.isCurrent)?.name}
         mode={subjectModal.mode}
         coefData={subjectModal?.subject?.coefficients}
       />

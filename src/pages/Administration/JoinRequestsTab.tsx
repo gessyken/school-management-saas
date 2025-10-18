@@ -73,13 +73,13 @@ const JoinRequestsTab: React.FC<JoinRequestsTabProps> = ({
   const loadData = async () => {
     setIsLoading(true);
     try {
-      if (activeTab === 'requests') {
+      // if (activeTab === 'requests') {
         const requests = await joinRequestService.getJoinRequests(currentSchool.id);
         setJoinRequests(requests);
-      } else {
+      // } else {
         const invites = await joinRequestService.getInvitationsBySchool(currentSchool.id);
         setInvitations(invites);
-      }
+      // }
     } catch (error) {
       console.error('Error loading data:', error);
       toast({

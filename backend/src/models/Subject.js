@@ -29,7 +29,7 @@ const subjectSchema = new mongoose.Schema({
   code: {
     type: String,
     required: true,
-    unique: true,
+    // unique: true,
     uppercase: true,
     trim: true,
     maxlength: 10
@@ -130,7 +130,7 @@ const subjectSchema = new mongoose.Schema({
 });
 
 // Index for efficient queries
-subjectSchema.index({ school: 1, code: 1 }, { unique: true });
+subjectSchema.index({ school: 1, code: 1 ,year: 1}, { unique: true });
 subjectSchema.index({ school: 1, name: 1 });
 subjectSchema.index({ school: 1, isActive: 1 });
 subjectSchema.index({ school: 1, levels: 1 });

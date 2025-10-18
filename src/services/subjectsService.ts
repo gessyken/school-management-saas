@@ -84,7 +84,7 @@ export const subjectsService = {
   },
 
   async updateSubject(id: string, subjectData: any): Promise<any> {
-   console.log("here")
+    console.log("here")
     try {
       const payload = {
         name: subjectData.name,
@@ -108,7 +108,11 @@ export const subjectsService = {
       throw error;
     }
   },
-
+  // In your subjectsService.ts
+  async createManySubjects(subjectsArray: any[]) {
+    const response = await api.post('/subjects/bulk', subjectsArray);
+    return response.data;
+  },
   async bulkUpdateSubjects(subjectIds: string[], updates: any): Promise<any> {
     try {
       const res = await api.patch('/subjects/bulk/update', {
@@ -151,7 +155,7 @@ export const subjectsService = {
   // Helper method to get coefficient for a specific level/specialty
   getCoefficientForLevel(subject: any, level: string, specialty?: string): number {
     if (!subject?.coefficients) return subject?.coefficient || 1;
-    
+
     // First try exact match with specialty
     if (specialty) {
       const exactMatch = subject.coefficients.find(
@@ -159,12 +163,12 @@ export const subjectsService = {
       );
       if (exactMatch) return exactMatch.value;
     }
-    
+
     // Then try level-only coefficient
     const levelMatch = subject.coefficients.find(
       (c: any) => c.level === level && !c.specialty
     );
-    
+
     return levelMatch ? levelMatch.value : (subject.coefficient || 1);
   }
 };

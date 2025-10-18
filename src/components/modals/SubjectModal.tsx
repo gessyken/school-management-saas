@@ -49,6 +49,7 @@ interface SubjectModalProps {
   subject?: Subject | null | any;
   mode: 'create' | 'edit' | 'view';
   coefData?: any;
+  academicYear?: string;
 }
 
 const SubjectModal: React.FC<SubjectModalProps> = ({
@@ -57,7 +58,8 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
   onSave,
   subject,
   mode,
-  coefData
+  coefData,
+  academicYear
 
 }) => {
   const [formData, setFormData] = useState<Subject>({
@@ -65,7 +67,7 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
     name: '',
     code: '',
     description: '',
-    year: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
+    year: academicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
     coefficient: 1,
     coefficients: [],
     weeklyHours: 4,
@@ -79,7 +81,7 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
     isActive: true,
     color: '#3B82F6',
   });
-
+  console.log("academicYear",academicYear)
   const [teacherOptions, setTeacherOptions] = useState<TeacherOption[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -114,8 +116,8 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
         coefficients: Array.isArray(subject.coefficients) ? subject.coefficients : [],
         weeklyHours: subject.weeklyHours || 4,
         teacher: subject.teacher || '',
-        mainTeacher: subject.mainTeacher.id || '',
-        teachers: Array.isArray(subject.teachers) ? subject.teachers : [],
+        mainTeacher: subject?.mainTeacher?.id || '',
+        teachers: Array.isArray(subject?.teachers) ? subject?.teachers : [],
         levels: Array.isArray(subject.levels) ? subject.levels : [],
         educationSystem: subject.educationSystem || 'bilingue',
         specialties: Array.isArray(subject.specialties) ? subject.specialties : Array.isArray(subject.specialty) ? subject.specialty : [],
@@ -129,7 +131,7 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
         name: '',
         code: '',
         description: '',
-        year: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
+        year: academicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
         coefficient: 1,
         coefficients: [],
         weeklyHours: 4,
@@ -443,6 +445,7 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
                 <Label htmlFor="year">Année scolaire</Label>
                 <Input
                   id="year"
+                  disabled
                   value={formData.year}
                   onChange={(e) => handleChange('year', e.target.value)}
                   placeholder="ex: 2024-2025"

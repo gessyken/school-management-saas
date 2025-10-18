@@ -17,6 +17,9 @@ import { useToast } from '@/hooks/use-toast';
 import { classesService } from '@/services/classesService';
 import { mapBackendToFrontend, mapFrontendToBackend } from '@/utils/classMapping';
 import BulkClassModal from '@/components/modals/BulkClassModal';
+import { AcademicYear } from '@/types/settings';
+import settingsService from '@/services/settingsService';
+import { Label } from '@/components/ui/label';
 
 interface ClassRoom {
   id: string;
@@ -55,6 +58,7 @@ interface ClassStatistics {
 const Classes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('all');
+  const [filterAcademicYear, setFilterAcademicYear] = useState('all');
   const [filterSystem, setFilterSystem] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [classes, setClasses] = useState<ClassRoom[]>([]);
@@ -93,21 +97,57 @@ const Classes: React.FC = () => {
   });
 
   const { toast } = useToast();
+  const [currentAcademicYears, setCurrentAcademicYears] = useState<AcademicYear>();
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+
+  // Load academic years on component mount
+  useEffect(() => {
+    getCurrentAcademicYear();
+  }, []);
+
+  const getCurrentAcademicYear = async () => {
+    try {
+      const academicYearsData = await settingsService.getAcademicYears();
+      console.log("academicYearsData", academicYearsData);
+      setAcademicYears(academicYearsData);
+      const currentYear = academicYearsData.find(t => t.isCurrent);
+      setCurrentAcademicYears(currentYear);
+
+      // Set the current academic year as default filter
+      if (currentYear) {
+        setFilterAcademicYear(currentYear.name);
+      }
+    } catch (error) {
+      console.error('Error loading Annee:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les années académiques',
+        variant: "destructive"
+      });
+    }
+  };
 
   const loadClasses = async (filters = {}) => {
     try {
       setIsLoading(true);
-      const backendData = await classesService.getClasses({
+
+      // Prepare filter parameters including academic year
+      const filterParams = {
         search: searchTerm || undefined,
         level: filterLevel !== 'all' ? filterLevel : undefined,
         educationSystem: filterSystem !== 'all' ? filterSystem : undefined,
         status: filterStatus !== 'all' ? filterStatus : undefined,
+        year: filterAcademicYear !== 'all' ? filterAcademicYear : undefined,
         ...filters
-      });
-      console.log("backendData", backendData)
+      };
+
+      console.log("Filter params:", filterParams);
+
+      const backendData = await classesService.getClasses(filterParams);
+      console.log("backendData", backendData);
 
       const frontendData = backendData.map(mapBackendToFrontend);
-      console.log("frontendData", frontendData)
+      console.log("frontendData", frontendData);
       setClasses(frontendData);
     } catch (error) {
       console.error('Error loading classes:', error);
@@ -136,19 +176,20 @@ const Classes: React.FC = () => {
     setIsRefreshing(false);
   };
 
+  // Load data on component mount
   useEffect(() => {
     loadClasses();
     loadStatistics();
   }, []);
 
-  // Debounced search effect
+  // Debounced search effect with all filters
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       loadClasses();
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, filterLevel, filterSystem, filterStatus]);
+  }, [searchTerm, filterLevel, filterSystem, filterStatus, filterAcademicYear]);
 
   const levels = [
     'Tous les niveaux',
@@ -181,6 +222,7 @@ const Classes: React.FC = () => {
       const backendData = mapFrontendToBackend(classData);
 
       if (classModal.mode === 'create') {
+        backendData.year = currentAcademicYears.name
         const response = await classesService.createClass(backendData);
         const newClass = response.class || response;
         const frontendClass = mapBackendToFrontend(newClass);
@@ -294,7 +336,7 @@ const Classes: React.FC = () => {
 
       const backendItems = items.map((it) => ({
         name: it.name,
-        mainTeacher: it.mainTeacher, // Fixed: was it.level, now it.mainTeacher
+        mainTeacher: it.mainTeacher,
         level: it.level,
         section: it.section,
         specialty: it.specialty,
@@ -303,7 +345,7 @@ const Classes: React.FC = () => {
         teacher: it.teacher,
         room: it.room,
         description: it.description,
-        year: it.year || '2024-2025',
+        year: it.year || filterAcademicYear !== 'all' ? filterAcademicYear : '2024-2025',
       }));
 
       console.log('Backend items:', backendItems);
@@ -422,6 +464,7 @@ const Classes: React.FC = () => {
     );
   };
 
+  // Filter classes locally (as fallback if API filtering doesn't work)
   const filteredClasses = classes.filter((classroom) => {
     const matchesSearch = classroom?.name?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
       classroom?.teacher?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
@@ -432,7 +475,10 @@ const Classes: React.FC = () => {
       classroom.educationSystem === filterSystem;
     const matchesStatus = filterStatus === 'all' || filterStatus === 'Tous les statuts' ||
       classroom.status === filterStatus;
-    return matchesSearch && matchesLevel && matchesSystem && matchesStatus;
+    const matchesYear = filterAcademicYear === 'all' ||
+      classroom.year === filterAcademicYear;
+
+    return matchesSearch && matchesLevel && matchesSystem && matchesStatus && matchesYear;
   });
 
   return (
@@ -443,6 +489,7 @@ const Classes: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">Gestion des classes</h1>
           <p className="text-muted-foreground mt-2">
             {statistics?.totalClasses || classes.length} classes • {statistics?.totalStudents || classes.reduce((acc, c) => acc + c.currentStudents, 0)} élèves au total
+            {filterAcademicYear !== 'all' && ` • Année: ${filterAcademicYear}`}
             {isLoading && ' • Chargement...'}
           </p>
         </div>
@@ -545,6 +592,27 @@ const Classes: React.FC = () => {
               />
             </div>
 
+            {/* Academic Year Filter */}
+            <div className="space-y-2">
+              <Label>Année académique</Label>
+              <Select
+                value={filterAcademicYear}
+                onValueChange={setFilterAcademicYear}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionnez une année" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les années</SelectItem>
+                  {academicYears?.map((year) => (
+                    <SelectItem key={year.name} value={year.name}>
+                      {year.name} {year.isCurrent && '(Actuelle)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <Select value={filterLevel} onValueChange={setFilterLevel}>
               <SelectTrigger>
                 <SelectValue placeholder="Niveau" />
@@ -583,15 +651,11 @@ const Classes: React.FC = () => {
                 ))}
               </SelectContent>
             </Select>
-
-            <Button variant="outline" className="w-full" onClick={() => loadClasses()}>
-              <Filter className="w-4 h-4 mr-2" />
-              Filtrer
-            </Button>
           </div>
         </CardContent>
       </Card>
 
+      {/* Rest of the component remains the same... */}
       {/* Grille des classes */}
       {isLoading ? (
         <div className="flex justify-center items-center py-12">
@@ -787,7 +851,7 @@ const Classes: React.FC = () => {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Aucune classe trouvée</h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm || filterLevel !== 'all' || filterSystem !== 'all' || filterStatus !== 'all'
+                  {searchTerm || filterLevel !== 'all' || filterSystem !== 'all' || filterStatus !== 'all' || filterAcademicYear !== 'all'
                     ? "Aucune classe ne correspond à vos critères de recherche."
                     : "Aucune classe n'a été créée pour le moment."
                   }
@@ -805,6 +869,7 @@ const Classes: React.FC = () => {
       {/* Modales */}
       <ClassModal
         isOpen={classModal.isOpen}
+        currentAcademicYears={currentAcademicYears?.name}
         onClose={handleCloseModal}
         onSave={handleSaveClass}
         classData={classModal.classData}
@@ -822,6 +887,7 @@ const Classes: React.FC = () => {
 
       <BulkClassModal
         isOpen={bulkModal.isOpen}
+        academicYear={currentAcademicYears?.name}
         onClose={() => setBulkModal((s) => ({ ...s, isOpen: false }))}
         onSave={handleBulkCreate}
         isSubmitting={bulkModal.isSubmitting}

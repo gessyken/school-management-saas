@@ -219,9 +219,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       const { token,newSchool } = response.data;
-      console.log("response.data",response.data)
+      newSchool.id = newSchool._id
       // Mettre à jour le token JWT
       localStorage.setItem('token', token);
+      console.log("response.data",newSchool)
       
       // Mettre à jour les données d'authentification locales
       const authData = JSON.parse(localStorage.getItem('schoolAuth') || '{}');

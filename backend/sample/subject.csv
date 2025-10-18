@@ -1,0 +1,6 @@
+name,code,year,description,weeklyHours,maintteacherid,teachers,levels,coefficients,educationSystem,specialties,isRequired,isActive,color
+Mathematics,MAT001,2024-2025,Advanced Mathematics course,6,68d09e48ba4b96cf8edda7dc,68d09e48ba4b96cf8edda7dd;68d09e48ba4b96cf8edda7de,Form 1;Form 2;Form 3,Form 1:4;Form 2:4;Form 3:4,anglophone,Science;Commercial,false,true,#3B82F6
+Physique,PHY001,2024-2025,Cours de physique fondamentale,4,68d09e48ba4b96cf8edda7df,,6ème;5ème;4ème,6ème:3;5ème:3;4ème:3,francophone,A;B,true,true,#EF4444
+History,HIS001,2024-2025,World history studies,3,68d09e48ba4b96cf8edda7e0,68d09e48ba4b96cf8edda7e1,Form 4;Form 5;Lower Sixth,Form 4:2;Form 5:2;Lower Sixth:2,bilingue,Arts;Commercial,false,true,#10B981
+Français,FRN001,2024-2025,Langue et littérature française,5,68d09e48ba4b96cf8edda7e2,,2nde;1ère;Terminale,2nde:3;1ère:3;Terminale:3,francophone,A;C;E,true,true,#8B5CF6
+Chemistry,CHEM001,2024-2025,Chemical principles and reactions,4,68d09e48ba4b96cf8edda7e3,68d09e48ba4b96cf8edda7e4,Form 3;Form 4;Form 5,Form 3:3;Form 4:3;Form 5:3,anglophone,Science;Industrial,true,true,#F59E0B

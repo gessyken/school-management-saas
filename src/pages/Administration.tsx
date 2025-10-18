@@ -11,6 +11,7 @@ import JoinRequestsTab from './Administration/JoinRequestsTab';
 import ActivityTab from './Administration/ActivityTab';
 import InviteMemberDialog from './Administration/InviteMemberDialog';
 import StatsCards from './Administration/StatsCards';
+import { joinRequestService } from '@/services/joinRequestService';
 
 interface JoinRequest {
   _id: string;
@@ -36,12 +37,12 @@ const Administration: React.FC = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
-  
+
   // States for real data
   const [members, setMembers] = useState<User[]>([]);
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  
+
   // Stats
   const [stats, setStats] = useState({
     totalMembers: 0,
@@ -56,21 +57,22 @@ const Administration: React.FC = () => {
   }, [currentSchool]);
 
   const loadData = async () => {
-    if (!currentSchool?.id) return;
-    
+    if (!(currentSchool?.id || currentSchool?._id)) return;
+
     setIsLoading(true);
     try {
       // Load members
       const membersData = await usersService.getUsers();
-      const schoolMembers = membersData.filter((u: User) => 
+      const schoolMembers = membersData.filter((u: User) =>
         u.memberships?.some(m => m.school === currentSchool.id && m.status === 'active')
       );
       setMembers(schoolMembers);
 
       // Load join requests (mock for now - would need backend endpoint)
-      const pendingMembers = membersData.filter((u: User) => 
+      const pendingMembers = membersData.filter((u: User) =>
         u.memberships?.some(m => m.school === currentSchool.id && m.status === 'pending')
       );
+      console.log("pendingMembers", pendingMembers)
       const mockRequests: JoinRequest[] = pendingMembers.map(u => ({
         _id: u._id + '_request',
         user: u,
@@ -92,6 +94,8 @@ const Administration: React.FC = () => {
         type: 'user_action' as const
       }));
       setActivityLogs(mockActivity);
+      const requests = await joinRequestService.getJoinRequests(currentSchool.id);
+      const invites = await joinRequestService.getInvitationsBySchool(currentSchool.id);
 
       // Update stats
       setStats({
@@ -99,7 +103,8 @@ const Administration: React.FC = () => {
         activeMembers: schoolMembers.filter(u =>
           u.memberships?.some(m => m.school === currentSchool.id && m.status === 'active')
         ).length,
-        pendingRequests: mockRequests.length,
+        pendingRequests: requests.length + invites.length,
+        // pendingRequests: 0,
         recentActivity: mockActivity.length
       });
 
@@ -160,8 +165,8 @@ const Administration: React.FC = () => {
             Gestion des membres et des demandes d'adhésion
           </p>
         </div>
-        <Button 
-          className="bg-gradient-primary hover:bg-primary-hover" 
+        <Button
+          className="bg-gradient-primary hover:bg-primary-hover"
           onClick={() => setInviteOpen(true)}
         >
           <UserPlus className="w-4 h-4 mr-2" />
@@ -170,7 +175,7 @@ const Administration: React.FC = () => {
       </div>
 
       {/* Invite Member Dialog */}
-      <InviteMemberDialog 
+      <InviteMemberDialog
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         onSuccess={loadData}
@@ -199,7 +204,7 @@ const Administration: React.FC = () => {
 
         {/* Members Tab */}
         <TabsContent value="members">
-          <MembersTab 
+          <MembersTab
             // members={members}
             currentSchool={currentSchool}
             // isLoading={isLoading}
@@ -209,15 +214,15 @@ const Administration: React.FC = () => {
 
         {/* Join Requests Tab */}
         <TabsContent value="requests">
-          <JoinRequestsTab 
-          currentSchool={currentSchool}
+          <JoinRequestsTab
+            currentSchool={currentSchool}
             onRefresh={loadData}
           />
         </TabsContent>
 
         {/* Activity Tab */}
         <TabsContent value="activity">
-          <ActivityTab 
+          <ActivityTab
             activityLogs={activityLogs}
             isLoading={isLoading}
           />
