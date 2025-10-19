@@ -110,9 +110,9 @@ export default function FeesManagement() {
     .filter(student =>
       (academicYear ? student.year === academicYear : true) &&
       (classId ? student.classes?._id === classId : true) &&
-      (student.student?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.student?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.student?.matricule?.toLowerCase().includes(searchTerm.toLowerCase()))
+      (student?.student?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student?.student?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student?.student?.matricule?.toLowerCase().includes(searchTerm.toLowerCase()))
     )
     .map(student => {
       console.log("student.classes", student.classes)

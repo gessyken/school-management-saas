@@ -236,10 +236,10 @@ const AcademicYearOverview: React.FC = () => {
                           </div>
                           <div>
                             <div className="font-medium">
-                              {student?.student.firstName} {student.student.lastName}
+                              {student?.student?.firstName} {student?.student?.lastName}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {student.student.matricule || 'N/A'}
+                              {student?.student?.matricule || 'N/A'}
                             </div>
                           </div>
                         </div>

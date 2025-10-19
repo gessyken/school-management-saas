@@ -235,9 +235,9 @@ export default function ClassmentManagement() {
 
     // Filter students based on search
     const filteredStudents = rankedStudents.filter(student =>
-        student.student?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.student?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.student?.matricule?.toLowerCase().includes(searchTerm.toLowerCase())
+        student?.student?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student?.student?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student?.student?.matricule?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const {
@@ -620,13 +620,13 @@ export default function ClassmentManagement() {
                                                 </div>
                                                 <div>
                                                     <div className="font-medium">
-                                                        {student.student?.firstName} {student.student?.lastName}
+                                                        {student?.student?.firstName} {student?.student?.lastName}
                                                     </div>
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell className="font-mono text-sm">
-                                            {student.student?.matricule}
+                                            {student?.student?.matricule}
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center space-x-2">
@@ -738,17 +738,17 @@ export default function ClassmentManagement() {
                                             </div>
                                         </div>
                                         <div className="font-semibold">
-                                            {student.student?.firstName} {student.student?.lastName}
+                                            {student?.student?.firstName} {student?.student?.lastName}
                                         </div>
                                         <div className="text-sm text-muted-foreground">
-                                            {student.student?.matricule}
+                                            {student?.student?.matricule}
                                         </div>
                                         <div className="text-xs text-muted-foreground mt-1">
-                                            {student.classes?.name}
+                                            {student?.classes?.name}
                                         </div>
                                         <div className="mt-2">
                                             <Badge className={`${student.performance.bg} ${student.performance.color} border-0 text-xs`}>
-                                                {student.performance.level}
+                                                {student?.performance?.level}
                                             </Badge>
                                         </div>
                                     </div>

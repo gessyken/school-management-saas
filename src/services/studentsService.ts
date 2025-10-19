@@ -1,5 +1,45 @@
 import api from '@/lib/api';
 
+// Helper method to handle class assignments for multiple students
+async function handleClassAssignments(createdStudents: any[], originalStudentsData: any[]): Promise<void> {
+  const assignmentPromises = createdStudents.map(async (createdStudent, index) => {
+    const originalData = originalStudentsData[index];
+    const studentId = createdStudent._id || createdStudent.id;
+
+    if (studentId && originalData.classesId) {
+      try {
+        await this.addStudentToClass(studentId, originalData.classesId);
+        console.log(`Successfully assigned student ${studentId} to class ${originalData.classesId}`);
+      } catch (error) {
+        console.warn(`Student ${studentId} created but class assignment failed:`, error);
+        // Don't throw - continue with other assignments
+      }
+    }
+  });
+
+  // Wait for all class assignments to complete (but don't fail the whole operation if some fail)
+  await Promise.allSettled(assignmentPromises);
+}
+
+// Helper method to refetch students after class assignments
+async function refetchStudents(students: any[]): Promise<any[]> {
+  const refetchPromises = students.map(async (student) => {
+    try {
+      const studentId = student._id || student.id;
+      if (studentId) {
+        const res = await api.get(`/students/${studentId}`);
+        return res.data?.student || res.data;
+      }
+      return student; // Return original if no ID
+    } catch (error) {
+      console.warn(`Failed to refetch student ${student._id}:`, error);
+      return student; // Return original on error
+    }
+  });
+
+  return Promise.all(refetchPromises);
+};
+
 export const studentsService = {
   // Get all students with filtering
   async getStudents(filters = {
@@ -197,15 +237,36 @@ export const studentsService = {
   // Bulk create students
   async createManyStudents(studentsData: any[]): Promise<any> {
     try {
+      // Transform all students to backend format
       const transformedStudents = studentsData.map(student =>
         this.transformToBackendFormat(student)
       );
 
+      // Send bulk creation request
       const res = await api.post('/students/bulk', {
         students: transformedStudents
       });
 
-      return res.data;
+      const responseData = res.data;
+
+      // If we have successfully created students, handle class assignments
+      if (responseData.savedStudents && Array.isArray(responseData.savedStudents)) {
+        await handleClassAssignments(responseData.savedStudents, studentsData);
+
+        // Refetch all successfully created students to get updated class information
+        const updatedStudents = await refetchStudents(responseData.savedStudents);
+        responseData.savedStudents = updatedStudents;
+      }
+
+      // Normalize all returned students
+      if (responseData.savedStudents) {
+        responseData.savedStudents = responseData.savedStudents.map((student: any) =>
+          this.normalizeStudent(student)
+        );
+      }
+
+      return responseData;
+
     } catch (error) {
       console.error('Error creating multiple students:', error);
       throw error;
@@ -301,7 +362,6 @@ export const studentsService = {
       age: student.age // Virtual field from schema
     };
   },
-
   // Transform frontend data to backend format
   transformToBackendFormat(studentData: any, isUpdate: boolean = false): any {
     const payload: any = {};
@@ -333,6 +393,7 @@ export const studentsService = {
       parentAddress: 'parentAddress',
       classesId: 'classId',
       class: 'class',
+      matricule: 'matricule',
       status: 'status',
       academicStatus: 'academicStatus',
       average: 'average',

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Filter, Download, Eye, Edit, Trash2, Mail, Phone, Users, BookOpen } from 'lucide-react';
+import { Search, Plus, Filter, Download, Eye, Edit, Trash2, Mail, Phone, Users, BookOpen, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,56 +64,445 @@ const Students: React.FC = () => {
   const [availableClasses, setAvailableClasses] = useState<any[]>(['Toutes les classes']);
   const [availableLevels, setAvailableLevels] = useState<string[]>(['Tous les niveaux']);
   const { toast } = useToast();
-const loadStudents = async () => {
-      try {
-        setIsLoading(true);
-        console.log("selectedClass", selectedClass);
-        const filters = {
-          search: searchTerm,
-          class: selectedClass !== 'all' ? selectedClass : '',
-          status: selectedStatus !== 'all' ? selectedStatus : '',
-          level: selectedLevel !== 'all' ? selectedLevel : '',
-          page: 1,
-          limit: 100
-        };
 
-        const data = await studentsService.getStudents(filters);
-        console.log("data", data)
-        setStudents(data || []);
+  const loadStudents = async () => {
+    try {
+      setIsLoading(true);
+      console.log("selectedClass", selectedClass);
+      const filters = {
+        search: searchTerm,
+        class: selectedClass !== 'all' ? selectedClass : '',
+        status: selectedStatus !== 'all' ? selectedStatus : '',
+        level: selectedLevel !== 'all' ? selectedLevel : '',
+        page: 1,
+        limit: 100
+      };
 
-        // Extract unique classes and levels for filters
-        const uniqueClasses = [
-          { label: 'Toutes les classes', value: 'Toutes les classes' },
-          ...Array.from(
-            data
-              .map(s => s.classesId ? { label: s.class, value: s.classesId } : null)
-              .filter(Boolean)
-              .reduce((map, item) => {
-                if (!map.has(item.value)) {
-                  map.set(item.value, item);
-                }
-                return map;
-              }, new Map())
-              .values()
-          )
-        ]; const uniqueLevels = ['Tous les niveaux', ...new Set(data.map(s => s.level).filter(Boolean))] as string[];
-        console.log("uniqueClasses", uniqueClasses)
-        setAvailableClasses(uniqueClasses);
-        setAvailableLevels(uniqueLevels);
-      } catch (e) {
-        console.error(e);
-        toast({
-          title: 'Données élèves indisponibles',
-          description: 'Les données seront affichées dès qu\'elles seront disponibles.',
-          variant: 'destructive'
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      const data = await studentsService.getStudents(filters);
+      console.log("data", data)
+      setStudents(data || []);
+
+      // Extract unique classes and levels for filters
+      const uniqueClasses = [
+        { label: 'Toutes les classes', value: 'Toutes les classes' },
+        ...Array.from(
+          data
+            .map(s => s.classesId ? { label: s.class, value: s.classesId } : null)
+            .filter(Boolean)
+            .reduce((map, item) => {
+              if (!map.has(item.value)) {
+                map.set(item.value, item);
+              }
+              return map;
+            }, new Map())
+            .values()
+        )
+      ];
+      const uniqueLevels = ['Tous les niveaux', ...new Set(data.map(s => s.level).filter(Boolean))] as string[];
+      console.log("uniqueClasses", uniqueClasses)
+      setAvailableClasses(uniqueClasses);
+      setAvailableLevels(uniqueLevels);
+    } catch (e) {
+      console.error(e);
+      toast({
+        title: 'Données élèves indisponibles',
+        description: 'Les données seront affichées dès qu\'elles seront disponibles.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadStudents();
   }, [searchTerm, selectedClass, selectedStatus, selectedLevel, toast]);
+
+  // CSV Import functionality
+  const handleImport = async () => {
+    try {
+      // Create a file input element
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.csv,.xlsx,.xls';
+      input.style.display = 'none';
+
+      input.onchange = async (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+
+        if (!file) {
+          toast({
+            title: "Aucun fichier sélectionné",
+            description: "Veuillez sélectionner un fichier CSV à importer.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Validate file type
+        const validTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+        if (!validTypes.includes(file.type) && !file.name.match(/\.(csv|xlsx|xls)$/i)) {
+          toast({
+            title: "Format de fichier non supporté",
+            description: "Veuillez sélectionner un fichier CSV ou Excel.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Show loading toast
+        const loadingToast = toast({
+          title: "Import en cours",
+          description: "Traitement du fichier...",
+        });
+
+        try {
+          // Read and parse the file
+          const text = await file.text();
+          const studentsArray = parseCSVToStudents(text);
+
+          if (studentsArray.length === 0) {
+            toast({
+              title: "Aucune donnée valide",
+              description: "Le fichier ne contient aucun élève valide.",
+              variant: "destructive"
+            });
+            return;
+          }
+
+          console.log("Students to import:", studentsArray);
+
+          // Send to backend bulk endpoint
+          const response = await studentsService.createManyStudents(studentsArray);
+
+          // Show success message
+          toast({
+            title: "Import réussi",
+            description: `${response.createdCount || studentsArray.length} élèves importés avec succès.`,
+          });
+
+          // Reload the students list
+          loadStudents();
+
+        } catch (error: any) {
+          console.error('Import error:', error);
+
+          // Handle partial success (207 status)
+          if (error.response?.status === 207) {
+            const errorData = error.response.data;
+            toast({
+              title: "Import partiellement réussi",
+              description: `${errorData.createdCount} élèves créés, ${errorData.errors?.length || 0} erreurs.`,
+              variant: "default"
+            });
+          } else {
+            const errorMessage = error.response?.data?.message || error.message || 'Erreur lors de l\'import du fichier.';
+            toast({
+              title: "Erreur d'import",
+              description: errorMessage,
+              variant: "destructive"
+            });
+          }
+        } finally {
+          // Clean up
+          document.body.removeChild(input);
+        }
+      };
+
+      // Add to DOM and trigger click
+      document.body.appendChild(input);
+      input.click();
+
+    } catch (error) {
+      console.error('Error in handleImport:', error);
+      toast({
+        title: "Erreur d'import",
+        description: "Une erreur inattendue est survenue.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // CSV parsing function
+  const parseCSVToStudents = (csvText: string): any[] => {
+    const lines = csvText.split('\n').filter(line => line.trim());
+
+    if (lines.length <= 1) {
+      return [];
+    }
+
+    const headers = lines[0].split(',').map(header =>
+      header.trim().toLowerCase().replace(/\s+/g, '')
+    );
+
+    const students = [];
+    const errors: string[] = [];
+
+    // Valid values from student modal
+    const validGenders = ['male', 'female', 'other'];
+    const validStatuses = ['active', 'inactive', 'graduated', 'transferred', 'suspended', 'withdrawn'];
+    const validAcademicStatuses = ['regular', 'repeating', 'advanced'];
+    const validEducationSystems = ['francophone', 'anglophone', 'bilingue'];
+    const validLevels = [
+      '6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Terminale',
+      'Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Lower Sixth', 'Upper Sixth'
+    ];
+    const validBloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const values = parseCSVLine(line);
+      const studentData: any = {};
+      const rowErrors: string[] = [];
+
+      headers.forEach((header, index) => {
+        const value = values[index]?.trim() || '';
+
+        switch (header) {
+          case 'firstname':
+          case 'prenom':
+            studentData.firstName = value;
+            if (!value) {
+              rowErrors.push(`Le prénom est requis (ligne ${i + 1})`);
+            }
+            break;
+          case 'lastname':
+          case 'nom':
+            studentData.lastName = value;
+            if (!value) {
+              rowErrors.push(`Le nom est requis (ligne ${i + 1})`);
+            }
+            break;
+          case 'email':
+            studentData.email = value;
+            if (!value) {
+              rowErrors.push(`L'email est requis (ligne ${i + 1})`);
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+              rowErrors.push(`Email invalide: ${value} (ligne ${i + 1})`);
+            }
+            break;
+          case 'phone':
+          case 'telephone':
+            studentData.phone = value;
+            if (!value) {
+              rowErrors.push(`Le téléphone est requis (ligne ${i + 1})`);
+            }
+            break;
+          case 'gender':
+          case 'genre':
+            studentData.gender = value.toLowerCase();
+            if (value && !validGenders.includes(value.toLowerCase())) {
+              rowErrors.push(`Genre invalide: ${value}. Valides: ${validGenders.join(', ')} (ligne ${i + 1})`);
+            }
+            break;
+          case 'birthdate':
+          case 'datenaissance':
+            if (value) {
+              const date = new Date(value);
+              if (isNaN(date.getTime())) {
+                rowErrors.push(`Date de naissance invalide: ${value} (ligne ${i + 1})`);
+              } else {
+                studentData.birthDate = date.toISOString().split('T')[0];
+              }
+            }
+            break;
+          case 'birthplace':
+          case 'lieunaissance':
+            studentData.birthPlace = value;
+            break;
+          case 'nationality':
+          case 'nationalite':
+            studentData.nationality = value || 'Cameroonian';
+            break;
+          case 'address':
+          case 'adresse':
+            studentData.address = value;
+            break;
+          case 'city':
+          case 'ville':
+            studentData.city = value;
+            break;
+          case 'level':
+          case 'niveau':
+            studentData.level = value;
+            if (value && !validLevels.includes(value)) {
+              rowErrors.push(`Niveau invalide: ${value}. Valides: ${validLevels.join(', ')} (ligne ${i + 1})`);
+            }
+            break;
+          case 'class':
+          case 'classe':
+            studentData.class = value;
+            break;
+          case 'classesid':
+          case 'classid':
+            studentData.classesId = value;
+            break;
+          case 'status':
+          case 'statut':
+            studentData.status = value.toLowerCase() || 'active';
+            if (!validStatuses.includes(value.toLowerCase())) {
+              rowErrors.push(`Statut invalide: ${value}. Valides: ${validStatuses.join(', ')} (ligne ${i + 1})`);
+            }
+            break;
+          case 'academicstatus':
+          case 'statutacademique':
+            studentData.academicStatus = value.toLowerCase() || 'regular';
+            if (value && !validAcademicStatuses.includes(value.toLowerCase())) {
+              rowErrors.push(`Statut académique invalide: ${value}. Valides: ${validAcademicStatuses.join(', ')} (ligne ${i + 1})`);
+            }
+            break;
+          case 'enrollmentdate':
+          case 'dateinscription':
+            if (value) {
+              const date = new Date(value);
+              if (isNaN(date.getTime())) {
+                rowErrors.push(`Date d'inscription invalide: ${value} (ligne ${i + 1})`);
+              } else {
+                studentData.enrollmentDate = date.toISOString().split('T')[0];
+              }
+            } else {
+              studentData.enrollmentDate = new Date().toISOString().split('T')[0];
+            }
+            break;
+          case 'matricule':
+          case 'matricule':
+            studentData.matricule = value;
+            break;
+          case 'parentname':
+          case 'nomparent':
+            studentData.parentName = value;
+            break;
+          case 'parentemail':
+          case 'emailparent':
+            studentData.parentEmail = value;
+            break;
+          case 'parentphone':
+          case 'telephoneparent':
+            studentData.parentPhone = value;
+            break;
+          case 'parentoccupation':
+          case 'professionparent':
+            studentData.parentOccupation = value;
+            break;
+          case 'parentaddress':
+          case 'adresseparent':
+            studentData.parentAddress = value;
+            break;
+          case 'bloodgroup':
+          case 'groupesanguin':
+            studentData.bloodGroup = value;
+            if (value && !validBloodGroups.includes(value)) {
+              rowErrors.push(`Groupe sanguin invalide: ${value}. Valides: ${validBloodGroups.join(', ')} (ligne ${i + 1})`);
+            }
+            break;
+          case 'allergies':
+          case 'allergies':
+            if (value) {
+              studentData.allergies = value.split(';').map((a: string) => a.trim()).filter(Boolean);
+            } else {
+              studentData.allergies = [];
+            }
+            break;
+          case 'medicalconditions':
+          case 'conditionsmedicales':
+            if (value) {
+              studentData.medicalConditions = value.split(';').map((m: string) => m.trim()).filter(Boolean);
+            } else {
+              studentData.medicalConditions = [];
+            }
+            break;
+          case 'emergencycontactname':
+          case 'nomcontacturgence':
+            if (!studentData.emergencyContact) studentData.emergencyContact = {};
+            studentData.emergencyContact.name = value;
+            break;
+          case 'emergencycontactrelationship':
+          case 'relationcontacturgence':
+            if (!studentData.emergencyContact) studentData.emergencyContact = {};
+            studentData.emergencyContact.relationship = value;
+            break;
+          case 'emergencycontactphone':
+          case 'telephonecontacturgence':
+            if (!studentData.emergencyContact) studentData.emergencyContact = {};
+            studentData.emergencyContact.phone = value;
+            break;
+        }
+      });
+
+      // Validate required fields
+      if (!studentData.firstName) {
+        rowErrors.push(`Le prénom est requis (ligne ${i + 1})`);
+      }
+      if (!studentData.lastName) {
+        rowErrors.push(`Le nom est requis (ligne ${i + 1})`);
+      }
+      if (!studentData.email) {
+        rowErrors.push(`L'email est requis (ligne ${i + 1})`);
+      }
+      if (!studentData.phone) {
+        rowErrors.push(`Le téléphone est requis (ligne ${i + 1})`);
+      }
+
+      if (rowErrors.length === 0) {
+        // Set default values
+        studentData.name = `${studentData.firstName} ${studentData.lastName}`.trim();
+        studentData.status = studentData.status || 'active';
+        studentData.academicStatus = studentData.academicStatus || 'regular';
+        studentData.enrollmentDate = studentData.enrollmentDate || new Date().toISOString().split('T')[0];
+        studentData.nationality = studentData.nationality || 'Cameroonian';
+        studentData.isActive = studentData.isActive !== undefined ? studentData.isActive : true;
+        studentData.allergies = studentData.allergies || [];
+        studentData.medicalConditions = studentData.medicalConditions || [];
+        studentData.emergencyContact = studentData.emergencyContact || { name: '', relationship: '', phone: '' };
+        if (!studentData.matricule) {
+          const timestamp = Date.now().toString().slice(-6);
+          const counter = ((i + 1) % 1000).toString().padStart(3, '0');
+          studentData.matricule = `MAT-${timestamp}${counter}`;
+        }
+        students.push(studentData);
+      } else {
+        errors.push(...rowErrors);
+      }
+    }
+
+    // Show validation errors
+    if (errors.length > 0) {
+      toast({
+        title: "Erreurs de validation",
+        description: `${errors.length} erreur(s) trouvée(s) dans le fichier CSV`,
+        variant: "destructive"
+      });
+      console.error('CSV Validation errors:', errors);
+    }
+
+    return students;
+  };
+
+  // Helper function to parse CSV lines with quoted values
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    result.push(current);
+    return result;
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -177,7 +566,6 @@ const loadStudents = async () => {
 
   const handleSaveStudent = async (studentData: any) => {
     try {
-      // console.log("studentData", studentData)
       if (studentModal.mode === 'create') {
         const newStudent = await studentsService.createStudent(studentData);
         setStudents(prev => [...prev, newStudent]);
@@ -285,6 +673,10 @@ const loadStudents = async () => {
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="w-4 h-4 mr-2" />
             Exporter
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleImport}>
+            <Upload className="w-4 h-4 mr-2" />
+            Importer CSV
           </Button>
           <Button
             className="bg-gradient-primary hover:bg-primary-hover"

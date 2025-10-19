@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Plus, Search, Users, BookOpen, TrendingUp, Calendar, Eye, Edit,
   Settings, Trash2, Upload, RefreshCw, BarChart3, Filter, Download,
@@ -20,6 +20,7 @@ import BulkClassModal from '@/components/modals/BulkClassModal';
 import { AcademicYear } from '@/types/settings';
 import settingsService from '@/services/settingsService';
 import { Label } from '@/components/ui/label';
+import { subjectsService } from '@/services/subjectsService';
 
 interface ClassRoom {
   id: string;
@@ -40,6 +41,7 @@ interface ClassRoom {
   status?: string;
   year?: string;
   description?: string;
+  mainTeacher?: any;
 }
 
 interface ClassStatistics {
@@ -54,7 +56,27 @@ interface ClassStatistics {
   systemBreakdown: Record<string, any>;
   levelBreakdown: Record<string, any>;
 }
-
+interface SubjectItem {
+  id?: string;
+  _id?: string;
+  name: string;
+  code: string;
+  description?: string;
+  year?: string;
+  baseCoefficient?: number;
+  coefficient: number;
+  weeklyHours: number;
+  teacher: string;
+  teachers?: Array<{ id: string; name: string; email?: string }>;
+  levels?: string[];
+  level: string[];
+  educationSystem?: string;
+  specialty?: string[];
+  required?: boolean;
+  isActive: boolean;
+  color: string;
+  mainTeacher?: { id: string; name: string; email?: string };
+}
 const Classes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('all');
@@ -99,12 +121,39 @@ const Classes: React.FC = () => {
   const { toast } = useToast();
   const [currentAcademicYears, setCurrentAcademicYears] = useState<AcademicYear>();
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [availableSubjects, setAvailableSubjects] = useState<SubjectItem[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
 
   // Load academic years on component mount
   useEffect(() => {
     getCurrentAcademicYear();
   }, []);
 
+  useEffect(() => {
+    loadAvailableSubjects();
+  }, [filterAcademicYear]);
+
+  const loadAvailableSubjects = useCallback(async () => {
+    if (!filterAcademicYear) {
+      setAvailableSubjects([]);
+      return;
+    }
+
+    setLoadingSubjects(true);
+    try {
+      const subjects = await subjectsService.getSubjects({
+        year: filterAcademicYear,
+      });
+      setAvailableSubjects(subjects);
+
+    } catch (error) {
+      console.error('Erreur lors du chargement des matières:', error);
+      setAvailableSubjects([]);
+    } finally {
+      setLoadingSubjects(false);
+    }
+  }, [filterAcademicYear]);
+  console.log(availableSubjects);
   const getCurrentAcademicYear = async () => {
     try {
       const academicYearsData = await settingsService.getAcademicYears();
@@ -685,9 +734,9 @@ const Classes: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <User className="w-4 h-4" />
-                        <span>{classRoom.teacher}</span>
-                        <span>•</span>
+                        {/* <User className="w-4 h-4" />
+                        <span>{classRoom.mainTeacher}</span>
+                        <span>•</span> */}
                         <MapPin className="w-4 h-4" />
                         <span>Salle {classRoom.level}{classRoom.section}</span>
                       </div>
@@ -822,7 +871,7 @@ const Classes: React.FC = () => {
                           variant="secondary"
                           className="text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200"
                         >
-                          {subject}
+                          {availableSubjects?.find(s=>s._id === subject)?.name}
                         </Badge>
                       ))}
                       {classRoom.subjects.length > 4 && (

@@ -111,9 +111,9 @@ async function addStudentToClassInternal(studentId, classId, schoolId) {
     }
 
     // Get current academic year
-    const currentAcademicYearDetail = await AcademicYearDetail.findOne({ 
-      school: schoolId, 
-      isCurrent: true 
+    const currentAcademicYearDetail = await AcademicYearDetail.findOne({
+      school: schoolId,
+      isCurrent: true
     });
 
     if (!currentAcademicYearDetail) {
@@ -132,17 +132,17 @@ async function addStudentToClassInternal(studentId, classId, schoolId) {
       academicYear.classes = classId;
       academicYear.status = 'Active';
       academicYear.enrollmentDate = student?.enrollmentDate;
-      
+
       // Update terms structure if class has changed
       if (academicYear.classes.toString() !== classId.toString()) {
         await initializeAcademicYearTerms(academicYear, currentAcademicYearDetail, classData);
       }
-      
+
       await academicYear.save();
     } else {
       // Create new academic year
       const terms = await initializeTermsFromAcademicYear(currentAcademicYearDetail, classData);
-      
+
       academicYear = new AcademicYear({
         student: studentId,
         school: schoolId,
@@ -182,19 +182,19 @@ async function addStudentToClassInternal(studentId, classId, schoolId) {
 // Helper function to initialize terms from academic year detail
 async function initializeTermsFromAcademicYear(academicYearDetail, classDoc) {
   const terms = [];
-  
+
   // Get terms for this academic year
-  const termDocs = await Term.find({ 
+  const termDocs = await Term.find({
     _id: { $in: academicYearDetail.terms },
-    school: academicYearDetail.school 
+    school: academicYearDetail.school
   }).populate('sequences');
 
   for (const termDoc of termDocs) {
     const sequences = [];
-    
+
     for (const sequenceDoc of termDoc.sequences) {
       const subjects = [];
-      
+
       // Initialize subjects from class subject details
       for (const subjectDetail of classDoc.subjectDetails) {
         if (subjectDetail.isActive) {
@@ -237,24 +237,24 @@ async function initializeTermsFromAcademicYear(academicYearDetail, classDoc) {
 // Helper function to update existing academic year terms
 async function initializeAcademicYearTerms(academicYear, academicYearDetail, classDoc) {
   const newTerms = await initializeTermsFromAcademicYear(academicYearDetail, classDoc);
-  
+
   // Map existing terms to preserve marks if possible
   const updatedTerms = newTerms.map(newTerm => {
-    const existingTerm = academicYear.terms.find(t => 
+    const existingTerm = academicYear.terms.find(t =>
       t.termInfo.toString() === newTerm.termInfo.toString()
     );
 
     if (existingTerm) {
       // Update sequences while preserving existing marks
       const updatedSequences = newTerm.sequences.map(newSequence => {
-        const existingSequence = existingTerm.sequences.find(s => 
+        const existingSequence = existingTerm.sequences.find(s =>
           s.sequenceInfo.toString() === newSequence.sequenceInfo.toString()
         );
 
         if (existingSequence) {
           // Update subjects while preserving marks
           const updatedSubjects = newSequence.subjects.map(newSubject => {
-            const existingSubject = existingSequence.subjects.find(sub => 
+            const existingSubject = existingSequence.subjects.find(sub =>
               sub.subjectInfo.toString() === newSubject.subjectInfo.toString()
             );
 
@@ -334,12 +334,12 @@ async function addStudentToClassInternalEnhanced(studentId, classId, schoolId, o
     }
 
     let academicYear = null;
-    
+
     if (createAcademicYear) {
       // Get current academic year
-      const currentAcademicYearDetail = await AcademicYearDetail.findOne({ 
-        school: schoolId, 
-        isCurrent: true 
+      const currentAcademicYearDetail = await AcademicYearDetail.findOne({
+        school: schoolId,
+        isCurrent: true
       });
 
       if (!currentAcademicYearDetail) {
@@ -359,12 +359,12 @@ async function addStudentToClassInternalEnhanced(studentId, classId, schoolId, o
           academicYear.classes = classId;
           academicYear.status = status;
           academicYear.enrollmentDate = enrollmentDate;
-          
+
           // Update terms structure if class has changed
           if (academicYear.classes.toString() !== classId.toString()) {
             await initializeAcademicYearTerms(academicYear, currentAcademicYearDetail, classData);
           }
-          
+
           await academicYear.save();
         } else {
           throw new Error('Academic year already exists for this student and update is disabled');
@@ -372,7 +372,7 @@ async function addStudentToClassInternalEnhanced(studentId, classId, schoolId, o
       } else {
         // Create new academic year
         const terms = await initializeTermsFromAcademicYear(currentAcademicYearDetail, classData);
-        
+
         academicYear = new AcademicYear({
           student: studentId,
           school: schoolId,
@@ -402,7 +402,7 @@ async function addStudentToClassInternalEnhanced(studentId, classId, schoolId, o
       classData,
       academicYear,
       student,
-      message: academicYear ? 
+      message: academicYear ?
         (academicYear.isModified() ? 'Academic year updated and student added to class' : 'New academic year created and student added to class') :
         'Student added to class (no academic year created)'
     };
@@ -423,7 +423,7 @@ async function addStudentsToClassInternal(studentIds, classId, schoolId, options
   for (const studentId of studentIds) {
     try {
       let enrollmentDate = new Date()
-      const result = await addStudentToClassInternalEnhanced(studentId, classId, schoolId,enrollmentDate, options);
+      const result = await addStudentToClassInternalEnhanced(studentId, classId, schoolId, enrollmentDate, options);
       results.success.push({
         studentId,
         ...result
@@ -544,22 +544,25 @@ class StudentController {
         const studentData = studentsArray[i];
 
         try {
-          // Set school and createdBy
+          // Set school and createdBy (same as createStudent)
           studentData.school = schoolId;
           studentData.createdBy = req.userId;
 
-          // Normalize and validate
+          console.log(`Processing student ${i + 1}:`, studentData);
+
+          // Use the same normalization and validation as createStudent
           const norm = normalizeAndValidateStudent(studentData);
           if (norm.error) {
             errors.push({
               index: i,
+              student: `${studentData.firstName || ''} ${studentData.lastName || ''}`.trim() || 'Unknown Student',
               error: norm.error,
               missingFields: norm.missingFields
             });
             continue;
           }
 
-          // Check for duplicate email
+          // Check if email already exists in school (same as createStudent)
           const existingStudent = await Student.findOne({
             email: norm.data.email,
             school: schoolId
@@ -568,15 +571,18 @@ class StudentController {
           if (existingStudent) {
             errors.push({
               index: i,
-              error: 'Email already exists in this school'
+              student: `${studentData.firstName || ''} ${studentData.lastName || ''}`.trim() || 'Unknown Student',
+              error: 'Email already exists in this school',
+              email: norm.data.email
             });
             continue;
           }
 
-          const student = new Student(norm.data);
-          const savedStudent = await student.save();
+          // Create and save student (same as createStudent)
+          const newStudent = new Student(norm.data);
+          const savedStudent = await newStudent.save();
 
-          // If class is assigned, add student to class
+          // If class is assigned, add student to class (same as createStudent)
           if (savedStudent.class) {
             try {
               await addStudentToClassInternal(savedStudent._id, savedStudent.class, schoolId);
@@ -586,42 +592,89 @@ class StudentController {
             }
           }
 
-          savedStudents.push(savedStudent);
+          // Populate the saved student for response (similar to createStudent)
+          const populatedStudent = await Student.findById(savedStudent._id)
+            .populate('class', 'name level section educationSystem');
+
+          savedStudents.push(populatedStudent);
+
         } catch (error) {
+          const studentName = `${studentData.firstName || ''} ${studentData.lastName || ''}`.trim() || 'Unknown Student';
+
           if (error.code === 11000) {
             errors.push({
               index: i,
-              error: 'Duplicate matricule or email',
+              student: studentName,
+              error: 'Duplicate field value entered',
               details: error.keyValue
             });
           } else {
             errors.push({
               index: i,
+              student: studentName,
               error: error.message
             });
           }
+
+          console.error(`Error creating student at index ${i}:`, error);
         }
       }
 
+      // Enhanced logging similar to createStudent
       req.log = {
-        action: 'CREATE',
+        action: 'BULK_CREATE',
         module: 'Students',
-        description: `Bulk created students: ${savedStudents.length} success, ${errors.length} errors`,
+        description: `Bulk created ${savedStudents.length} students with ${errors.length} errors`,
         metadata: {
-          count: savedStudents.length,
-          errors: errors.length
+          successCount: savedStudents.length,
+          errorCount: errors.length,
+          totalProcessed: studentsArray.length,
+          studentNames: savedStudents.map(s => `${s.firstName} ${s.lastName}`)
         }
       };
 
-      res.status(207).json({
-        message: `${savedStudents.length} students created, ${errors.length} errors`,
-        savedStudents,
-        errors
+      // Return 207 for partial success (some created, some errors)
+      if (savedStudents.length > 0 && errors.length > 0) {
+        return res.status(207).json({
+          message: `${savedStudents.length} students created successfully, ${errors.length} students failed`,
+          createdCount: savedStudents.length,
+          errorCount: errors.length,
+          savedStudents: savedStudents,
+          errors: errors
+        });
+      }
+
+      // Return 201 if all students were created successfully
+      if (savedStudents.length === studentsArray.length) {
+        return res.status(201).json({
+          message: `All ${savedStudents.length} students created successfully`,
+          createdCount: savedStudents.length,
+          savedStudents: savedStudents
+        });
+      }
+
+      // Return 400 if all students failed
+      return res.status(400).json({
+        message: 'All students failed to create',
+        errorCount: errors.length,
+        errors: errors
       });
 
     } catch (error) {
       console.error("Create many students error:", error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+
+      // Handle duplicate key errors consistently with createStudent
+      if (error.code === 11000) {
+        return res.status(409).json({
+          message: 'Duplicate field value entered',
+          error: error.keyValue
+        });
+      }
+
+      res.status(500).json({
+        message: 'Server error during bulk student creation',
+        error: error.message
+      });
     }
   }
 
