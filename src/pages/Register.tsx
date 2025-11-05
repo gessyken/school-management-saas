@@ -92,7 +92,17 @@ const Register: React.FC = () => {
       navigate('/login')
     } catch (error: any) {
       console.error('Erreur lors de l\'inscription:', error);
-      // Les erreurs sont gérées dans le contexte Auth
+      
+      // Si l'erreur concerne l'email déjà utilisé, afficher l'erreur sur le champ email
+      if (error.response?.data?.field === 'email' || 
+          error.response?.data?.code === 'EMAIL_ALREADY_EXISTS' ||
+          error.response?.data?.message?.toLowerCase().includes('email')) {
+        form.setError('email', {
+          type: 'manual',
+          message: error.response.data.message || 'Cet email est déjà utilisé'
+        });
+      }
+      // Les autres erreurs sont gérées dans le contexte Auth via toast
     } finally {
       setIsLoading(false);
     }

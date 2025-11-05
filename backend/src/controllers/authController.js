@@ -55,8 +55,15 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'Format de téléphone invalide' });
     }
 
+    // Vérifier si l'email est déjà utilisé
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: 'Cet email est déjà utilisé' });
+    if (existingUser) {
+      return res.status(409).json({ 
+        message: 'Cet email est déjà utilisé',
+        field: 'email',
+        code: 'EMAIL_ALREADY_EXISTS'
+      });
+    }
 
     // Séparer le nom en prénom et nom de famille
     const nameParts = name.trim().split(' ');

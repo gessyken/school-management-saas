@@ -9,6 +9,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Important pour CORS avec credentials
 });
 
 // Intercepteur pour ajouter le token d'authentification et le contexte d'école à chaque requête

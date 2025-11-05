@@ -660,17 +660,24 @@ const Students: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 animate-fade-in">
       {/* En-tête */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Gestion des élèves</h1>
-          <p className="text-muted-foreground mt-2">
-            {students.length} élèves inscrits • {filteredStudents.length} affichés
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            Gestion des élèves
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            <span className="font-semibold text-foreground">{students.length}</span> élèves inscrits • <span className="font-semibold text-foreground">{filteredStudents.length}</span> affichés
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm" onClick={handleExport}>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Button 
+            variant="outline" 
+            size="lg" 
+            onClick={handleExport}
+            className="hover:bg-muted/50 transition-all duration-200"
+          >
             <Download className="w-4 h-4 mr-2" />
             Exporter
           </Button>
@@ -679,7 +686,8 @@ const Students: React.FC = () => {
             Importer CSV
           </Button>
           <Button
-            className="bg-gradient-primary hover:bg-primary-hover"
+            className="bg-gradient-primary hover:bg-primary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
+            size="lg"
             onClick={() => handleOpenModal('create')}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -689,9 +697,9 @@ const Students: React.FC = () => {
       </div>
 
       {/* Filtres */}
-      <Card className="shadow-card">
+      <Card className="shadow-card hover:shadow-elevated transition-all duration-300">
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Recherche */}
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -751,10 +759,14 @@ const Students: React.FC = () => {
       </Card>
 
       {/* Liste des élèves */}
-      <div className="grid gap-3">
-        {filteredStudents.map((student) => (
-          <Card key={student.id} className="shadow-sm hover:shadow-md transition-all duration-200 border-l-4 border-l-primary/20">
-            <CardContent className="p-4">
+      <div className="grid gap-4">
+        {filteredStudents.map((student, index) => (
+          <Card 
+            key={student.id} 
+            className="shadow-sm hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary/30 hover:border-l-primary hover:scale-[1.01] animate-fade-in"
+            style={{ animationDelay: `${index * 0.05}s` }}
+          >
+            <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4 flex-1 min-w-0">
                   {/* Avatar avec statut */}
@@ -852,13 +864,29 @@ const Students: React.FC = () => {
       {filteredStudents.length === 0 && !isLoading && (
         <Card className="shadow-card">
           <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-muted-foreground" />
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-20 h-20 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full flex items-center justify-center mx-auto">
+                <Search className="w-10 h-10 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-foreground">Aucun élève trouvé</h3>
+                <p className="text-muted-foreground max-w-md">
+                  {searchTerm || selectedClass !== 'all' || selectedStatus !== 'all' || selectedLevel !== 'all'
+                    ? "Essayez de modifier vos critères de recherche pour trouver des élèves."
+                    : "Commencez par ajouter votre premier élève à la liste."
+                  }
+                </p>
+              </div>
+              {(!searchTerm && selectedClass === 'all' && selectedStatus === 'all' && selectedLevel === 'all') && (
+                <Button
+                  className="bg-gradient-primary hover:bg-primary-hover text-primary-foreground mt-4"
+                  onClick={() => handleOpenModal('create')}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ajouter le premier élève
+                </Button>
+              )}
             </div>
-            <h3 className="text-lg font-semibold mb-2">Aucun élève trouvé</h3>
-            <p className="text-muted-foreground">
-              Essayez de modifier vos critères de recherche ou ajoutez un nouvel élève.
-            </p>
           </CardContent>
         </Card>
       )}
@@ -867,8 +895,16 @@ const Students: React.FC = () => {
       {isLoading && (
         <Card className="shadow-card">
           <CardContent className="p-12 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Chargement des élèves...</p>
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary mx-auto"></div>
+                <Users className="w-6 h-6 text-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-foreground font-medium">Chargement des élèves...</p>
+                <p className="text-sm text-muted-foreground">Veuillez patienter</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

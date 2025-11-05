@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, Outlet } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Sidebar } from "./components/layout/Sidebar";
 import Login from "./pages/Login";
@@ -20,7 +20,7 @@ import Finances from "./pages/Finances";
 import Administration from "./pages/Administration";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import { School } from "lucide-react";
+import { School, Menu } from "lucide-react";
 import AcademicYearOverview from "./pages/AcademicYear/AcademicYearOverview";
 import AcademicYearLayout from "./pages/AcademicYearLayout";
 import GradesManagement from "./pages/AcademicYear/GradesManagement";
@@ -53,6 +53,7 @@ const AuthRedirectHandler = () => {
 // Layout protégé avec sidebar
 const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -86,9 +87,22 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-background flex overflow-hidden">
-      <Sidebar />
-      <main className="flex-1 h-screen overflow-auto">
-        {children}
+      <Sidebar 
+        isMobileOpen={isMobileMenuOpen}
+        onMobileToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+      />
+      <main className="flex-1 h-screen overflow-auto bg-gradient-to-br from-background via-background to-muted/20 lg:ml-0">
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="lg:hidden fixed top-4 left-4 z-30 w-10 h-10 bg-primary text-primary-foreground rounded-lg shadow-lg flex items-center justify-center hover:bg-primary-hover transition-colors"
+          aria-label="Ouvrir le menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <div className="min-h-full">
+          {children}
+        </div>
       </main>
     </div>
   );

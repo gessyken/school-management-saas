@@ -531,28 +531,42 @@ const Classes: React.FC = () => {
   });
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 animate-fade-in">
       {/* En-tête */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Gestion des classes</h1>
-          <p className="text-muted-foreground mt-2">
-            {statistics?.totalClasses || classes.length} classes • {statistics?.totalStudents || classes.reduce((acc, c) => acc + c.currentStudents, 0)} élèves au total
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            Gestion des classes
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            <span className="font-semibold text-foreground">{statistics?.totalClasses || classes.length}</span> classes • <span className="font-semibold text-foreground">{statistics?.totalStudents || classes.reduce((acc, c) => acc + c.currentStudents, 0)}</span> élèves au total
             {filterAcademicYear !== 'all' && ` • Année: ${filterAcademicYear}`}
             {isLoading && ' • Chargement...'}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={handleExportData}>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Button 
+            variant="outline" 
+            size="lg" 
+            onClick={handleExportData}
+            className="hover:bg-muted/50 transition-all duration-200"
+          >
             <Download className="w-4 h-4 mr-2" />
             Exporter
           </Button>
-          <Button variant="outline" size="sm" onClick={refreshAllData} disabled={isRefreshing}>
+          <Button 
+            variant="outline" 
+            size="lg" 
+            onClick={refreshAllData} 
+            disabled={isRefreshing}
+            className="hover:bg-muted/50 transition-all duration-200"
+          >
             <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
             Actualiser
           </Button>
           <Button
-            className="bg-primary hover:bg-primary/90"
+            className="bg-gradient-primary hover:bg-primary-hover text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
+            size="lg"
             onClick={() => handleOpenModal('create')}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -560,7 +574,9 @@ const Classes: React.FC = () => {
           </Button>
           <Button
             variant="outline"
+            size="lg"
             onClick={() => setBulkModal((s) => ({ ...s, isOpen: true }))}
+            className="hover:bg-muted/50 transition-all duration-200"
           >
             <Upload className="w-4 h-4 mr-2" />
             Créer en masse
@@ -628,9 +644,9 @@ const Classes: React.FC = () => {
       </div>
 
       {/* Filtres */}
-      <Card className="shadow-sm">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+      <Card className="shadow-card hover:shadow-elevated transition-all duration-300">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -707,14 +723,29 @@ const Classes: React.FC = () => {
       {/* Rest of the component remains the same... */}
       {/* Grille des classes */}
       {isLoading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
+        <Card className="shadow-card">
+          <CardContent className="p-12 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary mx-auto"></div>
+                <BookOpen className="w-6 h-6 text-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-foreground font-medium">Chargement des classes...</p>
+                <p className="text-sm text-muted-foreground">Veuillez patienter</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredClasses.map((classRoom) => (
-              <Card key={classRoom.id} className="hover:shadow-lg transition-all duration-300 group border-l-4 border-l-primary/50 hover:border-l-primary">
+            {filteredClasses.map((classRoom, index) => (
+              <Card 
+                key={classRoom.id} 
+                className="hover:shadow-xl transition-all duration-300 group border-l-4 border-l-primary/50 hover:border-l-primary hover:scale-[1.02] animate-fade-in"
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
                 <CardContent className="p-6">
                   {/* Header Section */}
                   <div className="flex items-start justify-between mb-6">
@@ -893,22 +924,31 @@ const Classes: React.FC = () => {
 
           {/* Message si aucun résultat */}
           {filteredClasses.length === 0 && (
-            <Card className="text-center py-12">
-              <CardContent>
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <BookOpen className="w-8 h-8 text-muted-foreground" />
+            <Card className="shadow-card text-center">
+              <CardContent className="p-12">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-20 h-20 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full flex items-center justify-center mx-auto">
+                    <BookOpen className="w-10 h-10 text-primary" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-bold text-foreground">Aucune classe trouvée</h3>
+                    <p className="text-muted-foreground max-w-md">
+                      {searchTerm || filterLevel !== 'all' || filterSystem !== 'all' || filterStatus !== 'all' || filterAcademicYear !== 'all'
+                        ? "Aucune classe ne correspond à vos critères de recherche."
+                        : "Aucune classe n'a été créée pour le moment."
+                      }
+                    </p>
+                  </div>
+                  {(!searchTerm && filterLevel === 'all' && filterSystem === 'all' && filterStatus === 'all' && filterAcademicYear === 'all') && (
+                    <Button 
+                      className="bg-gradient-primary hover:bg-primary-hover text-primary-foreground mt-4"
+                      onClick={() => handleOpenModal('create')}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Créer la première classe
+                    </Button>
+                  )}
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Aucune classe trouvée</h3>
-                <p className="text-muted-foreground mb-4">
-                  {searchTerm || filterLevel !== 'all' || filterSystem !== 'all' || filterStatus !== 'all' || filterAcademicYear !== 'all'
-                    ? "Aucune classe ne correspond à vos critères de recherche."
-                    : "Aucune classe n'a été créée pour le moment."
-                  }
-                </p>
-                <Button onClick={() => handleOpenModal('create')}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Créer la première classe
-                </Button>
               </CardContent>
             </Card>
           )}

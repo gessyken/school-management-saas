@@ -4,12 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from '@/components/ui/stat-card';
-import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  BarChart,
+import { Badge as BadgeUI } from '@/components/ui/badge';
+import { 
+  LineChart, 
+  Line, 
+  AreaChart, 
+  Area, 
+  BarChart, 
   Bar,
   XAxis,
   YAxis,
@@ -32,8 +33,7 @@ const Dashboard: React.FC = () => {
   const [currentAcademicYears, setCurrentAcademicYears] = useState<AcademicYearDetail>();
 
   const { currentSchool, user } = useAuth();
-  console.log(user)
-  console.log(currentSchool)
+  
   useEffect(() => {
     getCurrentAcademicYear()
   }, []);
@@ -42,7 +42,6 @@ const Dashboard: React.FC = () => {
     try {
       const academicYearsData = await settingsService.getAcademicYears();
       setCurrentAcademicYears(academicYearsData.find(t => t.isCurrent));
-
     } catch (error) {
       console.error('Error loading Annee:', error);
       toast({
@@ -57,7 +56,8 @@ const Dashboard: React.FC = () => {
   const performanceData: any[] = [];
   const classesData: any[] = [];
   const financesData: any[] = [];
-  // Add this helper function for avatar initials
+  
+  // Helper function for avatar initials
   const getUserInitials = (name: string) => {
     return name
       ?.split(' ')
@@ -66,6 +66,7 @@ const Dashboard: React.FC = () => {
       ?.toUpperCase()
       ?.slice(0, 2);
   };
+  
   // Rediriger vers la page de création d'école si aucune école n'est sélectionnée
   if (!currentSchool) {
     return (
@@ -87,7 +88,7 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 animate-fade-in">
       {/* En-tête personnalisé avec les informations de l'école */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
         <div className="flex-1">
@@ -95,7 +96,7 @@ const Dashboard: React.FC = () => {
             {/* School Logo */}
             {currentSchool?.logoUrl && (
               <div className="hidden sm:block flex-shrink-0">
-                <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-white">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-border shadow-lg bg-white">
                   <img
                     src={currentSchool.logoUrl.startsWith('/upload')
                       ? `${baseURL}/../document${currentSchool.logoUrl}`
@@ -109,11 +110,11 @@ const Dashboard: React.FC = () => {
             )}
 
             <div className="flex-1 min-w-0">
-              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 {currentSchool ? currentSchool.name : 'Tableau de bord'}
               </h1>
 
-              <p className="text-lg text-gray-600 mt-2">
+              <p className="text-lg text-muted-foreground mt-2">
                 {currentSchool
                   ? `Gestion des élèves de ${currentSchool.name}`
                   : 'Vue d\'ensemble des performances de votre école'
@@ -125,90 +126,37 @@ const Dashboard: React.FC = () => {
                   {/* School Info Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                     {/* System Type */}
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Globe className="w-4 h-4 text-blue-600" />
-                      </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border border-border">
+                      <Globe className="w-4 h-4 text-primary" />
                       <div>
-                        <p className="font-medium text-gray-900">Système</p>
-                        <p className="text-gray-600 capitalize">{currentSchool.system_type}</p>
+                        <span className="font-medium text-muted-foreground">Système: </span>
+                        <BadgeUI variant="secondary" className="capitalize">{currentSchool.system_type}</BadgeUI>
                       </div>
                     </div>
 
                     {/* Address */}
                     {currentSchool.address && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <MapPin className="w-4 h-4 text-green-600" />
-                        </div>
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border border-border">
+                        <MapPin className="w-4 h-4 text-primary" />
                         <div>
-                          <p className="font-medium text-gray-900">Adresse</p>
-                          <p className="text-gray-600 line-clamp-1">{currentSchool.address}</p>
+                          <span className="font-medium text-muted-foreground">Adresse: </span>
+                          <span className="text-foreground line-clamp-1">{currentSchool.address}</span>
                         </div>
                       </div>
                     )}
 
                     {/* Contact */}
                     {(currentSchool.phone || currentSchool.email) && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Mail className="w-4 h-4 text-purple-600" />
-                        </div>
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border border-border">
+                        <Mail className="w-4 h-4 text-primary" />
                         <div>
-                          <p className="font-medium text-gray-900">Contact</p>
-                          <div className="text-gray-600">
-                            {currentSchool.phone && <span>{currentSchool.phone}</span>}
-                            {currentSchool.phone && currentSchool.email && <span> • </span>}
-                            {currentSchool.email && <span>{currentSchool.email}</span>}
-                          </div>
+                          <span className="font-medium text-muted-foreground">Contact: </span>
+                          <span className="text-foreground">
+                            {currentSchool.phone || ''} {currentSchool.phone && currentSchool.email ? '|' : ''} {currentSchool.email || ''}
+                          </span>
                         </div>
                       </div>
                     )}
-
-                    {/* School Type */}
-                    {currentSchool.type && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Building2 className="w-4 h-4 text-orange-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">Type</p>
-                          <p className="text-gray-600">{currentSchool.type}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Motto */}
-                    {currentSchool.motto && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Sparkles className="w-4 h-4 text-yellow-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">Devise</p>
-                          <p className="text-gray-600 italic">"{currentSchool.motto}"</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Plan */}
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Crown className="w-4 h-4 text-indigo-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">Forfait</p>
-                        <Badge
-                          // variant={
-                          //   currentSchool.plan === 'PRO' ? 'default' :
-                          //     currentSchool.plan === 'BASIC' ? 'secondary' : 'outline'
-                          // }
-                          className="mt-1"
-                        >
-                        </Badge>
-                        {currentSchool.plan}
-                      </div>
-                    </div>
                   </div>
                 </div>
               )}
@@ -217,26 +165,28 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Right Side - Meta Information */}
-        <div className="flex flex-col items-end space-y-4">
+        <div className="flex flex-col items-end space-y-3">
           {/* Academic Year & Principal */}
           <div className="text-right space-y-3">
             {/* Academic Year */}
-            <div className="flex items-center justify-end gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-              <Calendar className="w-4 h-4" />
-              <span>Année académique {currentAcademicYears?.name}</span>
+            <div className="flex items-center justify-end gap-2 text-sm px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
+              <Calendar className="w-4 h-4 text-primary" />
+              <span className="text-foreground font-medium">
+                Année académique {currentAcademicYears?.name || '2023-2024'}
+              </span>
             </div>
 
             {/* Principal */}
             {currentSchool?.principal && (
-              <div className="flex items-center justify-end gap-2 text-sm">
+              <div className="flex items-center justify-end gap-2 text-sm px-3 py-1.5 bg-muted/50 rounded-lg border border-border">
                 <div className="text-right">
-                  <p className="font-medium text-gray-900">Directeur</p>
-                  <p className="text-gray-600">
+                  <span className="text-muted-foreground">Directeur: </span>
+                  <span className="font-medium text-foreground">
                     {typeof currentSchool.principal === 'object'
                       ? currentSchool.principal.fullName
                       : user?.firstName || user?.name
                     }
-                  </p>
+                  </span>
                 </div>
                 <Avatar className="w-8 h-8 border-2 border-white shadow-sm">
                   <AvatarImage
@@ -254,31 +204,12 @@ const Dashboard: React.FC = () => {
                 </Avatar>
               </div>
             )}
-
-            {/* School Status */}
-            {currentSchool && (
-              <div className="text-xs flex items-center justify-end gap-2">
-                {currentSchool.accessStatus === 'active' ? 'Actif' :
-                  currentSchool.accessStatus === 'suspended' ? 'Suspendu' : 'Bloqué'}
-                <Badge
-                  // variant={
-                  //   currentSchool.accessStatus === 'active' ? 'default' :
-                  //     currentSchool.accessStatus === 'suspended' ? 'secondary' : 'destructive'
-                  // }
-                  className="text-xs"
-                >
-                  {currentSchool.accessStatus === 'active' ? 'Actif' :
-                    currentSchool.accessStatus === 'suspended' ? 'Suspendu' : 'Bloqué'}
-                </Badge>
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-              </div>
-            )}
           </div>
 
           {/* Large Logo for Mobile */}
           {currentSchool?.logoUrl && (
             <div className="sm:hidden w-full">
-              <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-white mx-auto">
+              <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-border shadow-lg bg-white mx-auto">
                 <img
                   src={currentSchool.logoUrl.startsWith('/upload')
                     ? `${baseURL}/../document${currentSchool.logoUrl}`
@@ -295,238 +226,313 @@ const Dashboard: React.FC = () => {
 
       {/* Statistiques principales personnalisées selon le type d'école */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title={currentSchool?.system_type === 'anglophone' ? 'Enrolled Students' : 'Élèves inscrits'}
-          value="0"
-          subtitle={currentSchool?.system_type === 'anglophone' ? 'Total this year' : 'Total cette année'}
-          icon={Users}
-          variant="primary"
-          trend={{
-            value: 12,
-            label: currentSchool?.system_type === 'anglophone' ? 'vs last year' : "vs l'année dernière"
-          }}
-        />
-
-        <StatCard
-          title={currentSchool?.system_type === 'anglophone' ? 'Active Classes' : 'Classes actives'}
-          value="0"
-          subtitle={currentSchool?.system_type === 'anglophone' ? 'All sections' : 'Toutes sections'}
-          icon={BookOpen}
-          variant="secondary"
-          trend={{
-            value: 8,
-            label: currentSchool?.system_type === 'anglophone' ? 'new classes' : 'nouvelles classes'
-          }}
-        />
-
-        <StatCard
-          title={currentSchool?.system_type === 'anglophone' ? 'Overall Average' : 'Moyenne générale'}
-          value="0"
-          subtitle={currentSchool?.system_type === 'anglophone' ? 'Out of 100 points' : 'Sur 20 points'}
-          icon={TrendingUp}
-          variant="success"
-          trend={{
-            value: 5,
-            label: currentSchool?.system_type === 'anglophone' ? 'improvement' : "d'amélioration"
-          }}
-        />
-
-        <StatCard
-          title={currentSchool?.system_type === 'anglophone' ? 'At-risk Students' : 'Élèves à risque'}
-          value="0"
-          subtitle={currentSchool?.system_type === 'anglophone' ? 'Average < 50%' : 'Moyenne < 10'}
-          icon={AlertTriangle}
-          variant="warning"
-          trend={{
-            value: -15,
-            label: currentSchool?.system_type === 'anglophone' ? 'improving' : 'en amélioration'
-          }}
-        />
+        <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <StatCard
+            title={currentSchool?.system_type === 'anglophone' ? 'Enrolled Students' : 'Élèves inscrits'}
+            value="0"
+            subtitle={currentSchool?.system_type === 'anglophone' ? 'Total this year' : 'Total cette année'}
+            icon={Users}
+            variant="primary"
+            trend={{ 
+              value: 12, 
+              label: currentSchool?.system_type === 'anglophone' ? 'vs last year' : "vs l'année dernière" 
+            }}
+          />
+        </div>
+        
+        <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <StatCard
+            title={currentSchool?.system_type === 'anglophone' ? 'Active Classes' : 'Classes actives'}
+            value="0"
+            subtitle={currentSchool?.system_type === 'anglophone' ? 'All sections' : 'Toutes sections'}
+            icon={BookOpen}
+            variant="secondary"
+            trend={{ 
+              value: 8, 
+              label: currentSchool?.system_type === 'anglophone' ? 'new classes' : 'nouvelles classes' 
+            }}
+          />
+        </div>
+        
+        <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+          <StatCard
+            title={currentSchool?.system_type === 'anglophone' ? 'Overall Average' : 'Moyenne générale'}
+            value="0"
+            subtitle={currentSchool?.system_type === 'anglophone' ? 'Out of 100 points' : 'Sur 20 points'}
+            icon={TrendingUp}
+            variant="success"
+            trend={{ 
+              value: 5, 
+              label: currentSchool?.system_type === 'anglophone' ? 'improvement' : "d'amélioration" 
+            }}
+          />
+        </div>
+        
+        <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
+          <StatCard
+            title={currentSchool?.system_type === 'anglophone' ? 'At-risk Students' : 'Élèves à risque'}
+            value="0"
+            subtitle={currentSchool?.system_type === 'anglophone' ? 'Average < 50%' : 'Moyenne < 10'}
+            icon={AlertTriangle}
+            variant="warning"
+            trend={{ 
+              value: -15, 
+              label: currentSchool?.system_type === 'anglophone' ? 'improving' : 'en amélioration' 
+            }}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Performance académique */}
-        <Card className="shadow-card">
+        <Card className="shadow-card hover:shadow-elevated transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.5s' }}>
           <CardHeader>
-            <CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
               {currentSchool?.system_type === 'anglophone' ? 'Academic Performance' : 'Performance académique'}
             </CardTitle>
             <CardDescription>
-              {currentSchool?.system_type === 'anglophone'
-                ? 'Evolution of averages and attendance'
+              {currentSchool?.system_type === 'anglophone' 
+                ? 'Evolution of averages and attendance' 
                 : 'Évolution des moyennes et de la présence'
               }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={performanceData}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="moyenne"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={3}
-                  dot={{ fill: 'hsl(var(--primary))' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="presence"
-                  stroke="hsl(var(--secondary))"
-                  strokeWidth={3}
-                  dot={{ fill: 'hsl(var(--secondary))' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {performanceData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={performanceData}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      boxShadow: 'var(--shadow-card)'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="moyenne" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={3}
+                    dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="presence" 
+                    stroke="hsl(var(--secondary))" 
+                    strokeWidth={3}
+                    dot={{ fill: 'hsl(var(--secondary))', r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-center">
+                <div className="space-y-3">
+                  <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
+                  <p className="text-muted-foreground">
+                    {currentSchool?.system_type === 'anglophone' 
+                      ? 'No performance data available yet' 
+                      : 'Aucune donnée de performance disponible'
+                    }
+                  </p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Répartition des paiements */}
-        <Card className="shadow-card">
+        <Card className="shadow-card hover:shadow-elevated transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.6s' }}>
           <CardHeader>
-            <CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-secondary" />
               {currentSchool?.system_type === 'anglophone' ? 'Payment Status' : 'État des paiements'}
             </CardTitle>
             <CardDescription>
-              {currentSchool?.system_type === 'anglophone'
-                ? 'Distribution of tuition fees'
+              {currentSchool?.system_type === 'anglophone' 
+                ? 'Distribution of tuition fees' 
                 : 'Répartition des frais de scolarité'
               }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={financesData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  dataKey="value"
-                  label={({ name, value }) => `${name} (${value}%)`}
-                >
-                  {financesData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+            {financesData.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={financesData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      dataKey="value"
+                      label={({ name, value }) => `${name} (${value}%)`}
+                    >
+                      {financesData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        boxShadow: 'var(--shadow-card)'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex justify-center flex-wrap gap-4 mt-4">
+                  {financesData.map((item) => (
+                    <div key={item.name} className="flex items-center space-x-2">
+                      <div 
+                        className="w-3 h-3 rounded-full shadow-sm" 
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-sm text-muted-foreground">{item.name}</span>
+                    </div>
                   ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex justify-center space-x-6 mt-4">
-              {financesData.map((item) => (
-                <div key={item.name} className="flex items-center space-x-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="text-sm text-muted-foreground">{item.name}</span>
                 </div>
-              ))}
-            </div>
+              </>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-center">
+                <div className="space-y-3">
+                  <DollarSign className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
+                  <p className="text-muted-foreground">
+                    {currentSchool?.system_type === 'anglophone' 
+                      ? 'No payment data available yet' 
+                      : 'Aucune donnée de paiement disponible'
+                    }
+                  </p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Performance par classe */}
-      <Card className="shadow-card">
+      <Card className="shadow-card hover:shadow-elevated transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.7s' }}>
         <CardHeader>
-          <CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-primary" />
             {currentSchool?.system_type === 'anglophone' ? 'Performance by Class' : 'Performance par classe'}
           </CardTitle>
           <CardDescription>
-            {currentSchool?.system_type === 'anglophone'
-              ? 'Comparison of enrollment and averages by class'
+            {currentSchool?.system_type === 'anglophone' 
+              ? 'Comparison of enrollment and averages by class' 
               : 'Comparaison des effectifs et des moyennes par classe'
             }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={classesData}>
-              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px'
-                }}
-              />
-              <Bar
-                dataKey="effectif"
-                name={currentSchool?.system_type === 'anglophone' ? 'Enrollment' : 'Effectif'}
-                fill="hsl(var(--primary))"
-                radius={[4, 4, 0, 0]}
-              />
-              <Bar
-                dataKey="moyenne"
-                name={currentSchool?.system_type === 'anglophone' ? 'Average' : 'Moyenne'}
-                fill="hsl(var(--secondary))"
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+          {classesData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={classesData}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    boxShadow: 'var(--shadow-card)'
+                  }}
+                />
+                <Bar 
+                  dataKey="effectif" 
+                  name={currentSchool?.system_type === 'anglophone' ? 'Enrollment' : 'Effectif'}
+                  fill="hsl(var(--primary))" 
+                  radius={[8, 8, 0, 0]}
+                />
+                <Bar 
+                  dataKey="moyenne" 
+                  name={currentSchool?.system_type === 'anglophone' ? 'Average' : 'Moyenne'}
+                  fill="hsl(var(--secondary))" 
+                  radius={[8, 8, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-center">
+              <div className="space-y-3">
+                <BookOpen className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
+                <p className="text-muted-foreground">
+                  {currentSchool?.system_type === 'anglophone' 
+                    ? 'No class data available yet' 
+                    : 'Aucune donnée de classe disponible'
+                  }
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Actions rapides personnalisées selon le type d'école */}
-      <Card className="shadow-card">
+      <Card className="shadow-card hover:shadow-elevated transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.8s' }}>
         <CardHeader>
-          <CardTitle>Actions rapides</CardTitle>
-          <CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="w-5 h-5 text-primary" />
+            Actions rapides
+          </CardTitle>
+          <CardDescription className="flex items-center gap-2">
             Accès rapide aux fonctionnalités principales
             {currentSchool && (
-              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+              <BadgeUI variant="secondary" className="ml-2">
                 Système {currentSchool.system_type}
-              </span>
+              </BadgeUI>
             )}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <button
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <button 
               onClick={() => navigate('/students')}
-              className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors text-left"
+              className="group p-5 border-2 border-border rounded-xl hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 text-left hover:shadow-lg hover:scale-[1.02]"
             >
-              <Users className="w-8 h-8 text-primary mb-2" />
-              <h3 className="font-semibold">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
+                <Users className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-1">
                 {currentSchool?.system_type === 'anglophone' ? 'Add Student' : 'Ajouter un élève'}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {currentSchool?.system_type === 'anglophone' ? 'Register new student' : 'Inscrire un nouvel élève'}
               </p>
             </button>
-
-            <button
+            
+            <button 
               onClick={() => navigate('/classes')}
-              className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors text-left"
+              className="group p-5 border-2 border-border rounded-xl hover:border-secondary/50 hover:bg-secondary/5 transition-all duration-200 text-left hover:shadow-lg hover:scale-[1.02]"
             >
-              <BookOpen className="w-8 h-8 text-secondary mb-2" />
-              <h3 className="font-semibold">
+              <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center mb-3 group-hover:bg-secondary/20 transition-colors">
+                <BookOpen className="w-6 h-6 text-secondary" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-1">
                 {currentSchool?.system_type === 'anglophone' ? 'Create Class' : 'Créer une classe'}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {currentSchool?.system_type === 'anglophone' ? 'New class or section' : 'Nouvelle classe ou section'}
               </p>
             </button>
-
-            <button
+            
+            <button 
               onClick={() => navigate('/finances')}
-              className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors text-left"
+              className="group p-5 border-2 border-border rounded-xl hover:border-success/50 hover:bg-success/5 transition-all duration-200 text-left hover:shadow-lg hover:scale-[1.02]"
             >
-              <DollarSign className="w-8 h-8 text-success mb-2" />
-              <h3 className="font-semibold">
+              <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mb-3 group-hover:bg-success/20 transition-colors">
+                <DollarSign className="w-6 h-6 text-success" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-1">
                 {currentSchool?.system_type === 'anglophone' ? 'Record Payment' : 'Enregistrer un paiement'}
               </h3>
               <p className="text-sm text-muted-foreground">
@@ -534,12 +540,14 @@ const Dashboard: React.FC = () => {
               </p>
             </button>
 
-            <button
+            <button 
               onClick={() => navigate('/settings')}
-              className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors text-left"
+              className="group p-5 border-2 border-border rounded-xl hover:border-warning/50 hover:bg-warning/5 transition-all duration-200 text-left hover:shadow-lg hover:scale-[1.02]"
             >
-              <Settings className="w-8 h-8 text-orange-500 mb-2" />
-              <h3 className="font-semibold">
+              <div className="w-12 h-12 bg-warning/10 rounded-lg flex items-center justify-center mb-3 group-hover:bg-warning/20 transition-colors">
+                <Settings className="w-6 h-6 text-warning" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-1">
                 {currentSchool?.system_type === 'anglophone' ? 'School Settings' : 'Paramètres de l\'école'}
               </h3>
               <p className="text-sm text-muted-foreground">

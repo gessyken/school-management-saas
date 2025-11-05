@@ -27,19 +27,51 @@ const server = http.createServer(app);
 
 
 // Configure Express CORS middleware
+const allowedOrigins = [
+    "http://localhost:8080",
+    "http://localhost:8081",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3002",
+    // Allow local network IPs (for development)
+    /^http:\/\/172\.\d+\.\d+\.\d+:\d+$/,  // Pattern for local network IPs
+    /^http:\/\/192\.168\.\d+\.\d+:\d+$/,  // Pattern for local network IPs
+    /^http:\/\/10\.\d+\.\d+\.\d+:\d+$/,   // Pattern for local network IPs
+];
+
 app.use(
     cors({
-        origin: [
-            "http://localhost:8080",
-            "http://localhost:8081",
-            "http://localhost:3000",
-            "http://localhost:5173",
-            "http://localhost:5174",
-            "http://localhost:3002",
-        ],
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH"],
+        origin: function (origin, callback) {
+            // Allow requests with no origin (like mobile apps or curl requests)
+            if (!origin) return callback(null, true);
+            
+            // Check if origin matches allowed origins
+            const isAllowed = allowedOrigins.some(allowedOrigin => {
+                if (typeof allowedOrigin === 'string') {
+                    return origin === allowedOrigin;
+                } else if (allowedOrigin instanceof RegExp) {
+                    return allowedOrigin.test(origin);
+                }
+                return false;
+            });
+            
+            if (isAllowed) {
+                callback(null, true);
+            } else {
+                // In development, log the origin for debugging
+                if (process.env.NODE_ENV !== 'production') {
+                    console.log(`⚠️  CORS blocked origin: ${origin}`);
+                    console.log('💡 Add this origin to allowedOrigins if needed');
+                }
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         allowedHeaders: ["Content-Type", "Authorization", "X-School-Id"],
         credentials: true,
+        preflightContinue: false,
+        optionsSuccessStatus: 204
     })
 );
 
